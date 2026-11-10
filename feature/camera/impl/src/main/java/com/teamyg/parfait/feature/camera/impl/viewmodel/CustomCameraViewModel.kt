@@ -14,6 +14,9 @@ import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 sealed interface CustomCameraEffect : UiSideEffect {
     data object RequestPermission : CustomCameraEffect
@@ -63,6 +66,10 @@ sealed interface CustomCameraIntent : UiIntent {
     data class OnPinchZoom(
         val scale: Float,
     ) : CustomCameraIntent
+
+    data object OnPinchZoomStart : CustomCameraIntent
+
+    data object OnPinchZoomEnd : CustomCameraIntent
 
     data object OnClickFlip : CustomCameraIntent
 
@@ -123,6 +130,14 @@ constructor(
 ) {
     private var hasRequestedPermission = false
 
+    /** 렌즈 경계(초광각 0.5x·메인 최소 배율)를 넘어선 핀치 누적 */
+    private var lensSwitchScale = 1f
+
+    // 경계 떨림으로 재바인딩이 반복되지 않게 제스처당 한 번만 전환한다
+    private var hasSwitchedLensInPinch = false
+
+    private var lensSwitchJob: Job? = null
+
     init {
         viewModelLogger.i { "CustomCameraViewModel::init" }
     }
@@ -135,6 +150,8 @@ constructor(
             is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
             is CustomCameraIntent.OnClickZoom -> handleOnClickZoom()
             is CustomCameraIntent.OnPinchZoom -> handleOnPinchZoom(intent)
+            is CustomCameraIntent.OnPinchZoomStart -> handleOnPinchZoomStart()
+            is CustomCameraIntent.OnPinchZoomEnd -> handleOnPinchZoomEnd()
             is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
             is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
@@ -202,19 +219,69 @@ constructor(
         }
     }
 
+    private fun handleOnPinchZoomStart() {
+        cancelLensSwitch()
+        hasSwitchedLensInPinch = false
+    }
+
+    private fun handleOnPinchZoomEnd() {
+        cancelLensSwitch()
+    }
+
     private fun handleOnPinchZoom(intent: CustomCameraIntent.OnPinchZoom) {
-        // 초광각은 메인 카메라와 배율 축이 달라 핀치를 받지 않는다
-        if (state.value.shouldUseUltraWideCamera) return
+        // 전환 뒤 남은 손가락 이동이 새 카메라 배율로 이어지면 1x로 넘어가자마자 1.4x처럼 밀린다
+        if (hasSwitchedLensInPinch) return
+
+        val current = state.value
+        val canSwitchLens = current.halfZoomSource == HalfZoomSource.ULTRA_WIDE
+
+        // 초광각은 메인 카메라와 배율 축이 달라 그 안에서 줌하지 않는다
+        if (current.shouldUseUltraWideCamera) {
+            lensSwitchScale = (lensSwitchScale * intent.scale).coerceAtLeast(1f)
+            if (lensSwitchScale >= LENS_SWITCH_ZOOM_IN_SCALE) {
+                scheduleLensSwitch(CameraZoomLevel.ONE)
+            } else {
+                cancelLensSwitch()
+            }
+            return
+        }
+
+        val rawRatio = current.zoomRatio * intent.scale
+        val minRatio = current.zoomRange.start
+        lensSwitchScale = if (rawRatio < minRatio) lensSwitchScale * rawRatio / minRatio else 1f
+        if (canSwitchLens && lensSwitchScale <= LENS_SWITCH_ZOOM_OUT_SCALE) {
+            scheduleLensSwitch(CameraZoomLevel.HALF)
+        } else {
+            cancelLensSwitch()
+        }
 
         updateState {
             copy(
-                zoomRatio = (zoomRatio * intent.scale).coerceIn(zoomRange),
+                zoomRatio = rawRatio.coerceIn(zoomRange),
                 isZoomByGesture = true,
             )
         }
     }
 
+    // 빠른 핀치는 문턱만으로 쉽게 뚫린다
+    private fun scheduleLensSwitch(target: CameraZoomLevel) {
+        if (lensSwitchJob?.isActive == true) return
+
+        lensSwitchJob = launch {
+            delay(LENS_SWITCH_HOLD)
+            lensSwitchScale = 1f
+            hasSwitchedLensInPinch = true
+            updateState { copy(zoomRatio = target.ratio, isZoomByGesture = false) }
+        }
+    }
+
+    private fun cancelLensSwitch() {
+        lensSwitchJob?.cancel()
+        lensSwitchJob = null
+    }
+
     private fun handleOnClickFlip() {
+        cancelLensSwitch()
         updateState {
             copy(
                 zoomRatio = CameraZoomLevel.ONE.ratio,
@@ -264,3 +331,6 @@ constructor(
 }
 
 private val MAX_PINCH_ZOOM_RATIO = CameraZoomLevel.TWO.ratio
+private const val LENS_SWITCH_ZOOM_IN_SCALE = 1.25f
+private const val LENS_SWITCH_ZOOM_OUT_SCALE = 1f / LENS_SWITCH_ZOOM_IN_SCALE
+private val LENS_SWITCH_HOLD = 250.milliseconds

@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.camera.impl.viewmodel
 
 import app.cash.turbine.test
+import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
 import com.teamyg.parfait.feature.camera.impl.model.FlashMode
 import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
@@ -12,9 +13,15 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 
 class CustomCameraViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private fun createViewModel() = CustomCameraViewModel(
         createCameraCacheFileUseCase = mockk {
             every { this@mockk() } returns File("a.jpg")
@@ -308,15 +315,123 @@ class CustomCameraViewModelTest {
     }
 
     @Test
-    fun pinch_onUltraWide_isIgnored() {
+    fun pinch_zoomOutPastOneAndHold_switchesToUltraWide() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.7f))
+        advanceTimeBy(200)
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
+
+        advanceTimeBy(100)
+        assertTrue(viewModel.state.value.shouldUseUltraWideCamera)
+        assertEquals("0.5x", viewModel.state.value.zoomLabel)
+    }
+
+    @Test
+    fun pinch_zoomInOnUltraWideAndHold_switchesToOneWithoutDrift() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = createViewModel()
         viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
         viewModel.clickZoom(times = 2)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.1f))
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.shouldUseUltraWideCamera)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.2f))
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.4f))
+        assertEquals(1f, viewModel.state.value.zoomRatio)
+    }
+
+    @Test
+    fun pinch_backBelowThresholdBeforeHold_cancelsSwitch() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.7f))
+        advanceTimeBy(100)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.3f))
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
+    }
+
+    @Test
+    fun pinch_releasedBeforeHold_cancelsSwitch() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.7f))
+        advanceTimeBy(100)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomEnd)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
+    }
+
+    @Test
+    fun pinch_zoomOutOnUltraWide_doesNotDelayLaterZoomIn() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.clickZoom(times = 2)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.5f))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.3f))
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
+    }
+
+    @Test
+    fun pinch_switchesLensOncePerGesture() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.7f))
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.shouldUseUltraWideCamera)
 
         viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 2f))
-
+        advanceUntilIdle()
         assertTrue(viewModel.state.value.shouldUseUltraWideCamera)
-        assertEquals("0.5x", viewModel.state.value.zoomLabel)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomEnd)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 2f))
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
+    }
+
+    @Test
+    fun pinch_zoomOutPastMinWithoutUltraWide_clampsAtMin() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = false))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.5f))
+
+        assertEquals(1f, viewModel.state.value.zoomRatio)
+    }
+
+    @Test
+    fun pinch_zoomOutFromAboveMin_countsOnlyOvershoot() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.5f))
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.6f))
+
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
+        assertEquals(1f, viewModel.state.value.zoomRatio)
     }
 
     @Test

@@ -190,7 +190,9 @@ internal fun CustomCameraRoute(
                     transition = cameraPreviewState.transition,
                     onFeedRectChange = { feedRect = it },
                     onTapViewfinder = cameraPreviewState::focusAt,
+                    onPinchZoomStart = { viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart) },
                     onPinchZoom = { scale -> viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale)) },
+                    onPinchZoomEnd = { viewModel.processIntent(CustomCameraIntent.OnPinchZoomEnd) },
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     AndroidView(

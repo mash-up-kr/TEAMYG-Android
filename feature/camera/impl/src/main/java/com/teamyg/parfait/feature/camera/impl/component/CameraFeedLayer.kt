@@ -79,14 +79,18 @@ internal fun CameraFeedLayer(
     transition: CameraTransition?,
     onFeedRectChange: (Rect) -> Unit,
     onTapViewfinder: (Offset) -> Unit,
+    onPinchZoomStart: () -> Unit,
     onPinchZoom: (scale: Float) -> Unit,
+    onPinchZoomEnd: () -> Unit,
     modifier: Modifier = Modifier,
     feed: @Composable () -> Unit,
 ) {
     val contentLayer = rememberGraphicsLayer()
     val blurLayer = rememberGraphicsLayer()
     val currentOnTapViewfinder by rememberUpdatedState(onTapViewfinder)
+    val currentOnPinchZoomStart by rememberUpdatedState(onPinchZoomStart)
     val currentOnPinchZoom by rememberUpdatedState(onPinchZoom)
+    val currentOnPinchZoomEnd by rememberUpdatedState(onPinchZoomEnd)
 
     Box(
         modifier = modifier
@@ -100,7 +104,11 @@ internal fun CameraFeedLayer(
                     if (viewfinderRect()?.contains(offset) == true) currentOnTapViewfinder(offset)
                 }
             }.pointerInput(Unit) {
-                detectPinchZoom { scale -> currentOnPinchZoom(scale) }
+                detectPinchZoom(
+                    onPinchZoomStart = { currentOnPinchZoomStart() },
+                    onPinchZoom = { scale -> currentOnPinchZoom(scale) },
+                    onPinchZoomEnd = { currentOnPinchZoomEnd() },
+                )
             },
     ) {
         feed()
@@ -112,19 +120,33 @@ internal fun CameraFeedLayer(
 }
 
 /** `detectTransformGestures`는 한 손가락 이동도 소비해 탭 초점과 겹친다. 두 손가락일 때만 본다 */
-private suspend fun PointerInputScope.detectPinchZoom(onPinchZoom: (scale: Float) -> Unit) {
+private suspend fun PointerInputScope.detectPinchZoom(
+    onPinchZoomStart: () -> Unit,
+    onPinchZoom: (scale: Float) -> Unit,
+    onPinchZoomEnd: () -> Unit,
+) {
     awaitEachGesture {
         awaitFirstDown(requireUnconsumed = false)
-        do {
-            val event = awaitPointerEvent()
-            if (event.changes.count { it.pressed } >= PINCH_POINTER_COUNT) {
-                val scale = event.calculateZoom()
-                if (scale != 1f) {
-                    onPinchZoom(scale)
-                    event.changes.forEach { it.consume() }
+        var isPinching = false
+        try {
+            do {
+                val event = awaitPointerEvent()
+                val isPinchEvent = event.changes.count { it.pressed } >= PINCH_POINTER_COUNT
+                if (isPinchEvent && !isPinching) onPinchZoomStart()
+                if (!isPinchEvent && isPinching) onPinchZoomEnd()
+                isPinching = isPinchEvent
+                if (isPinchEvent) {
+                    val scale = event.calculateZoom()
+                    if (scale != 1f) {
+                        onPinchZoom(scale)
+                        event.changes.forEach { it.consume() }
+                    }
                 }
-            }
-        } while (event.changes.any { it.pressed })
+            } while (event.changes.any { it.pressed })
+        } finally {
+            // 취소된 제스처도 끝을 알려야 대기 중인 렌즈 전환이 손을 뗀 뒤에 터지지 않는다
+            if (isPinching) onPinchZoomEnd()
+        }
     }
 }
 
@@ -271,7 +293,9 @@ private fun PreviewCameraFeedLayer(
             transition = transition,
             onFeedRectChange = {},
             onTapViewfinder = {},
+            onPinchZoomStart = {},
             onPinchZoom = {},
+            onPinchZoomEnd = {},
             modifier = Modifier.fillMaxSize(),
         ) {
             Box(
