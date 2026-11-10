@@ -25,7 +25,7 @@
 |---|---|---|---|
 | [auth.md](auth.md) | `http/auth` | 5 (카카오 로그인 · **애플 로그인** · 회원가입 완료 · 토큰 재발급 · 로그아웃) | **결선됨**(애플 해당 없음, 나머지 4 전부 호출부 있음) |
 | [policy.md](policy.md) | `http/auth` | 1 (현재 유효 약관 목록) | 구현됨 |
-| [notice.md](notice.md) | `http/notice` | 1 (공지 목록 조회. 어드민 등록·수정은 앱 대상 아님) | 미구현 |
+| [notice.md](notice.md) | `http/notice` | 1 (공지 목록 조회. 어드민 등록·수정은 앱 대상 아님) | 구현됨 |
 | [parfait-group.md](parfait-group.md) | `http/parfaitgroup` | 9 (목록 · **목록 v2(텍스트 포함)** · 상세 · 참여 미리보기 · 참여 · 생성 · 닉네임 변경 · 탈퇴 · 신고) | **결선됨**(목록은 v2를 부르고 v1은 `@Deprecated`, 나머지 7 전부 호출부 있음, **불일치 1건** — 목록 `recentImageUrl`의 뜻) |
 | [parfait.md](parfait.md) | `http/parfait` | 6 + 테스트 전용 1 (연도 리스트 · 오늘의 캔버스 · **오늘의 캔버스 조건부(v2, ETag/304)** · 과거 목록 · 상세 조회 · 배경 변경 / 테스트 회전) | **결선됨**(회전 해당 없음, 5 전부 호출부 있음, 불일치 0건 — 2026-09-07 신설 `groupName`을 앱이 이튿날 읽기 시작했다) |
 | [image.md](image.md) | `http/image` | 2 (업로드 URL 발급 · 업로드 확인) | **결선됨**(2 전부 호출부 있음) |
