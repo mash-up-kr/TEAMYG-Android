@@ -17,12 +17,15 @@ import androidx.lifecycle.Observer
 internal fun CameraZoomEffect(
     camera: Camera?,
     zoomRatio: Float,
+    isAnimated: Boolean,
 ) {
     // 카메라가 바뀌면 새 슬롯이 현재 배율로 시작해 애니메이션 없이 바로 걸린다
     val appliedRatio = remember(camera) { mutableFloatStateOf(zoomRatio) }
     LaunchedEffect(camera, zoomRatio) {
         val target = camera ?: return@LaunchedEffect
-        if (appliedRatio.floatValue == zoomRatio) {
+        // 핀치는 이벤트마다 배율이 바뀌어 애니메이션이 매번 재시작돼 손가락보다 늦는다
+        if (!isAnimated || appliedRatio.floatValue == zoomRatio) {
+            appliedRatio.floatValue = zoomRatio
             target.cameraControl.setZoomRatio(zoomRatio)
             return@LaunchedEffect
         }

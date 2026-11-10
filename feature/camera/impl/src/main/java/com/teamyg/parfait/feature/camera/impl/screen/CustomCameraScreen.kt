@@ -216,6 +216,13 @@ private class CustomCameraScreenPreviewParameterProvider : NamedPreviewParameter
             hasPermission = true,
             zoomLevels = listOf(CameraZoomLevel.ONE, CameraZoomLevel.TWO, CameraZoomLevel.HALF),
         ),
+        "pinchZoomed" to CustomCameraState(
+            isInitialized = true,
+            hasPermission = true,
+            zoomRatio = 1.4f,
+            zoomRange = 1f..8f,
+            zoomLevels = listOf(CameraZoomLevel.ONE, CameraZoomLevel.TWO),
+        ),
     )
 }
 

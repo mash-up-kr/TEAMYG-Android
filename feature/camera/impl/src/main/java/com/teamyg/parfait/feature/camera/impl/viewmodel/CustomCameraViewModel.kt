@@ -59,6 +59,11 @@ sealed interface CustomCameraIntent : UiIntent {
 
     data object OnClickZoom : CustomCameraIntent
 
+    /** 직전 이벤트 대비 두 손가락 간격 비율. 1보다 크면 확대 */
+    data class OnPinchZoom(
+        val scale: Float,
+    ) : CustomCameraIntent
+
     data object OnClickFlip : CustomCameraIntent
 
     data object OnClickShutter : CustomCameraIntent
@@ -83,8 +88,10 @@ data class CustomCameraState(
     val lensFacing: LensFacing = LensFacing.BACK,
     /** 메인 카메라 기준 배율. 초광각에 붙었으면 0.5다 */
     val zoomRatio: Float = CameraZoomLevel.ONE.ratio,
+    val zoomRange: ClosedFloatingPointRange<Float> = CameraZoomLevel.ONE.ratio..CameraZoomLevel.ONE.ratio,
     val zoomLevels: List<CameraZoomLevel> = listOf(CameraZoomLevel.ONE),
     val halfZoomSource: HalfZoomSource = HalfZoomSource.NONE,
+    val isZoomByGesture: Boolean = false,
     val flashMode: FlashMode = FlashMode.OFF,
     val isCapturing: Boolean = false,
 ) : UiState {
@@ -95,7 +102,7 @@ data class CustomCameraState(
         get() = CameraZoomLevel.labelOf(zoomRatio)
 
     val isZoomButtonVisible: Boolean
-        get() = zoomLevels.size > 1
+        get() = zoomLevels.size > 1 || zoomRange.start < zoomRange.endInclusive
 
     val shouldUseUltraWideCamera: Boolean
         get() = zoomRatio == CameraZoomLevel.HALF.ratio && halfZoomSource == HalfZoomSource.ULTRA_WIDE
@@ -127,6 +134,7 @@ constructor(
             is CustomCameraIntent.OnClickOpenAppSettings -> handleOnClickOpenAppSettings()
             is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
             is CustomCameraIntent.OnClickZoom -> handleOnClickZoom()
+            is CustomCameraIntent.OnPinchZoom -> handleOnPinchZoom(intent)
             is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
             is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
@@ -173,13 +181,16 @@ constructor(
         val newHalfZoomSource = HalfZoomSource.of(intent.range, intent.hasUltraWideCamera)
         val newZoomLevels = CameraZoomLevel.available(intent.range, newHalfZoomSource)
         val isUltraWideKept = state.value.shouldUseUltraWideCamera && newHalfZoomSource == HalfZoomSource.ULTRA_WIDE
+        val pinchRange = intent.range.start..minOf(intent.range.endInclusive, MAX_PINCH_ZOOM_RATIO)
 
         updateState {
             copy(
                 halfZoomSource = newHalfZoomSource,
                 zoomLevels = newZoomLevels,
+                zoomRange = pinchRange,
                 // 다시 찍기 등으로 같은 카메라가 다시 바인딩될 때는 배율을 지킨다
-                zoomRatio = zoomRatio.takeIf { isUltraWideKept || it in intent.range } ?: CameraZoomLevel.ONE.ratio,
+                zoomRatio = zoomRatio.takeIf { isUltraWideKept || it in pinchRange } ?: CameraZoomLevel.ONE.ratio,
+                isZoomByGesture = false,
             )
         }
     }
@@ -187,7 +198,19 @@ constructor(
     private fun handleOnClickZoom() {
         updateState {
             val target = zoomLevel?.next(zoomLevels) ?: CameraZoomLevel.ONE
-            copy(zoomRatio = target.ratio)
+            copy(zoomRatio = target.ratio, isZoomByGesture = false)
+        }
+    }
+
+    private fun handleOnPinchZoom(intent: CustomCameraIntent.OnPinchZoom) {
+        // 초광각은 메인 카메라와 배율 축이 달라 핀치를 받지 않는다
+        if (state.value.shouldUseUltraWideCamera) return
+
+        updateState {
+            copy(
+                zoomRatio = (zoomRatio * intent.scale).coerceIn(zoomRange),
+                isZoomByGesture = true,
+            )
         }
     }
 
@@ -195,6 +218,8 @@ constructor(
         updateState {
             copy(
                 zoomRatio = CameraZoomLevel.ONE.ratio,
+                zoomRange = CameraZoomLevel.ONE.ratio..CameraZoomLevel.ONE.ratio,
+                isZoomByGesture = false,
                 // 새 렌즈 범위가 올 때까지 버튼을 숨긴다. 두면 이전 렌즈 단계로 순환한다
                 zoomLevels = listOf(CameraZoomLevel.ONE),
                 halfZoomSource = HalfZoomSource.NONE,
@@ -237,3 +262,5 @@ constructor(
         postSideEffect(CustomCameraEffect.Cancel)
     }
 }
+
+private val MAX_PINCH_ZOOM_RATIO = CameraZoomLevel.TWO.ratio

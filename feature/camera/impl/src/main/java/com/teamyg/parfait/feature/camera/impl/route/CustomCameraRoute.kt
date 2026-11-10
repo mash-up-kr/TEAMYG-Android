@@ -166,6 +166,7 @@ internal fun CustomCameraRoute(
     CameraZoomEffect(
         camera = cameraPreviewState.camera,
         zoomRatio = state.cameraZoomRatio,
+        isAnimated = !state.isZoomByGesture,
     )
     CameraTransitionEffect(state = cameraPreviewState)
 
@@ -189,6 +190,7 @@ internal fun CustomCameraRoute(
                     transition = cameraPreviewState.transition,
                     onFeedRectChange = { feedRect = it },
                     onTapViewfinder = cameraPreviewState::focusAt,
+                    onPinchZoom = { scale -> viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale)) },
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     AndroidView(

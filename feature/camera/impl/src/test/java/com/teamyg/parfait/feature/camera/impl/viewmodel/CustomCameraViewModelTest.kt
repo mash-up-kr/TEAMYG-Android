@@ -246,6 +246,96 @@ class CustomCameraViewModelTest {
         assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
     }
 
+    @Test
+    fun pinch_clampsToTwoEvenIfCameraGoesHigher() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(0.5f..8f, hasUltraWideCamera = false))
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 5f))
+
+        assertEquals(2f, viewModel.state.value.zoomRatio)
+        assertEquals("2x", viewModel.state.value.zoomLabel)
+    }
+
+    @Test
+    fun pinch_clampsToCameraMaxBelowTwo() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..1.8f, hasUltraWideCamera = false))
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 5f))
+
+        assertEquals(1.8f, viewModel.state.value.zoomRatio)
+    }
+
+    @Test
+    fun pinch_clampsToCameraMin() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(0.6f..8f, hasUltraWideCamera = false))
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.1f))
+
+        assertEquals(0.6f, viewModel.state.value.zoomRatio)
+        assertEquals("0.6x", viewModel.state.value.zoomLabel)
+    }
+
+    @Test
+    fun pinch_betweenLevels_clickReturnsToOne() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(0.5f..8f, hasUltraWideCamera = false))
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.4f))
+        assertEquals("1.4x", viewModel.state.value.zoomLabel)
+        assertTrue(viewModel.state.value.isZoomByGesture)
+
+        viewModel.processIntent(CustomCameraIntent.OnClickZoom)
+
+        assertEquals(CameraZoomLevel.ONE, viewModel.state.value.zoomLevel)
+        assertEquals(1f, viewModel.state.value.zoomRatio)
+        assertFalse(viewModel.state.value.isZoomByGesture)
+    }
+
+    @Test
+    fun pinch_roundedOntoLevel_clickCyclesFromThatLevel() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(0.5f..8f, hasUltraWideCamera = false))
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.98f))
+        assertEquals(CameraZoomLevel.TWO, viewModel.state.value.zoomLevel)
+
+        viewModel.processIntent(CustomCameraIntent.OnClickZoom)
+
+        assertEquals(CameraZoomLevel.HALF, viewModel.state.value.zoomLevel)
+    }
+
+    @Test
+    fun pinch_onUltraWide_isIgnored() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.clickZoom(times = 2)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 2f))
+
+        assertTrue(viewModel.state.value.shouldUseUltraWideCamera)
+        assertEquals("0.5x", viewModel.state.value.zoomLabel)
+    }
+
+    @Test
+    fun pinch_onlyPinchRange_showsButton() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..1.8f, hasUltraWideCamera = false))
+
+        assertTrue(viewModel.state.value.isZoomButtonVisible)
+    }
+
+    @Test
+    fun pinch_beforeRangeReady_staysAtOne() {
+        val viewModel = createViewModel()
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 2f))
+
+        assertEquals(1f, viewModel.state.value.zoomRatio)
+    }
+
     private fun CustomCameraViewModel.clickZoom(times: Int): List<CameraZoomLevel?> = List(times) {
         processIntent(CustomCameraIntent.OnClickZoom)
         state.value.zoomLevel

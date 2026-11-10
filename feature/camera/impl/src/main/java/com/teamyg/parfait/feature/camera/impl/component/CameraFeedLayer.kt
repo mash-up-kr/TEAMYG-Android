@@ -8,6 +8,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,6 +39,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onLayoutRectChanged
@@ -63,6 +67,7 @@ private val VIEWFINDER_CORNER_LENGTH = 18.dp
 private val VIEWFINDER_CORNER_WIDTH = 2.dp
 private val VIEWFINDER_FRAME_PADDING = 10.dp
 private val VIEWFINDER_COLOR = YGAtomicColors.Gray.Gray500
+private const val PINCH_POINTER_COUNT = 2
 
 /**
  * 카메라 피드를 한 번 기록해 두 번 그린다 — 뷰파인더 밖은 흐리게, 안은 원본으로.
@@ -74,12 +79,14 @@ internal fun CameraFeedLayer(
     transition: CameraTransition?,
     onFeedRectChange: (Rect) -> Unit,
     onTapViewfinder: (Offset) -> Unit,
+    onPinchZoom: (scale: Float) -> Unit,
     modifier: Modifier = Modifier,
     feed: @Composable () -> Unit,
 ) {
     val contentLayer = rememberGraphicsLayer()
     val blurLayer = rememberGraphicsLayer()
     val currentOnTapViewfinder by rememberUpdatedState(onTapViewfinder)
+    val currentOnPinchZoom by rememberUpdatedState(onPinchZoom)
 
     Box(
         modifier = modifier
@@ -92,6 +99,8 @@ internal fun CameraFeedLayer(
                 detectTapGestures { offset ->
                     if (viewfinderRect()?.contains(offset) == true) currentOnTapViewfinder(offset)
                 }
+            }.pointerInput(Unit) {
+                detectPinchZoom { scale -> currentOnPinchZoom(scale) }
             },
     ) {
         feed()
@@ -99,6 +108,23 @@ internal fun CameraFeedLayer(
             transition = transition,
             modifier = Modifier.fillMaxSize(),
         )
+    }
+}
+
+/** `detectTransformGestures`는 한 손가락 이동도 소비해 탭 초점과 겹친다. 두 손가락일 때만 본다 */
+private suspend fun PointerInputScope.detectPinchZoom(onPinchZoom: (scale: Float) -> Unit) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false)
+        do {
+            val event = awaitPointerEvent()
+            if (event.changes.count { it.pressed } >= PINCH_POINTER_COUNT) {
+                val scale = event.calculateZoom()
+                if (scale != 1f) {
+                    onPinchZoom(scale)
+                    event.changes.forEach { it.consume() }
+                }
+            }
+        } while (event.changes.any { it.pressed })
     }
 }
 
@@ -245,6 +271,7 @@ private fun PreviewCameraFeedLayer(
             transition = transition,
             onFeedRectChange = {},
             onTapViewfinder = {},
+            onPinchZoom = {},
             modifier = Modifier.fillMaxSize(),
         ) {
             Box(
