@@ -87,24 +87,16 @@ internal class CanvasVideoSaveState {
                     PreviewOutcome.Save(CanvasSaveResult.VideoFailed)
                 }
 
-            // 공유는 **실제로 인스타를 띄워야** 소비로 친다 — 성공 여부는 Route 만 아므로 여기서
-            // consumed 를 세우지 않고 [markShared] 를 기다린다. 못 띄우면 파일이 남아 삭제된다
             PreviewAction.SHARE ->
-                if (file != null) PreviewOutcome.Share(file) else PreviewOutcome.Back
+                if (file != null) {
+                    consumed = true
+                    PreviewOutcome.Share(file)
+                } else {
+                    PreviewOutcome.Back
+                }
         }
         dispatched = true
         return outcome
-    }
-
-    /** 공유가 실제로 인스타를 띄웠다 — 인스타가 그 파일을 읽으므로 종료 삭제에서 뺀다 */
-    fun markShared() {
-        consumed = true
-    }
-
-    /** 동작이 실패했다(인스타 미설치·녹화 실패 등). 버튼을 다시 열어 재시도·닫기를 할 수 있게 한다 */
-    fun cancelPendingAction() {
-        pendingAction = null
-        dispatched = false
     }
 
     /** 나갈 때 지울 파일 — 저장·공유로 소비되지 않은 미리 구운 mp4만. 없으면 null */

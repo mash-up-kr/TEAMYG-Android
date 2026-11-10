@@ -27,8 +27,6 @@ import androidx.navigation3.runtime.result.LocalResultEventBus
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
-import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
-import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.screenLogger
@@ -72,10 +70,6 @@ internal fun CanvasImageSaveRoute(
 ) {
     val resultEventBus = LocalResultEventBus.current
     val context = LocalContext.current
-    // 공유 실패(인스타 미설치·실행 실패·영상 못 만듦)는 미리보기에서 알려 준다 — 그냥 닫히면
-    // 사용자가 이유를 모른다
-    val toastPolicy = rememberYGToastPolicy()
-    val shareFailedMessage = stringResource(R.string.canvas_share_failed)
 
     val capturedBitmap = remember { CanvasCaptureHolder.peek()?.asImageBitmap() }
     val videoSource = remember { CanvasVideoSourceHolder.peek() }
@@ -154,22 +148,13 @@ internal fun CanvasImageSaveRoute(
                 navigator.onBack()
             }
 
-            // 띄웠으면 성공 토스트 없이 조용히 돌아간다. 못 띄우면(인스타 미설치 등) 이유를 알리고
-            // 화면은 유지해 다시 시도하거나 닫을 수 있게 한다
-            is PreviewOutcome.Share ->
-                if (shareCanvasToInstagramStory(context, outcome.file, VIDEO_MIME_TYPE)) {
-                    saveState.markShared()
-                    navigator.onBack()
-                } else {
-                    saveState.cancelPendingAction()
-                    toastPolicy.showError(shareFailedMessage)
-                }
-
-            // 영상을 만들지 못해 공유로 넘기지 못했다 — 알리고 화면은 유지한다
-            PreviewOutcome.Back -> {
-                saveState.cancelPendingAction()
-                toastPolicy.showError(shareFailedMessage)
+            // 공유는 결과 토스트가 없다 — 인스타를 띄우고 조용히 돌아간다
+            is PreviewOutcome.Share -> {
+                shareCanvasToInstagramStory(context, outcome.file, VIDEO_MIME_TYPE)
+                navigator.onBack()
             }
+
+            PreviewOutcome.Back -> navigator.onBack()
         }
     }
 
@@ -178,7 +163,7 @@ internal fun CanvasImageSaveRoute(
     BackHandler(enabled = saveState.isBusy) {}
 
     Box(modifier = modifier.fillMaxSize()) {
-        YGScaffoldV2(toastPolicy = toastPolicy) { innerPadding ->
+        YGScaffoldV2 { innerPadding ->
             CanvasImageSaveScreen(
                 saveType = navKey.saveType,
                 date = LocalDate.parse(navKey.date),
@@ -199,12 +184,14 @@ internal fun CanvasImageSaveRoute(
                 onClickShareInstagram = {
                     if (isVideo) {
                         saveState.requestShare()
-                    } else if (shareCanvasToInstagramStory(context, File(navKey.imagePath), IMAGE_MIME_TYPE)) {
-                        // 띄웠으면 성공 토스트 없이 조용히 돌아간다
-                        navigator.onBack()
                     } else {
-                        // 못 띄웠으면(인스타 미설치 등) 알리고 화면은 유지한다
-                        toastPolicy.showError(shareFailedMessage)
+                        // 공유는 결과 토스트가 없다 — 인스타를 띄우고(실패해도) 조용히 돌아간다
+                        shareCanvasToInstagramStory(
+                            context = context,
+                            file = File(navKey.imagePath),
+                            mimeType = IMAGE_MIME_TYPE,
+                        )
+                        navigator.onBack()
                     }
                 },
                 modifier = Modifier

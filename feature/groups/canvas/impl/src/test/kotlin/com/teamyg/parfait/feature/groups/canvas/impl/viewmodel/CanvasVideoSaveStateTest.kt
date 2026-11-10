@@ -64,36 +64,15 @@ class CanvasVideoSaveStateTest {
     }
 
     @Test
-    fun share_keepsFileOnlyAfterMarkShared() {
+    fun recordingSucceeded_thenShare_returnsShareAndKeepsFile() {
         val state = CanvasVideoSaveState()
         state.startRecording()
         state.recordingSucceeded(file)
         state.requestShare()
 
         assertEquals(PreviewOutcome.Share(file), state.dispatch())
-        // 실제로 인스타를 띄웠다는 보고(markShared) 전엔 아직 소비 아님 → 나가면 지운다
-        assertEquals(file, state.fileToDeleteOnExit())
-
-        state.markShared()
+        // 공유로 넘겼으니 나갈 때 지우지 않는다
         assertNull(state.fileToDeleteOnExit())
-    }
-
-    @Test
-    fun share_whenCancelled_fileStaysDeletableAndCanRetry() {
-        val state = CanvasVideoSaveState()
-        state.startRecording()
-        state.recordingSucceeded(file)
-        state.requestShare()
-        state.dispatch()
-
-        // 공유 실패 → 되돌리면 버튼이 다시 열리고(busy 아님) 파일은 소비 안 돼 삭제 대상이다
-        state.cancelPendingAction()
-        assertFalse(state.isBusy)
-        assertEquals(file, state.fileToDeleteOnExit())
-
-        // 재시도 — 다시 요청하면 dispatch 가 또 Share 를 돌려준다
-        state.requestShare()
-        assertEquals(PreviewOutcome.Share(file), state.dispatch())
     }
 
     @Test
