@@ -246,7 +246,7 @@ class CustomCameraViewModelTest {
         assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
     }
 
-    private fun CustomCameraViewModel.clickZoom(times: Int): List<CameraZoomLevel> = List(times) {
+    private fun CustomCameraViewModel.clickZoom(times: Int): List<CameraZoomLevel?> = List(times) {
         processIntent(CustomCameraIntent.OnClickZoom)
         state.value.zoomLevel
     }

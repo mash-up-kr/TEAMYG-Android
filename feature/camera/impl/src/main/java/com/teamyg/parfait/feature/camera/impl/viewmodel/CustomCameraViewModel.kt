@@ -81,21 +81,28 @@ data class CustomCameraState(
     val isInitialized: Boolean = false,
     val hasPermission: Boolean = false,
     val lensFacing: LensFacing = LensFacing.BACK,
-    val zoomLevel: CameraZoomLevel = CameraZoomLevel.ONE,
+    /** 메인 카메라 기준 배율. 초광각에 붙었으면 0.5다 */
+    val zoomRatio: Float = CameraZoomLevel.ONE.ratio,
     val zoomLevels: List<CameraZoomLevel> = listOf(CameraZoomLevel.ONE),
     val halfZoomSource: HalfZoomSource = HalfZoomSource.NONE,
     val flashMode: FlashMode = FlashMode.OFF,
     val isCapturing: Boolean = false,
 ) : UiState {
+    val zoomLevel: CameraZoomLevel?
+        get() = CameraZoomLevel.matching(zoomRatio, zoomLevels)
+
+    val zoomLabel: String
+        get() = CameraZoomLevel.labelOf(zoomRatio)
+
     val isZoomButtonVisible: Boolean
         get() = zoomLevels.size > 1
 
     val shouldUseUltraWideCamera: Boolean
-        get() = zoomLevel == CameraZoomLevel.HALF && halfZoomSource == HalfZoomSource.ULTRA_WIDE
+        get() = zoomRatio == CameraZoomLevel.HALF.ratio && halfZoomSource == HalfZoomSource.ULTRA_WIDE
 
     /** 바인딩된 카메라에 걸 배율. 초광각에 붙었으면 그 카메라의 1x가 곧 0.5x다 */
     val cameraZoomRatio: Float
-        get() = if (shouldUseUltraWideCamera) 1f else zoomLevel.ratio
+        get() = if (shouldUseUltraWideCamera) 1f else zoomRatio
 }
 
 @HiltViewModel
@@ -163,27 +170,31 @@ constructor(
     }
 
     private fun handleOnZoomRangeReady(intent: CustomCameraIntent.OnZoomRangeReady) {
-        val halfZoomSource = HalfZoomSource.of(intent.range, intent.hasUltraWideCamera)
-        val zoomLevels = CameraZoomLevel.available(intent.range, halfZoomSource)
+        val newHalfZoomSource = HalfZoomSource.of(intent.range, intent.hasUltraWideCamera)
+        val newZoomLevels = CameraZoomLevel.available(intent.range, newHalfZoomSource)
+        val isUltraWideKept = state.value.shouldUseUltraWideCamera && newHalfZoomSource == HalfZoomSource.ULTRA_WIDE
 
         updateState {
             copy(
-                halfZoomSource = halfZoomSource,
-                zoomLevels = zoomLevels,
-                // 다시 찍기 등으로 같은 카메라가 다시 바인딩될 때는 단계를 지킨다
-                zoomLevel = zoomLevel.takeIf { it in zoomLevels } ?: CameraZoomLevel.ONE,
+                halfZoomSource = newHalfZoomSource,
+                zoomLevels = newZoomLevels,
+                // 다시 찍기 등으로 같은 카메라가 다시 바인딩될 때는 배율을 지킨다
+                zoomRatio = zoomRatio.takeIf { isUltraWideKept || it in intent.range } ?: CameraZoomLevel.ONE.ratio,
             )
         }
     }
 
     private fun handleOnClickZoom() {
-        updateState { copy(zoomLevel = zoomLevel.next(zoomLevels)) }
+        updateState {
+            val target = zoomLevel?.next(zoomLevels) ?: CameraZoomLevel.ONE
+            copy(zoomRatio = target.ratio)
+        }
     }
 
     private fun handleOnClickFlip() {
         updateState {
             copy(
-                zoomLevel = CameraZoomLevel.ONE,
+                zoomRatio = CameraZoomLevel.ONE.ratio,
                 // 새 렌즈 범위가 올 때까지 버튼을 숨긴다. 두면 이전 렌즈 단계로 순환한다
                 zoomLevels = listOf(CameraZoomLevel.ONE),
                 halfZoomSource = HalfZoomSource.NONE,

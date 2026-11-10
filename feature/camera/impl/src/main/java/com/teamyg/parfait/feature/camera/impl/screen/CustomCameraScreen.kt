@@ -66,7 +66,7 @@ internal fun CustomCameraScreen(
         CameraContent(
             toastPolicy = toastPolicy,
             flashMode = state.flashMode,
-            zoomLevel = state.zoomLevel,
+            zoomLabel = state.zoomLabel,
             isZoomButtonVisible = state.isZoomButtonVisible,
             isCapturing = state.isCapturing,
             onClickShutter = onClickShutter,
@@ -92,7 +92,7 @@ internal fun CustomCameraScreen(
 private fun CameraContent(
     toastPolicy: YGToastPolicy,
     flashMode: FlashMode,
-    zoomLevel: CameraZoomLevel,
+    zoomLabel: String,
     isZoomButtonVisible: Boolean,
     isCapturing: Boolean,
     onClickShutter: () -> Unit,
@@ -156,7 +156,7 @@ private fun CameraContent(
                 )
                 if (isZoomButtonVisible) {
                     YGCameraZoomButton(
-                        label = zoomLevel.label,
+                        label = zoomLabel,
                         onClick = onClickZoom,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
