@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -64,6 +65,8 @@ import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasTextInputToolbar
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
+import com.teamyg.parfait.feature.groups.canvas.impl.component.AngleGuideLines
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CenterGuideLines
 import com.teamyg.parfait.feature.groups.canvas.impl.component.TextColorChipRow
 import com.teamyg.parfait.feature.groups.canvas.impl.component.TextToppingBackground
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasDim
@@ -86,8 +89,10 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditBudget
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditModeState
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditVerticalAnchor
-import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.animateToppingSnapSettleDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.animateToppingSnapSettleRotation
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberDedupeHangulEnterTransformation
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberMaxLengthInputTransformation
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingAnnotatedString
@@ -111,6 +116,7 @@ internal fun CanvasTextInputScreen(
     onCanvasMeasured: (DpSize) -> Unit,
     onTextBoxMeasured: (DpSize) -> Unit,
     onToppingTransform: (pan: DpOffset, zoom: Float, rotationDelta: Float) -> Unit,
+    onToppingTransformGestureEnd: () -> Unit,
     onDragPlacementSeed: (offsetX: Dp, offsetY: Dp) -> Unit,
     onClickConfirm: () -> Unit,
     onClickClose: () -> Unit,
@@ -157,6 +163,14 @@ internal fun CanvasTextInputScreen(
         // 어느 경로로 편집이 끝나도 팝오버를 닫는다 — 재편집 때 저절로 뜨지 않게
         LaunchedEffect(textEditMode.isEditing) {
             if (!textEditMode.isEditing) onDismissColorPopover()
+        }
+
+        // 떨어지는 경계(true→false)에서만 끝 콜백을 부른다
+        var isToppingGestureActive by remember { mutableStateOf(false) }
+        var wasToppingGestureActive by remember { mutableStateOf(false) }
+        LaunchedEffect(isToppingGestureActive) {
+            if (wasToppingGestureActive && !isToppingGestureActive) onToppingTransformGestureEnd()
+            wasToppingGestureActive = isToppingGestureActive
         }
 
         var rootHeightPx by remember { mutableIntStateOf(0) }
@@ -241,9 +255,15 @@ internal fun CanvasTextInputScreen(
         }
 
         val focusFraction by animatePanelFocusFraction(textEditMode.isEditing)
+
+        val animatedOffsetX by animateToppingSnapSettleDp(uiState.offsetX, uiState.isCenterGuideXVisible)
+        val animatedOffsetY by animateToppingSnapSettleDp(uiState.offsetY, uiState.isCenterGuideYVisible)
+        val animatedRotationDegrees by
+            animateToppingSnapSettleRotation(uiState.rotationDegrees, uiState.isAngleGuideVisible)
+
         val storedCenter = DpOffset(
-            x = uiState.offsetX + (uiState.textBoxSize?.width ?: 0.dp) / 2,
-            y = uiState.offsetY + (uiState.textBoxSize?.height ?: 0.dp) / 2,
+            x = animatedOffsetX + (uiState.textBoxSize?.width ?: 0.dp) / 2,
+            y = animatedOffsetY + (uiState.textBoxSize?.height ?: 0.dp) / 2,
         )
         val canvasWidthPx = with(density) { (uiState.canvasSize?.width ?: 0.dp).roundToPx() }
 
@@ -256,7 +276,7 @@ internal fun CanvasTextInputScreen(
         val drawnCenter = lerp(storedCenter, editingCenter, focusFraction)
         // 편집 중엔 처음 작성할 때처럼 배율·회전 없이 보여야 한다
         val drawnScale = uiState.scale + (1f - uiState.scale) * focusFraction
-        val drawnRotationDegrees = uiState.rotationDegrees * (1f - focusFraction)
+        val drawnRotationDegrees = animatedRotationDegrees * (1f - focusFraction)
 
         // 점프 없이 지금 자리를 배치 좌표로 심고 키보드를 내린다 — 이후 이동이 그대로 이어진다
         val onEditDragStart: () -> Unit = {
@@ -280,7 +300,7 @@ internal fun CanvasTextInputScreen(
                         centerYPx = drawnCenter.y.toPx(),
                         imageWidthPx = maxOf((size.width * uiState.scale).toPx(), minTouchPx),
                         imageHeightPx = maxOf((size.height * uiState.scale).toPx(), minTouchPx),
-                        rotationDegrees = uiState.rotationDegrees,
+                        rotationDegrees = animatedRotationDegrees,
                         borderWidthPx = 0f,
                         outline = null,
                     )
@@ -341,6 +361,20 @@ internal fun CanvasTextInputScreen(
                         }
                     }
 
+                    CenterGuideLines(
+                        showVertical = uiState.isCenterGuideXVisible,
+                        showHorizontal = uiState.isCenterGuideYVisible,
+                        modifier = Modifier.matchParentSize(),
+                    )
+
+                    // 위치 가이드 위에 그린다(기획 「동시 적용」 — 민트 점선이 옐로우 실선 위)
+                    AngleGuideLines(
+                        isVisible = uiState.isAngleGuideVisible,
+                        isHorizontal = uiState.isAngleGuideHorizontal,
+                        centerOffset = if (uiState.isAngleGuideHorizontal) storedCenter.y else storedCenter.x,
+                        modifier = Modifier.matchParentSize(),
+                    )
+
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -355,6 +389,7 @@ internal fun CanvasTextInputScreen(
                                 canStartSingleFingerDrag = { x, y -> hitTarget()?.containsPoint(x, y) == true },
                                 onDragStart = onEditDragStart,
                                 onDrag = onEditDrag,
+                                onGestureActiveChange = { isToppingGestureActive = it },
                             ),
                     ) {
                         Box(
@@ -475,6 +510,7 @@ internal fun CanvasTextInputScreen(
                                             rotationDelta,
                                         )
                                     },
+                                    onGestureActiveChange = { isToppingGestureActive = it },
                                 ),
                         )
                     }
@@ -571,6 +607,7 @@ private fun PreviewCanvasTextInputScreen() = PreviewBox {
         onCanvasMeasured = {},
         onTextBoxMeasured = {},
         onToppingTransform = { _, _, _ -> },
+        onToppingTransformGestureEnd = {},
         onDragPlacementSeed = { _, _ -> },
         onClickConfirm = {},
         onClickClose = {},
@@ -597,6 +634,7 @@ private fun PreviewCanvasTextInputScreenAtLimit() = PreviewBox {
         onCanvasMeasured = {},
         onTextBoxMeasured = {},
         onToppingTransform = { _, _, _ -> },
+        onToppingTransformGestureEnd = {},
         onDragPlacementSeed = { _, _ -> },
         onClickConfirm = {},
         onClickClose = {},

@@ -3,7 +3,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.component
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingHitTarget
 
 /**
  * 테두리 패널이 있는 캔버스의 입력 셋을 정해진 순서로 단다. 패널이 열려 있으면 터치는 패널만 닫는다.

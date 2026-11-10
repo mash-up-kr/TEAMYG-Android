@@ -7,9 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.util.android.extension.triggerSnapHaptic
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
@@ -30,6 +32,7 @@ internal fun CanvasToppingPlaceRoute(
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val toastPolicy = rememberYGToastPolicy()
+    val context = LocalContext.current
     val draftUnavailableMessage = stringResource(R.string.canvas_topping_place_draft_unavailable)
     val placeFailedMessage = stringResource(R.string.canvas_topping_place_failed)
     val placeFailedPermanentlyMessage = stringResource(R.string.canvas_topping_place_failed_permanently)
@@ -65,6 +68,8 @@ internal fun CanvasToppingPlaceRoute(
                 CanvasToppingPlaceEffect.ToppingImageNotReady -> {
                     toastPolicy.showError(toppingImageNotReadyMessage)
                 }
+
+                CanvasToppingPlaceEffect.TriggerSnapHaptic -> context.triggerSnapHaptic()
             }
         }
     }
@@ -92,6 +97,9 @@ internal fun CanvasToppingPlaceRoute(
             },
             onToppingTransform = { pan, zoom, rotationDelta ->
                 viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingTransform(pan, zoom, rotationDelta))
+            },
+            onToppingTransformGestureEnd = {
+                viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingTransformGestureEnd)
             },
             onCanvasMeasured = { size -> viewModel.processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(size)) },
             onToppingBaseSizeMeasured = { size ->

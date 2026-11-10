@@ -907,6 +907,15 @@ constructor(
                 displayName = displayName,
             )
 
+            if (result.isSuccess) {
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(
+                        type = AnalyticsEventType.CANVAS_SAVE_GALLERY_SAVED,
+                        params = mapOf("format" to "video"),
+                    ),
+                )
+            }
+
             // 다시 시도할 길이 없는 캐시 파일이라 결과와 상관없이 지운다
             deleteRecordedVideo(videoFilePath)
 

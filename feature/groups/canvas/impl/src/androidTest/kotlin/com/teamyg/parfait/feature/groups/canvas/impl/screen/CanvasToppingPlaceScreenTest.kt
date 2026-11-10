@@ -200,6 +200,7 @@ class CanvasToppingPlaceScreenTest {
                         onSelectBorderColor = {},
                         onChangeBorderWidth = {},
                         onToppingTransform = { _, _, _ -> transformCount++ },
+                        onToppingTransformGestureEnd = {},
                         onCanvasMeasured = {},
                         onToppingBaseSizeMeasured = {},
                         onToppingImageReadyChanged = { isReady -> imageReady = isReady },

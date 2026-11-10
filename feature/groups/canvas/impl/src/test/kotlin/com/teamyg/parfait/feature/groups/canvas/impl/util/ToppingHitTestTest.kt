@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingHitTarget
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

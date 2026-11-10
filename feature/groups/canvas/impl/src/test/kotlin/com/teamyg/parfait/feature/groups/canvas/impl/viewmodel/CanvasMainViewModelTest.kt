@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
@@ -812,6 +814,15 @@ class CanvasMainViewModelTest {
                 awaitItem(),
             )
         }
+        // 그리고 format=image 로 저장 완료 이벤트를 남긴다
+        verify {
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    type = AnalyticsEventType.CANVAS_SAVE_GALLERY_SAVED,
+                    params = mapOf("format" to "image"),
+                ),
+            )
+        }
     }
 
     @Test
@@ -1203,6 +1214,15 @@ class CanvasMainViewModelTest {
                 awaitItem(),
             )
         }
+        // 그리고 format=video 로 저장 완료 이벤트를 남긴다(OQ-P-437 — 전엔 안 찍혔다)
+        verify {
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    type = AnalyticsEventType.CANVAS_SAVE_GALLERY_SAVED,
+                    params = mapOf("format" to "video"),
+                ),
+            )
+        }
     }
 
     @Test
@@ -1223,6 +1243,15 @@ class CanvasMainViewModelTest {
                 awaitItem(),
             )
             assertFalse(videoFile.exists())
+        }
+        // 실패했으니 저장 완료 이벤트는 안 남긴다
+        verify(exactly = 0) {
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    type = AnalyticsEventType.CANVAS_SAVE_GALLERY_SAVED,
+                    params = mapOf("format" to "video"),
+                ),
+            )
         }
     }
 
