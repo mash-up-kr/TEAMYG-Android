@@ -2,64 +2,76 @@ package com.teamyg.parfait.feature.app.notice.impl.viewmodel
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
-import com.teamyg.parfait.domain.model.notice.NoticeVO
-import com.teamyg.parfait.domain.usecase.notice.GetNoticeUseCase
+import com.teamyg.parfait.domain.usecase.notice.MarkNoticeReadUseCase
+import com.teamyg.parfait.feature.app.notice.api.NavKeyNoticeDetail
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
+import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class NoticeDetailViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val getNotice: GetNoticeUseCase = mockk()
+    private val markNoticeRead: MarkNoticeReadUseCase = mockk()
 
-    private val notice = NoticeVO(
-        id = 7L,
+    private val key = NavKeyNoticeDetail(
+        noticeId = 7L,
         title = "공지",
         date = "2026.11.12",
         content = "본문",
-        isNew = false,
     )
 
-    private fun viewModel(result: Result<NoticeVO>): NoticeDetailViewModel {
-        coEvery { getNotice(any()) } returns result
-        return NoticeDetailViewModel(noticeId = 7L, getNotice = getNotice)
+    private fun viewModel(): NoticeDetailViewModel {
+        coEvery { markNoticeRead(any()) } returns Unit
+        return NoticeDetailViewModel(key = key, markNoticeRead = markNoticeRead)
     }
 
     @Test
-    fun init_loadsNoticeForGivenId() = runTest(mainDispatcherRule.dispatcher) {
-        // Given, When id 7 로 진입한다
-        val viewModel = viewModel(Result.success(notice))
+    fun init_buildsStateFromKey() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 공지 한 건을 NavKey 로 받아 진입한다
+        val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 그 id 로 조회하고 결과가 상태에 담긴다
-        coVerify(exactly = 1) { getNotice(7L) }
-        assertEquals(notice, viewModel.state.value.notice)
+        // Then 서버나 UseCase 조회 없이 NavKey 값으로 상태가 만들어진다
+        assertEquals(NoticeDetailState(title = "공지", date = "2026.11.12", content = "본문"), viewModel.state.value)
     }
 
     @Test
-    fun init_failure_postsShowLoadErrorAndKeepsNullNotice() = runTest(mainDispatcherRule.dispatcher) {
-        // Given, When 없는 id 라 조회가 실패한다
-        val viewModel = viewModel(Result.failure(NoSuchElementException("none")))
+    fun init_marksNoticeRead() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 상세에 진입한다
+        viewModel()
         advanceUntilIdle()
 
-        // Then 공지는 비어 있고 안내 effect 만 나간다
-        assertNull(viewModel.state.value.notice)
+        // Then 그 공지를 읽음 처리한다
+        coVerify(exactly = 1) { markNoticeRead(7L) }
+    }
+
+    @Test
+    fun init_markReadThrows_screenStaysUsable() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 읽음 저장이 IO 실패로 던진다
+        coEvery { markNoticeRead(any()) } throws IOException("disk")
+
+        // When 상세에 진입한다
+        val viewModel = NoticeDetailViewModel(key = key, markNoticeRead = markNoticeRead)
+        advanceUntilIdle()
+
+        // Then 화면 내용은 그대로이고 뒤로가기도 동작한다
+        assertEquals("본문", viewModel.state.value.content)
         viewModel.effect.test {
-            assertEquals(NoticeDetailSideEffect.ShowLoadError, awaitItem())
+            viewModel.processIntent(NoticeDetailIntent.ClickBack)
+            assertEquals(NoticeDetailSideEffect.NavigateBack, awaitItem())
         }
     }
 
     @Test
     fun clickBack_postsNavigateBack() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = viewModel(Result.success(notice))
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {

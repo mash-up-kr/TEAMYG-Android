@@ -5,13 +5,21 @@ import com.teamyg.parfait.core.analytics.AnalyticsEvent
 import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.model.notice.NoticeItemVO
 import com.teamyg.parfait.domain.model.notice.NoticeVO
-import com.teamyg.parfait.domain.usecase.notice.GetNoticesUseCase
+import com.teamyg.parfait.domain.usecase.notice.GetNoticeItemsUseCase
+import com.teamyg.parfait.domain.usecase.notice.RefreshNoticesUseCase
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,54 +29,61 @@ class NoticeListViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val getNotices: GetNoticesUseCase = mockk()
+    private val getNoticeItems: GetNoticeItemsUseCase = mockk()
+    private val refreshNotices: RefreshNoticesUseCase = mockk()
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
-    private val notice = NoticeVO(
-        id = 1L,
-        title = "공지",
-        date = "2026.11.17",
-        content = "본문",
-        isNew = true,
+    private fun item(
+        id: Long,
+        isNew: Boolean,
+    ) = NoticeItemVO(
+        notice = NoticeVO(
+            id = id,
+            title = "공지 $id",
+            publishedDate = LocalDate(2026, 11, 17),
+            content = "본문 $id",
+        ),
+        isNew = isNew,
     )
 
-    private fun viewModel(result: Result<List<NoticeVO>>): NoticeListViewModel {
-        coEvery { getNotices() } returns result
-        return NoticeListViewModel(getNotices = getNotices, analyticsLogger = analyticsLogger)
-    }
-
-    @Test
-    fun init_loadsNoticesIntoState() = runTest(mainDispatcherRule.dispatcher) {
-        // Given, When 공지 두 건이 있는 상태로 진입한다
-        val viewModel = viewModel(Result.success(listOf(notice, notice.copy(id = 2L, isNew = false))))
-        advanceUntilIdle()
-
-        // Then 목록이 상태에 담긴다
-        assertEquals(
-            listOf(1L, 2L),
-            viewModel.state.value.notices
-                .map { it.id },
+    private fun viewModel(
+        items: Flow<List<NoticeItemVO>?>,
+        refresh: Result<Unit> = Result.success(Unit),
+    ): NoticeListViewModel {
+        every { getNoticeItems() } returns items
+        coEvery { refreshNotices() } returns refresh
+        return NoticeListViewModel(
+            getNoticeItems = getNoticeItems,
+            refreshNotices = refreshNotices,
+            analyticsLogger = analyticsLogger,
         )
     }
 
     @Test
-    fun init_emptyList_keepsEmptyStateWithoutError() = runTest(mainDispatcherRule.dispatcher) {
-        // Given, When 공지가 0건이다
-        val viewModel = viewModel(Result.success(emptyList()))
+    fun init_cacheEmpty_refreshesOnce() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시가 비어 있는 채로 목록이 열린다
+        viewModel(MutableStateFlow(null))
         advanceUntilIdle()
 
-        // Then 빈 목록이고 에러 effect 는 나가지 않는다
-        assertTrue(
-            viewModel.state.value.notices
-                .isEmpty(),
-        )
-        viewModel.effect.test { expectNoEvents() }
+        // Then 서버 갱신을 한 번 부른다
+        coVerify(exactly = 1) { refreshNotices() }
     }
 
     @Test
-    fun init_failure_postsShowLoadError() = runTest(mainDispatcherRule.dispatcher) {
-        // Given, When 조회가 실패한다
-        val viewModel = viewModel(Result.failure(IllegalStateException("fail")))
+    fun init_cacheLoaded_doesNotRefresh() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 설정 화면이 이미 받아 둔 캐시가 있다
+        val viewModel = viewModel(flowOf(listOf(item(1L, true), item(2L, false))))
+        advanceUntilIdle()
+
+        // Then 서버를 부르지 않고 캐시를 그대로 보여준다
+        coVerify(exactly = 0) { refreshNotices() }
+        assertEquals(listOf(1L, 2L), viewModel.state.value.notices.map { it.notice.id })
+    }
+
+    @Test
+    fun init_refreshFails_showsLoadError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 캐시가 비어 있고 갱신이 실패한다
+        val viewModel = viewModel(MutableStateFlow(null), refresh = Result.failure(IllegalStateException("fail")))
         advanceUntilIdle()
 
         // Then 불러오기 실패 안내 effect 가 나간다
@@ -78,30 +93,43 @@ class NoticeListViewModelTest {
     }
 
     @Test
-    fun clickNotice_postsNavigateToDetailWithThatId() = runTest(mainDispatcherRule.dispatcher) {
+    fun init_emptyList_showsNothingWithoutError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 공지가 0건이다
+        val viewModel = viewModel(flowOf(emptyList()))
+        advanceUntilIdle()
+
+        // Then 빈 목록이고 서버 호출도 에러 effect 도 없다
+        assertTrue(viewModel.state.value.notices.isEmpty())
+        coVerify(exactly = 0) { refreshNotices() }
+        viewModel.effect.test { expectNoEvents() }
+    }
+
+    @Test
+    fun clickNotice_navigatesWithThatNotice() = runTest(mainDispatcherRule.dispatcher) {
         // Given 목록이 떠 있다
-        val viewModel = viewModel(Result.success(listOf(notice)))
+        val target = item(7L, true)
+        val viewModel = viewModel(flowOf(listOf(item(1L, false), target)))
         advanceUntilIdle()
 
         viewModel.effect.test {
-            // When 공지를 누른다
+            // When 7번 공지를 누른다
             viewModel.processIntent(NoticeListIntent.ClickNotice(id = 7L))
 
-            // Then 그 id 의 상세로 이동한다
-            assertEquals(NoticeListSideEffect.NavigateToDetail(id = 7L), awaitItem())
+            // Then 그 공지 한 건을 들고 상세로 이동한다
+            assertEquals(NoticeListSideEffect.NavigateToDetail(notice = target.notice), awaitItem())
         }
     }
 
     @Test
-    fun clickNotice_newNotice_logsItemTappedWithIsNewTrue() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickNotice_newNotice_logsItemTappedWithRowIsNewTrue() = runTest(mainDispatcherRule.dispatcher) {
         // Given NEW 칩이 붙은 공지가 떠 있다
-        val viewModel = viewModel(Result.success(listOf(notice)))
+        val viewModel = viewModel(flowOf(listOf(item(1L, true))))
         advanceUntilIdle()
 
         // When 그 공지를 누른다
         viewModel.processIntent(NoticeListIntent.ClickNotice(id = 1L))
 
-        // Then 공지 id 와 is_new=true 로 이벤트가 나간다
+        // Then 공지 id 와 행의 is_new=true 로 이벤트가 나간다
         verify(exactly = 1) {
             analyticsLogger.logEvent(
                 AnalyticsEvent(
@@ -113,9 +141,9 @@ class NoticeListViewModelTest {
     }
 
     @Test
-    fun clickNotice_readNotice_logsItemTappedWithIsNewFalse() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickNotice_notNewNotice_logsItemTappedWithRowIsNewFalse() = runTest(mainDispatcherRule.dispatcher) {
         // Given NEW 칩이 없는 공지가 떠 있다
-        val viewModel = viewModel(Result.success(listOf(notice.copy(id = 2L, isNew = false))))
+        val viewModel = viewModel(flowOf(listOf(item(2L, false))))
         advanceUntilIdle()
 
         // When 그 공지를 누른다
@@ -133,46 +161,29 @@ class NoticeListViewModelTest {
     }
 
     @Test
-    fun clickNotice_unknownId_navigatesWithoutLogging() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickNotice_unknownId_navigatesNowhereAndLogsNothing() = runTest(mainDispatcherRule.dispatcher) {
         // Given 목록에 없는 id
-        val viewModel = viewModel(Result.success(listOf(notice)))
+        val viewModel = viewModel(flowOf(listOf(item(1L, true))))
         advanceUntilIdle()
 
         viewModel.effect.test {
             // When 그 id 를 누른다
             viewModel.processIntent(NoticeListIntent.ClickNotice(id = 99L))
 
-            // Then 이동은 하고 이벤트는 나가지 않는다
-            assertEquals(NoticeListSideEffect.NavigateToDetail(id = 99L), awaitItem())
+            // Then 화면이 그린 적 없는 공지라 이동도 이벤트도 없다
+            expectNoEvents()
         }
         verify(exactly = 0) { analyticsLogger.logEvent(any()) }
     }
 
     @Test
     fun clickBack_postsNavigateBack() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = viewModel(Result.success(listOf(notice)))
+        val viewModel = viewModel(flowOf(listOf(item(1L, true))))
         advanceUntilIdle()
 
         viewModel.effect.test {
             viewModel.processIntent(NoticeListIntent.ClickBack)
 
-            assertEquals(NoticeListSideEffect.NavigateBack, awaitItem())
-        }
-    }
-
-    @Test
-    fun clickBack_afterLoadFailure_stillNavigatesBack() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 조회 실패로 안내 effect 가 이미 나간 상태
-        val viewModel = viewModel(Result.failure(IllegalStateException("fail")))
-        advanceUntilIdle()
-
-        viewModel.effect.test {
-            assertEquals(NoticeListSideEffect.ShowLoadError, awaitItem())
-
-            // When 뒤로가기를 누른다
-            viewModel.processIntent(NoticeListIntent.ClickBack)
-
-            // Then 정상적으로 뒤로 간다
             assertEquals(NoticeListSideEffect.NavigateBack, awaitItem())
         }
     }

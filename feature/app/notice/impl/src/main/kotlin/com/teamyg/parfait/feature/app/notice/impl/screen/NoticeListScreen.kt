@@ -24,10 +24,13 @@ import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.domain.model.notice.NoticeItemVO
 import com.teamyg.parfait.domain.model.notice.NoticeVO
 import com.teamyg.parfait.feature.app.notice.impl.R
 import com.teamyg.parfait.feature.app.notice.impl.component.ListItemMenuSub
+import com.teamyg.parfait.feature.app.notice.impl.util.toNoticeDateText
 import com.teamyg.parfait.feature.app.notice.impl.viewmodel.NoticeListState
+import kotlinx.datetime.LocalDate
 
 private val ToastTopOffset = 13.dp
 
@@ -61,21 +64,21 @@ internal fun NoticeListScreen(
                     verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    state.notices.forEachIndexed { index, notice ->
+                    state.notices.forEachIndexed { index, item ->
                         if (index > 0) {
-                            item(key = "divider-${notice.id}") {
+                            item(key = "divider-${item.notice.id}") {
                                 YGHorizontalDivider(
                                     modifier = Modifier.padding(horizontal = ContentHorizontalPadding),
                                 )
                             }
                         }
 
-                        item(key = notice.id) {
+                        item(key = item.notice.id) {
                             ListItemMenuSub(
-                                title = notice.title,
-                                subText = notice.date,
-                                isNew = notice.isNew,
-                                onClick = { onClickNotice(notice.id) },
+                                title = item.notice.title,
+                                subText = item.notice.publishedDate.toNoticeDateText(),
+                                isNew = item.isNew,
+                                onClick = { onClickNotice(item.notice.id) },
                                 modifier = Modifier.padding(horizontal = ContentHorizontalPadding),
                             )
                         }
@@ -96,11 +99,13 @@ internal fun NoticeListScreen(
     }
 }
 
-private val PREVIEW_NOTICE = NoticeVO(
-    id = 1L,
-    title = "파르페 v1.5.0 업데이트 안내",
-    date = "2026.11.12",
-    content = "",
+private val PREVIEW_ITEM = NoticeItemVO(
+    notice = NoticeVO(
+        id = 1L,
+        title = "파르페 v1.5.0 업데이트 안내",
+        publishedDate = LocalDate(2026, 11, 12),
+        content = "",
+    ),
     isNew = false,
 )
 
@@ -108,9 +113,14 @@ private class NoticeListPreviewParameterProvider : NamedPreviewParameterProvider
     override val entries = listOf(
         "notices" to NoticeListState(
             notices = listOf(
-                PREVIEW_NOTICE.copy(id = 1L, isNew = true),
-                PREVIEW_NOTICE.copy(id = 2L),
-                PREVIEW_NOTICE.copy(id = 3L, title = "아주 긴 제목의 공지사항이 한 줄을 넘어가는 경우를 확인하기 위한 예시 제목"),
+                PREVIEW_ITEM.copy(isNew = true),
+                PREVIEW_ITEM.copy(notice = PREVIEW_ITEM.notice.copy(id = 2L)),
+                PREVIEW_ITEM.copy(
+                    notice = PREVIEW_ITEM.notice.copy(
+                        id = 3L,
+                        title = "아주 긴 제목의 공지사항이 한 줄을 넘어가는 경우를 확인하기 위한 예시 제목",
+                    ),
+                ),
             ),
         ),
         "empty" to NoticeListState(),
