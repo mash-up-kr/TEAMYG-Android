@@ -5,6 +5,7 @@ import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.ImageService
 import com.teamyg.parfait.data.service.MemberService
 import com.teamyg.parfait.data.service.NotificationService
+import com.teamyg.parfait.data.service.NotificationSettingService
 import com.teamyg.parfait.data.service.ParfaitGroupService
 import com.teamyg.parfait.data.service.ParfaitImageService
 import com.teamyg.parfait.data.service.ParfaitService
@@ -70,4 +71,9 @@ object ServiceModule {
     @Singleton
     fun provideNotificationService(retrofit: Retrofit): NotificationService =
         retrofit.create(NotificationService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideNotificationSettingService(retrofit: Retrofit): NotificationSettingService =
+        retrofit.create(NotificationSettingService::class.java)
 }

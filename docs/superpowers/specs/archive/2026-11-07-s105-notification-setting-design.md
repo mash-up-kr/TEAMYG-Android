@@ -9,6 +9,8 @@ related_code:
   - NotificationSettingVO.kt#NotificationSettingVO
   - NotificationSettingRepository.kt#NotificationSettingRepository
   - NotificationSettingRepositoryImpl.kt#NotificationSettingRepositoryImpl
+  - NotificationSettingRemoteDataSource.kt#NotificationSettingRemoteDataSource
+  - NotificationSettingService.kt#NotificationSettingService
   - GetNotificationSettingUseCase.kt#GetNotificationSettingUseCase
   - UpdateCanvasNotificationUseCase.kt#UpdateCanvasNotificationUseCase
   - UpdateActivityNotificationUseCase.kt#UpdateActivityNotificationUseCase
@@ -129,9 +131,18 @@ interface NotificationSettingRepository {
 
 ## 주의 / 열린 질문
 
-- **서버 계약이 없다.** `NotificationSettingRepositoryImpl`이 KDoc으로 스스로 "서버
+- ~~**서버 계약이 없다.** `NotificationSettingRepositoryImpl`이 KDoc으로 스스로 "서버
   연동 전 임시 구현, 서버 API가 정해지면 원격 데이터소스 호출로 교체"라고 밝히는
-  stub이다 — 설정이 앱 재시작마다 mock 초기값(캔버스 on·활동 off)으로 돌아간다.
+  stub이다 — 설정이 앱 재시작마다 mock 초기값(캔버스 on·활동 off)으로 돌아간다.~~
+  → ✅ **해소됨**(2026-11-11, 서버 PR #218). `NotificationSettingRepositoryImpl`을
+  `NotificationSettingRemoteDataSource`(`NotificationSettingService` — `GET`/`PATCH
+  /api/v1/notifications/settings`)로 교체했다. `NotificationSettingVO`·
+  `NotificationSettingRepository` 인터페이스는 서버 필드명(`dailyReminderEnabled`·
+  `activityDigestEnabled`)과 의미가 그대로 맞아 변경이 없었다. 로컬 캐시 없는 순수
+  원격 패스스루다(`PolicyRepositoryImpl`과 같은 모양). 자세한 계약은
+  [api/notification.md](../../../api/notification.md) "알림 설정 조회·변경(S-105)".
+  **두 토글의 실제 서버 효과가 다르다** — 자세한 것은 [status.md](../../../status.md)
+  "알림 설정 (S-105)"와 OQ-P-343.
   서버 쪽 계약이 생기면 [api/notification.md](../../../api/notification.md)에 이 화면의
   설정 저장 절을 추가하고 이 리포지토리를 실제 호출로 교체해야 한다.
 - 화면·ViewModel 계측 테스트는 없다 — ViewModel은 `NotificationSettingViewModelTest`·

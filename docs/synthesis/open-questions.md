@@ -6196,6 +6196,14 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 여전히 없다. 토글과 서버 `data.type`의 대응도 정해지지 않았다 — 문구상 캔버스는 10시/20시 알림
   > (REMIND 계열로 보임), 활동은 "모아 받기"인데 서버에 묶음 발송이 없다. 푸시 표시 경로는 토글을 읽지
   > 않아 꺼도 알림이 온다.
+  > 📌 **2026-11-11 — 서버가 ③의 필드를 붙였고 앱이 결선했다**(서버 PR #218, Android
+  > `NotificationSettingRepositoryImpl`을 `GET`/`PATCH /api/v1/notifications/settings`로 교체 —
+  > [api/notification.md](../api/notification.md) "알림 설정 조회·변경"). **캔버스 토글은 이제 진짜로
+  > 끈다** — `dailyReminderEnabled=false`면 P-02·P-03 리마인드 대상에서 빠진다. **활동 토글은 이름 그대로
+  > "모아 받기" 전환일 뿐 차단이 아니다** — 꺼져 있으면(기본값) `TOPPING`·`BACKGROUND`·`TEXT` 개별 알림이
+  > 종전처럼 무조건 나가고, 켜면 그 알림들이 ~10분 창으로 묶여 `ACTIVITY_DIGEST` 한 건으로 나간다
+  > (`ActivityDigestCoordinator`). 즉 **"꺼도 알림은 그대로 온다"는 활동 쪽은 여전히 사실이지만 이제
+  > 설계 의도다** — 그룹 활동 알림 자체를 끄는 자리는 서버 어디에도 없다.
 - **해소 메모**: ①②③은 **정책 소관이라 위키 [[open-questions]]와 갈리는 자리**다 — 여기는 앱이
   무엇을 구현해야 하는지만 추적한다. 정해지면 스펙을 `specs/`에 세우고
   [api/notification.md](../api/notification.md) 미결 절을 지운다.

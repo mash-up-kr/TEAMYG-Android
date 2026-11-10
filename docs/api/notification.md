@@ -36,6 +36,8 @@ tags: [api, parfait, server-contract, notification]
 | 메서드 | 경로 | 인증 | 요청 | 응답 | Android |
 |---|---|---|---|---|---|
 | POST | `/api/v1/notifications/devices` | **필요**(화이트리스트 밖) | `RegisterDeviceTokenRequest` | 없음(204, envelope 없음) | **구현됨·결선됨**(PR #450 — 세션 축 넷에서 부른다: 로그인·가입·앱 진입의 성공 분기 + `onNewToken`) |
+| GET | `/api/v1/notifications/settings` | **필요** | 없음 | `NotificationSettingsResponse` | **구현됨·결선됨**(S-105, 아래 [알림 설정 조회·변경](#알림-설정-조회변경s-105)) |
+| PATCH | `/api/v1/notifications/settings` | **필요** | `UpdateNotificationSettingsRequest`(둘 다 optional) | `NotificationSettingsResponse`(변경 후 전체) | **구현됨·결선됨**(S-105, 같은 절) |
 
 **삭제 엔드포인트는 없다.** 커밋 제목이 "저장/삭제 API"라고 적지만 HTTP 표면은 등록 하나뿐이고,
 삭제는 다른 도메인·발송 경로의 부수 효과로만 일어난다
@@ -82,6 +84,43 @@ tags: [api, parfait, server-contract, notification]
   `CommonErrorCode.INVALID_REQUEST`(`GlobalExceptionHandler`의 bad-request 핸들러), 401 4종은 전역 인증
   (`AuthErrorCode`)이다. 즉 **실패 표현이 전부 전역 계약이다.** 발송 실패도 마찬가지로 **HTTP 에러가
   아니다** — 아무에게도 응답으로 나가지 않고 서버 로그와 `notification_outbox.last_error`에만 남는다.
+
+### GET/PATCH /api/v1/notifications/settings (S-105)
+
+> 서버 PR #218(`parfait.http.api.notification.controller.NotificationSettingsController`). 이 둘은 위
+> 기기 토큰·푸시 발송 파이프라인과 **별개 축**이다 — 회원이 **직접 설정하는** 알림 수신 여부를 다룬다.
+
+- **인증**: **필요**. `memberId`는 `Authentication.name`에서 꺼낸다(다른 엔드포인트와 동형).
+- **응답 필드**(`NotificationSettingsResponse`, GET·PATCH 공통)
+
+| 필드 | 타입 | 의미 |
+|---|---|---|
+| `dailyReminderEnabled` | Boolean | 오늘의 캔버스 오픈·마감 리마인드(P-02·P-03) 수신 여부. 기본값 **true** |
+| `activityDigestEnabled` | Boolean | 그룹원 활동(사진·텍스트·배경 변경) 알림을 모아 받을지. 기본값 **false** |
+
+  `member` 테이블에 `NOT NULL DEFAULT`로 컬럼 2개를 더했다(V25) — 기존 회원도 기본값이 자동으로 채워진다.
+
+- **PATCH 요청 필드**(`UpdateNotificationSettingsRequest`, 둘 다 optional)
+
+| 필드 | 타입 | 비고 |
+|---|---|---|
+| `dailyReminderEnabled` | Boolean? | `null`(미전송)이면 그 필드는 바꾸지 않는다 |
+| `activityDigestEnabled` | Boolean? | 같음 |
+
+  **부분 변경이 컬럼별 원자적 UPDATE다** — 두 토글을 동시에 저장해도 서로 덮어쓰지 않는다. 둘 다
+  `null`이면 아무것도 쓰지 않고 현재 설정을 그대로 돌려준다(`NotificationSettingsService.update`).
+
+- **이 설정이 다른 발송 경로에 미치는 효과**
+  - `dailyReminderEnabled = false`인 회원은 P-02·P-03(오전·저녁 리마인드) 발송 대상에서 **빠진다**
+    (위 [데일리 리마인드](#서버가-보내는-푸시--데일리-리마인드p-02p-03)의 대상 조회가 이 값을 추가로 본다).
+    **활동 알림은 이 설정의 영향을 받지 않는다.**
+  - `activityDigestEnabled = true`인 회원은 그룹원 활동(사진·텍스트·배경 변경)을 **즉시 1건 + 이후
+    ~10분 묶음 1건**(`그사이 새 소식이 N개 쌓였어요`, 100건 이상은 `99+`)으로 받는다(P-06,
+    `ActivityDigestCoordinator`). 묶음 알림의 `data`는 `type: "ACTIVITY_DIGEST"` · `route: "canvas"` ·
+    `groupId` · `date`로, **기존 Outbox 3종(`TOPPING`·`BACKGROUND`·`TEXT`)과 키 구성이 완전히 같다** —
+    `route=canvas` + `groupId`만 보고 캔버스로 이동하는 Android 수신 로직이 **코드 변경 없이** 이 타입도
+    받는다. `type`을 enum으로 좁히지 않고 서버 값을 그대로 분석에 싣는 설계(`push-opened-raw-type-log`)
+    덕에 `APP_PUSH_OPENED`에도 자동으로 잡힌다.
 
 ## 등록은 upsert다 — `token`이 유일 키
 
@@ -402,6 +441,9 @@ Outbox를 안 쓰는 근거를 커밋 메시지가 적는다 — 묶일 사용�
 | 성공 204·본문 없음 | `ApiCaller.safeApiCallNoContent` — 반환 타입에 envelope를 두지 않는다. `Result<Unit>`으로 나온다 |
 | 등록 해제 엔드포인트 없음 | 서비스에도 없다. 로그아웃·탈퇴가 서버에서 대신 지운다는 사실을 KDoc이 가리킨다 |
 | **푸시 수신·채널·딥링크** | ~~**대응 심볼 0건**~~ → **셋 다 생겼다**(2026-09-05, PR #446·#447) — 아래 [푸시 수신·딥링크](#푸시-수신딥링크-2026-09-05-pr-446447) |
+| `GET`/`PATCH /api/v1/notifications/settings` | `NotificationSettingService` — `NotificationSettingRemoteDataSourceImpl`이 `ApiCaller.safeApiCall`로 감싸고 `NotificationSettingRepositoryImpl`이 `:domain`에 넘긴다. **로컬 캐시가 없다** — `PolicyRepositoryImpl`과 같은 순수 원격 패스스루(화면이 매 진입마다 조회) |
+| 응답 `dailyReminderEnabled`·`activityDigestEnabled` | `NotificationSettingsResponse` → `NotificationSettingVO.isCanvasNotificationEnabled`·`isActivityNotificationEnabled`로 매핑(`toNotificationSettingVO`). 이름이 다른 것은 **의도다** — 서버 필드명은 유지, 도메인 어휘는 기존 VO를 그대로 쓴다 |
+| PATCH 부분 변경(null=유지) | `UpdateNotificationSettingsRequest`의 두 필드가 전부 nullable. `updateCanvasNotification`·`updateActivityNotification` 각각 자기 필드만 채우고 나머지는 `null`로 보낸다 — 서버가 PATCH 응답으로 돌려주는 전체 설정은 **읽지 않는다**(ViewModel이 이미 요청한 값으로 로컬 state를 낙관적 갱신하므로) |
 
 도메인 모델은 `domain.model.notification.DeviceToken`(`@JvmInline value class`) 하나다.
 `upsert`라 반복 호출해도 된다는 계약은 `NotificationRemoteDataSourceImpl`의 KDoc이 받아 적었다.
