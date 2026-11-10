@@ -4,6 +4,7 @@ import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
+import com.teamyg.parfait.domain.repository.notice.NoticeRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import javax.inject.Inject
 
@@ -36,11 +37,13 @@ class LogoutUseCase @Inject constructor(
     private val memberRepository: MemberRepository,
     private val parfaitGroupRepository: ParfaitGroupRepository,
     private val parfaitRepository: ParfaitRepository,
+    private val noticeRepository: NoticeRepository,
 ) {
     suspend operator fun invoke(): Result<Unit> {
         val result = authRepository.logout()
         parfaitGroupRepository.clearGroups()
         parfaitRepository.clearTodayCanvas()
+        noticeRepository.clearNotices()
         runSuspendCatching { memberRepository.clearMyAccount() }
         return result
     }

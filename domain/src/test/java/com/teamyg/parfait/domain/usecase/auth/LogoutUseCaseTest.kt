@@ -3,6 +3,7 @@ package com.teamyg.parfait.domain.usecase.auth
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
+import com.teamyg.parfait.domain.repository.notice.NoticeRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,7 +18,14 @@ class LogoutUseCaseTest {
     private val memberRepository: MemberRepository = mockk(relaxed = true)
     private val parfaitGroupRepository: ParfaitGroupRepository = mockk(relaxed = true)
     private val parfaitRepository: ParfaitRepository = mockk(relaxed = true)
-    private val logout = LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository, parfaitRepository)
+    private val noticeRepository: NoticeRepository = mockk(relaxed = true)
+    private val logout = LogoutUseCase(
+        authRepository,
+        memberRepository,
+        parfaitGroupRepository,
+        parfaitRepository,
+        noticeRepository,
+    )
 
     @Test
     fun invoke_always_clearsTokensAndAccount() = runTest {
@@ -40,7 +48,7 @@ class LogoutUseCaseTest {
         coEvery { authRepository.logout() } returns Result.success(Unit)
 
         // When 로그아웃한다
-        LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository, parfaitRepository).invoke()
+        logout()
 
         // Then 계정 정보와 그룹 캐시를 함께 지운다 — 하나만 남으면 계정 전환 때 이전 사용자
         // 흔적이 남는다
@@ -56,12 +64,20 @@ class LogoutUseCaseTest {
     }
 
     @Test
+    fun invoke_clearsNoticeCache() = runTest {
+        logout()
+
+        verify(exactly = 1) { noticeRepository.clearNotices() }
+    }
+
+    @Test
     fun invoke_clearsInMemoryCachesBeforeTheAccountStore() = runTest {
         logout()
 
         coVerifyOrder {
             parfaitGroupRepository.clearGroups()
             parfaitRepository.clearTodayCanvas()
+            noticeRepository.clearNotices()
             memberRepository.clearMyAccount()
         }
     }
