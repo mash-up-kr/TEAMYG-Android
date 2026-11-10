@@ -411,6 +411,37 @@ class CustomCameraViewModelTest {
     }
 
     @Test
+    fun pinch_accumulationDoesNotCarryIntoNextPinch() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.clickZoom(times = 2)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.15f))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomEnd)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.1f))
+        advanceUntilIdle()
+
+        assertTrue(viewModel.state.value.shouldUseUltraWideCamera)
+    }
+
+    @Test
+    fun pinch_zoomOutAccumulationDoesNotCarryIntoNextPinch() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.85f))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomEnd)
+
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.9f))
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
+    }
+
+    @Test
     fun pinch_zoomOutPastMinWithoutUltraWide_clampsAtMin() {
         val viewModel = createViewModel()
         viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = false))

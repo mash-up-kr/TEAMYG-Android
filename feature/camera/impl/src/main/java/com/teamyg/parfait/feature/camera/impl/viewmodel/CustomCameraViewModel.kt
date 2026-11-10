@@ -150,8 +150,8 @@ constructor(
             is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
             is CustomCameraIntent.OnClickZoom -> handleOnClickZoom()
             is CustomCameraIntent.OnPinchZoom -> handleOnPinchZoom(intent)
-            is CustomCameraIntent.OnPinchZoomStart -> handleOnPinchZoomStart()
-            is CustomCameraIntent.OnPinchZoomEnd -> handleOnPinchZoomEnd()
+            is CustomCameraIntent.OnPinchZoomStart -> resetLensSwitch()
+            is CustomCameraIntent.OnPinchZoomEnd -> resetLensSwitch()
             is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
             is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
@@ -219,15 +219,6 @@ constructor(
         }
     }
 
-    private fun handleOnPinchZoomStart() {
-        cancelLensSwitch()
-        hasSwitchedLensInPinch = false
-    }
-
-    private fun handleOnPinchZoomEnd() {
-        cancelLensSwitch()
-    }
-
     private fun handleOnPinchZoom(intent: CustomCameraIntent.OnPinchZoom) {
         // 전환 뒤 남은 손가락 이동이 새 카메라 배율로 이어지면 1x로 넘어가자마자 1.4x처럼 밀린다
         if (hasSwitchedLensInPinch) return
@@ -280,8 +271,15 @@ constructor(
         lensSwitchJob = null
     }
 
-    private fun handleOnClickFlip() {
+    // 누적이 다음 핀치로 이어지면 전환 문턱이 그만큼 낮아진다
+    private fun resetLensSwitch() {
         cancelLensSwitch()
+        lensSwitchScale = 1f
+        hasSwitchedLensInPinch = false
+    }
+
+    private fun handleOnClickFlip() {
+        resetLensSwitch()
         updateState {
             copy(
                 zoomRatio = CameraZoomLevel.ONE.ratio,
