@@ -92,9 +92,8 @@ internal fun CanvasMainScreen(
     var isMenuExpanded by remember { mutableStateOf(false) }
     val openMenu = { isMenuExpanded = true }
 
-    // 저장 아이콘(↓)이 여는 사진/영상 선택 메뉴. 영상은 쌓인 토핑이 있어야 성립한다
+    // 저장 아이콘(↓)이 여는 사진/영상 선택 메뉴.
     var isSaveMenuExpanded by remember { mutableStateOf(false) }
-    val isVideoSaveEnabled = (canvasState.toppings.size + canvasState.texts.size) > 0
 
     Column(
         modifier = modifier
@@ -186,7 +185,7 @@ internal fun CanvasMainScreen(
             isSaveMenuVisible = isSaveMenuExpanded,
             saveMenuContent = {
                 CanvasSaveTypeMenu(
-                    isVideoEnabled = isVideoSaveEnabled,
+                    isVideoEnabled = canvasState.isVideoSaveEnabled,
                     onClickSaveAsImage = {
                         isSaveMenuExpanded = false
                         onClickSaveAsImage()

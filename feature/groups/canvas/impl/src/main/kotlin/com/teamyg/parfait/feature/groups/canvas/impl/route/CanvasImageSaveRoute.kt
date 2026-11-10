@@ -222,7 +222,7 @@ internal fun CanvasImageSaveRoute(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    StaticCanvasPreview(bitmap = capturedBitmap, fallbackImagePath = navKey.imagePath)
+                    CanvasImagePreview(bitmap = capturedBitmap, fallbackImagePath = navKey.imagePath)
                 }
             }
         }
@@ -248,7 +248,7 @@ internal fun CanvasImageSaveRoute(
 
 /** 캡처한 캔버스를 정적으로 보인다. 비트맵이 있으면 그대로, 없으면 캐시 PNG 경로로 불러온다 */
 @Composable
-private fun StaticCanvasPreview(
+private fun CanvasImagePreview(
     bitmap: ImageBitmap?,
     fallbackImagePath: String,
 ) {

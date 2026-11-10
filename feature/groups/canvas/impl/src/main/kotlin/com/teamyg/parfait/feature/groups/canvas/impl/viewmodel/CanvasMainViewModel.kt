@@ -176,6 +176,10 @@ data class CanvasMainUiState(
     val isCanvasEmpty: Boolean
         get() = toppings.isEmpty() && texts.isEmpty()
 
+    /** 영상 저장은 토핑이 하나라도 쌓여야 성립한다 — [isCanvasEmpty] 와 반대지만 뜻이 달라 따로 둔다 */
+    val isVideoSaveEnabled: Boolean
+        get() = isCanvasEmpty.not()
+
     /**
      * [YGCanvas] 의 빈 캔버스 안내판과 정확히 반대 조건이다 — 안내판이 덮고 있을 때는
      * 저장할 배경도 토핑도 없으므로 저장 아이콘도 함께 감춘다.
