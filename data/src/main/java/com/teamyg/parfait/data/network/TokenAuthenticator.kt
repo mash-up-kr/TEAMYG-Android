@@ -10,6 +10,7 @@ import com.teamyg.parfait.data.event.SessionEventBusImpl
 import com.teamyg.parfait.data.source.auth.mapper.toAuthSessionVO
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
+import com.teamyg.parfait.data.source.notice.local.NoticeLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
 import com.teamyg.parfait.data.poller.CanvasPoller
 import com.teamyg.parfait.data.source.token.local.TokenLocalDataSource
@@ -48,6 +49,7 @@ class TokenAuthenticator @Inject constructor(
     private val sessionEventBus: SessionEventBusImpl,
     private val userInfoLocalDataSource: UserInfoLocalDataSource,
     private val groupLocalDataSource: GroupLocalDataSource,
+    private val noticeLocalDataSource: NoticeLocalDataSource,
     private val canvasLocalDataSource: CanvasLocalDataSource,
     private val canvasPoller: Lazy<CanvasPoller>,
 ) : Authenticator {
@@ -127,6 +129,7 @@ class TokenAuthenticator @Inject constructor(
                 // 던지지 않는 인메모리 캐시부터 지운다. 뒤의 DataStore IO 실패가 이 정리까지
                 // 막지 않게 한다
                 groupLocalDataSource.clear()
+                noticeLocalDataSource.clear()
                 // 폴러부터 세운다. 순서가 반대면 이미 출발한 응답이 빈 캐시를 되살린다
                 canvasPoller.get().stopAll()
                 canvasLocalDataSource.clear()
