@@ -468,3 +468,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-10] change | 앱 설정 약관 풋터(#680) 되돌림 · 알림 설정·공지사항 진입 임시 숨김
 `YGTextButton` 풋터와 `YGTextButton` 컴포넌트를 되돌려 약관 영역이 다시 `state.policies` 를 순회하는 `YGListItem` 목록이 됨 · status.md S-001 복원(OQ-P-231 트레이드오프 설명 되살림) · 설정 화면의 알림 설정·공지사항 행을 주석 처리해 알림 설정·공지 목록·공지 상세에 들어갈 수 없음(진입 경로가 그 두 행뿐). 이 PR 을 되돌리면 풋터와 두 행이 함께 돌아온다
+
+## [2026-11-11] change | 공지사항 서버 연동·읽음 상태
+`NoticeRepositoryImpl` Mock 을 `GET /api/v1/notices` 호출로 교체 · 목록은 인메모리 SSoT 구독·상세는 `NavKeyNoticeDetail` 입력(서버 미호출) · NEW = 게시 14일 미만 & 미열람(읽은 id 는 DataStore, 기기 단위) · 설정 화면 칩 `hasNewNotice` · 로그아웃·세션 만료 시 공지 캐시 정리 · `api/notice.md` 신설

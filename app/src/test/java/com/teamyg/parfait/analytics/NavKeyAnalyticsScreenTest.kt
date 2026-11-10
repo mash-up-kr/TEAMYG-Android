@@ -51,7 +51,7 @@ class NavKeyAnalyticsScreenTest {
             NavKeyAccountInfo to "S-002",
             NavKeyNotificationSetting to "S-105",
             NavKeyNoticeList to "S-106",
-            NavKeyNoticeDetail(noticeId = 1L) to "S-106-detail",
+            NavKeyNoticeDetail(noticeId = 1L, title = "t", date = "2026.11.17", content = "c") to "S-106-detail",
             NavKeyGroupSetting(groupId = 1L) to "S-101",
             NavKeyWebView(title = "약관", url = "https://example.com") to "S-004",
         )

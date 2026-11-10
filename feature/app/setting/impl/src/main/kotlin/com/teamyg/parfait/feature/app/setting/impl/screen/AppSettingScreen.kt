@@ -105,7 +105,7 @@ internal fun AppSettingScreen(
 //                        text = stringResource(R.string.setting_item_notice),
 //                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
 //                        onClickTrailingIcon = onClickNotice,
-//                        isNew = true, // TODO: 추후 서버에서 받아서 처리 예정
+//                        isNew = state.hasNewNotice,
 //                    )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),

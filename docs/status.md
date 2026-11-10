@@ -66,8 +66,10 @@
 - 설계: [s105-notification-setting](superpowers/specs/archive/2026-11-07-s105-notification-setting-design.md)
 
 ## 공지사항 — 목록·상세
-- 상태: 설정 화면 「알림 설정」 아래 「공지사항」(제목 옆 `YGChipNew`, 항상 표시)에서 `NavKeyNoticeList`로 들어가 목록을, 행을 누르면 `NavKeyNoticeDetail(noticeId)` 상세를 연다. 목록 행의 NEW 칩은 `NoticeVO.isNew`를 따른다. 두 화면은 `GetNoticesUseCase`·`GetNoticeUseCase` 결과를 그리고 조회 실패는 에러 토스트로 알린다.
-- ⚠️ 서버 API가 없어 `NoticeRepositoryImpl`이 고정된 5건을 메모리에서 내려주는 **임시 구현**이다(서버 연동 전 stub이지 버그가 아니다). NEW 판정 규칙(서버 필드·앱 읽음 기록)은 API가 정해질 때 정한다. 화면 ID와 분석 이벤트는 아직 없다.
+- 상태: 서버 `GET /api/v1/notices?platform=ANDROID`([api/notice.md](api/notice.md))를 부른다. 설정 화면 진입(`AppSettingViewModel`)이 `RefreshNoticesUseCase`로 갱신을 일으키고, 목록 `NoticeListViewModel`은 인메모리 SSoT(`NoticeLocalDataSource`)를 `GetNoticeItemsUseCase`로 구독하며 캐시가 비어 있을 때만 직접 갱신한다. 행을 누르면 공지 한 건을 `NavKeyNoticeDetail`(`noticeId`·`title`·`date`·`content`)에 실어 이동하고, 상세는 서버를 부르지 않고 진입 시 읽음 처리한다.
+- NEW 규칙: 게시 14일 미만(KST)이고 읽은 id(`NoticeReadLocalDataSource`, DataStore, 기기 단위)에 없는 공지. 행별 칩과 설정 화면 공지사항 행의 칩(`AppSettingState.hasNewNotice`)이 같은 규칙을 쓴다. 14일은 기획 확정 전 기준이고 `GetNoticeItemsUseCase`의 상수 한 곳이다.
+- 공지 캐시는 `LogoutUseCase`와 `TokenAuthenticator` 세션 종료 분기에서 비운다. 읽은 id는 지우지 않는다.
+- ⚠️ 설정 화면의 알림 설정·공지사항 진입 행은 임시로 주석 처리돼 있어(`AppSettingScreen`) 현재는 두 화면에 들어갈 수 없다. 주석을 풀 때 공지사항 행의 `isNew`는 `state.hasNewNotice`다.
 
 ## 캔버스 메인 (C-001)
 - 상태: `CanvasMainViewModel`은 저장소의 오늘 캔버스 흐름을 화면이 보이는 동안만 구독하고(갱신은 폴러 몫, 지난 날을 보는 동안은 구독을 끊는다) 첫 조회 전에만 덮개를 띄우며 첫 조회 실패만 토스트로 알린다. 상단 그룹명은 그룹 목록 캐시가 정본이고 캔버스 응답의 이름은 캐시가 빌 때만 쓰며, 남의 토핑 탭은 Spotlight와 작성자 토스트로, 본인 토핑 탭은 오늘 캔버스에서만 배치 수정 화면(`NavKeyCanvasToppingArrange`)으로 이어지고, 배경·토핑 이미지 결말은 `canvasLoadState`로 접혀 첫 페인트 전까지만 로딩·재시도 덮개가 된다.

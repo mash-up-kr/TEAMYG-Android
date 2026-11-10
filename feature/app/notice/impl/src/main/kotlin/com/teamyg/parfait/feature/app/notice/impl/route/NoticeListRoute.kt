@@ -13,12 +13,14 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.feature.app.notice.api.NavKeyNoticeDetail
 import com.teamyg.parfait.feature.app.notice.impl.R
 import com.teamyg.parfait.feature.app.notice.impl.screen.NoticeListScreen
 import com.teamyg.parfait.feature.app.notice.impl.viewmodel.NoticeListIntent
 import com.teamyg.parfait.feature.app.notice.impl.viewmodel.NoticeListSideEffect
 import com.teamyg.parfait.feature.app.notice.impl.viewmodel.NoticeListViewModel
+import kotlinx.datetime.format
 
 @Composable
 internal fun NoticeListRoute(
@@ -34,7 +36,16 @@ internal fun NoticeListRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 NoticeListSideEffect.NavigateBack -> navigator.onBack()
-                is NoticeListSideEffect.NavigateToDetail -> navigator.goTo(NavKeyNoticeDetail(noticeId = effect.id))
+
+                is NoticeListSideEffect.NavigateToDetail -> navigator.goTo(
+                    NavKeyNoticeDetail(
+                        noticeId = effect.notice.id,
+                        title = effect.notice.title,
+                        date = effect.notice.publishedDate.format(DateTextFormat.dottedDateFormat),
+                        content = effect.notice.content,
+                    ),
+                )
+
                 NoticeListSideEffect.ShowLoadError -> toastPolicy.showError(loadErrorMessage)
             }
         }
