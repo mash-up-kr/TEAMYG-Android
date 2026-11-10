@@ -1,7 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
-import android.content.Context
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -62,7 +60,7 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
-import com.teamyg.parfait.core.ui.R as CoreUiR
+import com.teamyg.parfait.core.ui.share.shareInviteMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -113,7 +111,6 @@ internal fun CanvasMainRoute(
     val welcomeCreatedTitleFormat = stringResource(R.string.canvas_welcome_created_title)
     val welcomeCreatedSubFormat = stringResource(R.string.canvas_welcome_created_sub)
     val welcomeInviteShareText = stringResource(R.string.canvas_welcome_invite_share)
-    val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
 
     var pendingSaveType by remember { mutableStateOf(CanvasSaveType.IMAGE) }
 
@@ -280,7 +277,7 @@ internal fun CanvasMainRoute(
                         buttonText = welcomeInviteShareText,
                         buttonIconResource = null,
                         onButtonClick = {
-                            context.shareText(inviteMessageTemplate.format(welcome.inviteCode))
+                            context.shareInviteMessage(welcome.inviteCode)
                         },
                     )
                 }
@@ -393,12 +390,4 @@ internal fun CanvasMainRoute(
 private fun PendingGallerySave.toSaveIntent(): CanvasMainIntent = when (this) {
     is PendingGallerySave.Image -> CanvasMainIntent.SaveCapturedCanvas(bitmap)
     is PendingGallerySave.Video -> CanvasMainIntent.SaveRecordedVideo(filePath)
-}
-
-private fun Context.shareText(text: String) {
-    val sendIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, text)
-    }
-    startActivity(Intent.createChooser(sendIntent, null))
 }

@@ -1,7 +1,5 @@
 package com.teamyg.parfait.feature.groups.setting.impl.route
 
-import android.content.Context
-import android.content.Intent
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -10,14 +8,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.core.ui.R as CoreUiR
+import com.teamyg.parfait.core.ui.share.shareInviteMessage
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import com.teamyg.parfait.feature.groups.setting.impl.screen.GroupSettingScreen
 import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingError
@@ -39,7 +36,6 @@ internal fun GroupSettingRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
     val toastPolicy = rememberYGToastPolicy()
 
     // 이펙트 수집은 컴포지션이 아니라 코루틴이라 그 안에서 `stringResource` 를 부를 수 없다.
@@ -55,7 +51,7 @@ internal fun GroupSettingRoute(
                     toastPolicy.showError(errorMessages.getValue(effect.error))
 
                 is GroupSettingSideEffect.ShareInviteCode ->
-                    context.shareText(String.format(inviteMessageTemplate, effect.inviteCode))
+                    context.shareInviteMessage(effect.inviteCode)
 
                 // 뒤로 가기(pop)가 아니라 백스택을 갈아 끼우는 이유: 여기 오기까지 쌓인 화면은
                 // 전부 방금 떠난 그룹의 것이라 돌아가면 403 뿐이다. 목록도 새로 열려 다시 읽는다.
@@ -95,12 +91,4 @@ internal fun GroupSettingRoute(
                 .consumeWindowInsets(innerPadding),
         )
     }
-}
-
-private fun Context.shareText(text: String) {
-    val sendIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, text)
-    }
-    startActivity(Intent.createChooser(sendIntent, null))
 }
