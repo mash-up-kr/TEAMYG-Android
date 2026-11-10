@@ -35,6 +35,7 @@ import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionMan
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_SAVE_RESULT_KEY
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveType
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
@@ -119,8 +120,11 @@ internal fun CanvasMainRoute(
     val welcomeInviteCopiedText = stringResource(R.string.canvas_welcome_invite_copied)
     val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
 
+    // 저장 메뉴에서 고른 타입. 캡처가 끝나 미리보기로 갈 때 navKey 에 실린다
+    var pendingSaveType by remember { mutableStateOf(CanvasSaveType.IMAGE) }
+
     // WRITE_EXTERNAL_STORAGE 요청은 Activity 가 있어야만 가능해, 저장할 것을 여기서 들고 있다가
-    // 승인이 오면 그때 ViewModel 로 넘긴다(API 29+ 는 애초에 필요 없어 안 걸린다)
+    // 승인이 오면 그때 ViewModel 로 넘긴다
     var pendingGallerySave by remember { mutableStateOf<PendingGallerySave?>(null) }
     val galleryWritePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -222,7 +226,6 @@ internal fun CanvasMainRoute(
                     // 다른 그룹원이 토핑을 올리거나 지우면, 나중에 읽은 토핑이 이미 캡처된
                     // 그림과 어긋난다
                     val capturedState = viewModel.state.value
-                    val toppingCount = capturedState.toppings.size + capturedState.texts.size
                     val videoSource = CanvasVideoSource(
                         toppings = capturedState.toppings,
                         texts = capturedState.texts,
@@ -240,9 +243,9 @@ internal fun CanvasMainRoute(
                             CanvasVideoSourceHolder.put(videoSource)
                             navigator.goTo(
                                 destination = NavKeyCanvasImageSave(
+                                    saveType = pendingSaveType,
                                     imagePath = file.absolutePath,
                                     date = selectedDate.toString(),
-                                    toppingCount = toppingCount,
                                 ),
                             )
                         }.onFailure { toastPolicy.showError(captureFailureMessage) }
@@ -374,7 +377,14 @@ internal fun CanvasMainRoute(
             onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
             onClickTextInput = { viewModel.processIntent(CanvasMainIntent.OnClickTextInput) },
             onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
-            onClickSaveToGallery = { viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery) },
+            onClickSaveAsImage = {
+                pendingSaveType = CanvasSaveType.IMAGE
+                viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery)
+            },
+            onClickSaveAsVideo = {
+                pendingSaveType = CanvasSaveType.VIDEO
+                viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery)
+            },
             onClickGoToToday = { viewModel.processIntent(CanvasMainIntent.OnClickGoToToday) },
             onDismissCalendar = { viewModel.processIntent(CanvasMainIntent.DismissCalendar) },
             onSelectYear = { viewModel.processIntent(CanvasMainIntent.SelectYear(it)) },

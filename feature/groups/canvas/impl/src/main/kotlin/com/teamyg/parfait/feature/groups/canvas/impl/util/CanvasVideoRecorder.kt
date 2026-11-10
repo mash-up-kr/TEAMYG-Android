@@ -12,6 +12,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 
+// 공유 FileProvider 가 캐시 전체가 아니라 이 하위 디렉터리만 열도록 전용 폴더에 둔다(canvas_share_file_paths)
+private const val VIDEO_CACHE_DIR_NAME = "canvas_video"
 private const val VIDEO_CACHE_FILE_NAME = "canvas_timelapse.mp4"
 
 /**
@@ -34,7 +36,8 @@ internal suspend fun recordCanvasVideo(
     captureLayer: GraphicsLayer,
     advanceFrame: suspend (frameIndex: Int) -> Unit,
 ): Result<File> = runCatching {
-    val output = File(context.cacheDir, VIDEO_CACHE_FILE_NAME)
+    val directory = File(context.cacheDir, VIDEO_CACHE_DIR_NAME).apply { mkdirs() }
+    val output = File(directory, VIDEO_CACHE_FILE_NAME)
 
     // 인코더 호출은 부른 스레드를 막는다(Mp4VideoEncoder KDoc). 메인에 두면 만드는 동안 화면이
     // 멈추므로 레이어 읽기만 메인에 남기고 나머지는 넘긴다

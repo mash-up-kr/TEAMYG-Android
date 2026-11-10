@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+
+    <!-- 캡처 PNG (CanvasCaptureCache) -->
+    <cache-path
+        name="canvas_capture"
+        path="canvas_capture/" />
+    <!-- 타임랩스 mp4 (CanvasVideoRecorder) -->
+    <cache-path
+        name="canvas_video"
+        path="canvas_video/" />
+</paths>

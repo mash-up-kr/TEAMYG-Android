@@ -58,12 +58,21 @@
     <string name="canvas_topping_place_image_not_ready">사진을 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
     <!-- 갤러리에 저장하기 전, 무엇이 저장될지 보여 주는 미리보기 화면 -->
-    <string name="canvas_image_save_title">이미지 미리보기</string>
+    <string name="canvas_image_save_title">사진 미리보기</string>
+    <string name="canvas_video_save_title">영상 미리보기</string>
     <string name="canvas_image_save_preview_content_description">저장할 캔버스 미리보기</string>
-    <string name="canvas_image_save_question_suffix">의 캔버스를 갤러리에 저장할까요?</string>
-    <string name="canvas_image_save_description">이 이미지 그대로 갤러리에 저장돼요\n파르페는 인스타그램 스토리 규격에 최적화되어 있어요</string>
+    <string name="canvas_image_save_question_suffix">의 캔버스를 저장할까요?</string>
+    <string name="canvas_image_save_description">이 이미지 그대로 갤러리에 저장돼요\n인스타그램 스토리에 바로 공유할 수 있어요</string>
+    <string name="canvas_video_save_description">이 영상 그대로 갤러리에 저장돼요\n인스타그램 스토리에 바로 공유할 수 있어요</string>
     <string name="canvas_image_save_confirm">사진으로 저장</string>
-    <string name="canvas_image_save_video">영상으로 저장</string>
+    <string name="canvas_video_save_confirm">영상으로 저장</string>
+    <string name="canvas_save_share_instagram">인스타그램 스토리 공유</string>
+    <string name="canvas_share_failed">인스타그램으로 공유하지 못했어요. 인스타그램이 설치되어 있는지 확인해 주세요.</string>
+
+    <!-- 캔버스 메인 저장 메뉴 (다운로드 아이콘) -->
+    <string name="canvas_main_save_as_image">사진으로 저장</string>
+    <string name="canvas_main_save_as_video">영상으로 저장</string>
+
 
     <string name="canvas_spotlight_dismiss">사진 강조 닫기</string>
     <string name="canvas_spotlight_time_just_now">방금 전</string>

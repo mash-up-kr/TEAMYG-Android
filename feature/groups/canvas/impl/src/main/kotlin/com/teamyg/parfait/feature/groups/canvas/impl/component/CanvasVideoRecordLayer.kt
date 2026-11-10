@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -76,6 +77,9 @@ internal fun CanvasVideoRecordLayer(
             modifier = Modifier
                 // 부모 constraints 로 clamp 되면 해상도가 조용히 줄어든다
                 .requiredSize(width = canvasWidth, height = canvasHeight)
+                // 캔버스를 빠져나간 토핑은 화면 캔버스(CanvasArea 의 clip)처럼 경계에서 잘려 기록돼야 한다 —
+                // 없으면 넘친 토핑이 영상에 통째로 찍힌다
+                .clipToBounds()
                 .drawWithContent {
                     // drawLayer 를 부르지 않는다 — 기록만 하고 화면에는 내보내지 않는다
                     captureLayer.record { this@drawWithContent.drawContent() }
