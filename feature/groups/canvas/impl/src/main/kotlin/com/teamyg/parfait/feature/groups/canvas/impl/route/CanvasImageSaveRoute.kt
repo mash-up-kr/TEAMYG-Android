@@ -23,6 +23,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -45,8 +47,9 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasVideoSourceHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.recordCanvasVideo
 import com.teamyg.parfait.feature.groups.canvas.impl.util.shareCanvasToInstagramStory
-import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasVideoSaveState
-import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.PreviewOutcome
+import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageSaveEffect
+import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageSaveIntent
+import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageSaveViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.LocalDate
@@ -56,27 +59,27 @@ private const val IMAGE_MIME_TYPE = "image/*"
 private const val VIDEO_MIME_TYPE = "video/*"
 
 /**
- * ViewModel 이 없다 — navKey 인자와 전역 홀더만 읽어 그리면 되고, 갤러리에 넣는 일은 결과를
- * 받는 캔버스 메인의 몫이다.
+ * navKey 인자와 전역 홀더로 그린다. 갤러리에 넣는 일은 결과를 받는 캔버스 메인의 몫이다.
  *
  * 한 라우트가 [CanvasSaveType] 으로 사진·영상 미리보기를 겸한다. 사진은 캡처한 PNG 를 정적으로
- * 보이고, 영상은 저장될 타임랩스를 반복 재생한다. 영상은 들어오는 즉시 mp4 를 미리 굽어 저장·공유를 즉시 처리한다
+ * 보이고, 영상은 저장될 타임랩스를 반복 재생한다. 영상은 들어오는 즉시 mp4 를 미리 굽어 저장·공유를
+ * 즉시 처리한다
  */
 @Composable
 internal fun CanvasImageSaveRoute(
     navKey: NavKeyCanvasImageSave,
     navigator: Navigator,
     modifier: Modifier = Modifier,
+    viewModel: CanvasImageSaveViewModel = hiltViewModel(),
 ) {
     val resultEventBus = LocalResultEventBus.current
     val context = LocalContext.current
+    val uiState by viewModel.state.collectAsStateWithLifecycle()
 
     val capturedBitmap = remember { CanvasCaptureHolder.peek()?.asImageBitmap() }
     val videoSource = remember { CanvasVideoSourceHolder.peek() }
     val isVideo = navKey.saveType == CanvasSaveType.VIDEO
 
-    // 저장·공유의 상태 기계·파일 수명 판단은 홀더가 든다
-    val saveState = remember { CanvasVideoSaveState() }
     val recordLayer = rememberGraphicsLayer()
     var recordFrameIndex by remember { mutableIntStateOf(0) }
     // 배경과 토핑을 접은 신호다. 접는 일은 녹화 레이어가 한다
@@ -89,7 +92,7 @@ internal fun CanvasImageSaveRoute(
                 CanvasCaptureHolder.clear()
                 CanvasVideoSourceHolder.clear()
                 // 저장·공유로 넘기지 않은 미리 구운 mp4 는 캐시에 남기지 않는다
-                saveState.fileToDeleteOnExit()?.delete()
+                viewModel.fileToDeleteOnExit()?.delete()
             }
         }
     }
@@ -101,11 +104,11 @@ internal fun CanvasImageSaveRoute(
 
         // 재료가 없거나(프로세스 재시작) 캔버스를 재지 못했으면 만들 수 없다
         if (videoSource == null || videoSource.canvasWidth <= 0.dp) {
-            saveState.recordingFailed()
+            viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
             return@LaunchedEffect
         }
 
-        saveState.startRecording()
+        viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
 
         // 첫 프레임을 빈 그림으로 찍지 않는다 — 배경과 토핑 이미지가 다 모여야 시작한다
         val settledLoadState = withTimeoutOrNull(VideoRecordOptions.SOURCE_LOAD_TIMEOUT_MILLIS) {
@@ -113,7 +116,7 @@ internal fun CanvasImageSaveRoute(
         }
 
         if (settledLoadState != CanvasLoadState.Loaded) {
-            saveState.recordingFailed()
+            viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
             return@LaunchedEffect
         }
 
@@ -129,50 +132,49 @@ internal fun CanvasImageSaveRoute(
             withFrameNanos { }
             withFrameNanos { }
         }.fold(
-            onSuccess = { saveState.recordingSucceeded(it) },
+            onSuccess = { viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(it)) },
             onFailure = { throwable ->
                 screenLogger.e(throwable) { "CanvasImageSaveRoute - 캔버스 영상 녹화 실패" }
-                saveState.recordingFailed()
+                viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
             },
         )
     }
 
-    // 저장·공유 실행: 동작과 mp4 가 둘 다 준비되면 홀더가 내보낼 것을 돌려준다.
-    LaunchedEffect(saveState.phase, saveState.isBusy) {
-        when (val outcome = saveState.dispatch()) {
-            null -> Unit
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                // 저장 결과는 캔버스 메인이 토스트로 알린다
+                is CanvasImageSaveEffect.DispatchSave -> {
+                    resultEventBus.sendResult(CANVAS_SAVE_RESULT_KEY, effect.result)
+                    navigator.onBack()
+                }
 
-            // 저장 결과는 캔버스 메인이 토스트로 알린다
-            is PreviewOutcome.Save -> {
-                resultEventBus.sendResult(CANVAS_SAVE_RESULT_KEY, outcome.result)
-                navigator.onBack()
+                // 공유는 결과 토스트가 없다 — 인스타를 띄우고 조용히 돌아간다
+                is CanvasImageSaveEffect.DispatchShare -> {
+                    shareCanvasToInstagramStory(context, effect.file, VIDEO_MIME_TYPE)
+                    navigator.onBack()
+                }
+
+                CanvasImageSaveEffect.DispatchBack -> navigator.onBack()
             }
-
-            // 공유는 결과 토스트가 없다 — 인스타를 띄우고 조용히 돌아간다
-            is PreviewOutcome.Share -> {
-                shareCanvasToInstagramStory(context, outcome.file, VIDEO_MIME_TYPE)
-                navigator.onBack()
-            }
-
-            PreviewOutcome.Back -> navigator.onBack()
         }
     }
 
     // 동작을 누른 뒤 mp4 를 기다리는 동안엔 나가면 결과를 알릴 길이 없다. 미리 굽는 중(동작 전)에는
     // 자유롭게 나갈 수 있다
-    BackHandler(enabled = saveState.isBusy) {}
+    BackHandler(enabled = uiState.isBusy) {}
 
     Box(modifier = modifier.fillMaxSize()) {
         YGScaffoldV2 { innerPadding ->
             CanvasImageSaveScreen(
                 saveType = navKey.saveType,
                 date = LocalDate.parse(navKey.date),
-                isSaveEnabled = saveState.isBusy.not(),
-                isShareEnabled = saveState.isBusy.not(),
-                onClickClose = { if (saveState.isBusy.not()) navigator.onBack() },
+                isSaveEnabled = uiState.isBusy.not(),
+                isShareEnabled = uiState.isBusy.not(),
+                onClickClose = { if (uiState.isBusy.not()) navigator.onBack() },
                 onClickSave = {
                     if (isVideo) {
-                        saveState.requestSave()
+                        viewModel.processIntent(CanvasImageSaveIntent.RequestSave)
                     } else {
                         resultEventBus.sendResult(
                             CANVAS_SAVE_RESULT_KEY,
@@ -183,7 +185,7 @@ internal fun CanvasImageSaveRoute(
                 },
                 onClickShareInstagram = {
                     if (isVideo) {
-                        saveState.requestShare()
+                        viewModel.processIntent(CanvasImageSaveIntent.RequestShare)
                     } else {
                         // 공유는 결과 토스트가 없다 — 인스타를 띄우고(실패해도) 조용히 돌아간다
                         shareCanvasToInstagramStory(
@@ -216,7 +218,7 @@ internal fun CanvasImageSaveRoute(
 
         // 미리 굽는 동안에만 컴포지션에 붙는다. 화면에는 한 픽셀도 그리지 않고 프레임만 기록한다.
         // 0dp 로는 밀도를 정할 수 없어(0 으로 나눈다) 재지 못한 재료로는 붙이지 않는다
-        if (saveState.isRecording && videoSource != null && videoSource.canvasWidth > 0.dp) {
+        if (uiState.isRecording && videoSource != null && videoSource.canvasWidth > 0.dp) {
             CanvasVideoRecordLayer(
                 toppings = videoSource.toppings,
                 texts = videoSource.texts,
