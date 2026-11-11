@@ -470,4 +470,4 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 `YGTextButton` 풋터와 `YGTextButton` 컴포넌트를 되돌려 약관 영역이 다시 `state.policies` 를 순회하는 `YGListItem` 목록이 됨 · status.md S-001 복원(OQ-P-231 트레이드오프 설명 되살림) · 설정 화면의 알림 설정·공지사항 행을 주석 처리해 알림 설정·공지 목록·공지 상세에 들어갈 수 없음(진입 경로가 그 두 행뿐). 이 PR 을 되돌리면 풋터와 두 행이 함께 돌아온다
 
 ## [2026-11-11] change | C-001 환영 배너 문구·공유 버튼 (Figma `5456:20958`)
-참여 갈래 보조 문구 `+ 버튼을` → `추가 버튼을` · 생성 갈래 버튼 `복사하기`(클립보드 + `복사완료` 재발행) → `공유하기`(아이콘 없음, `ACTION_SEND` 공유 시트) · `YGAlert`·`YGAlertItem`의 `buttonIconResource`가 `Int?`가 됨 · OQ-P-339 ③④(복사 재시도·실패 표현) 소멸 · 초대 메시지 공유가 `core:ui` `share/InviteShare.kt#shareInviteMessage` 하나로 모임(C-001 환영 배너·S-101 그룹 설정 공용)
+참여 갈래 보조 문구 `+ 버튼을` → `추가 버튼을` · 생성 갈래 버튼 `복사하기`(클립보드 + `복사완료` 재발행) → `공유하기`(아이콘 없음, `ACTION_SEND` 공유 시트) · `YGAlert`·`YGAlertItem`의 `buttonIconResource`가 `Int?`가 됨 · OQ-P-339 ③④(복사 재시도·실패 표현) 소멸 · 공유 시트 호출이 `core:util:android` `extension/Context.kt#shareText` 하나로 모임(C-001 환영 배너·S-101 그룹 설정 공용, 초대 문구 `group_invite_message`는 `core:ui`에 남고 호출부가 채운다)
