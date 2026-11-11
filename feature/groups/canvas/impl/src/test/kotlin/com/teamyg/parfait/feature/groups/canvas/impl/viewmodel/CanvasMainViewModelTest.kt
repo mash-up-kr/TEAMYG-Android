@@ -1327,6 +1327,18 @@ class CanvasMainViewModelTest {
         }
 
     @Test
+    fun init_withSoloMemberLimitButNoInviteCode_showsJoinedWelcome() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 초대코드 없이 정원만 실려 온 진입 — 정원은 생성 갈래에서만 뜻이 있다
+        viewModel(welcomeGroupName = GROUP_NAME, welcomeMemberLimit = 1).effect.test {
+            // Then 정원을 무시하고 참여 환영 배너를 띄운다
+            assertEquals(
+                CanvasMainEffect.ShowWelcome(CanvasWelcome.Joined(groupName = GROUP_NAME)),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
     fun init_withWelcomeInviteCodeAndMemberLimitOverOne_showsCreatedWelcome() = runTest(mainDispatcherRule.dispatcher) {
         // Given, When 정원 2명 이상으로 그룹을 만든 직후의 진입
         viewModel(
