@@ -60,7 +60,8 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
-import com.teamyg.parfait.core.ui.share.shareInviteMessage
+import com.teamyg.parfait.core.ui.R as CoreUiR
+import com.teamyg.parfait.core.util.android.extension.shareText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -277,7 +278,9 @@ internal fun CanvasMainRoute(
                         buttonText = welcomeInviteShareText,
                         buttonIconResource = null,
                         onButtonClick = {
-                            context.shareInviteMessage(welcome.inviteCode)
+                            context.shareText(
+                                context.getString(CoreUiR.string.group_invite_message, welcome.inviteCode),
+                            )
                         },
                     )
                 }
