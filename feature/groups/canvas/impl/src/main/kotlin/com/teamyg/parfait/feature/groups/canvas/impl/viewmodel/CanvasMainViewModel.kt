@@ -80,7 +80,7 @@ sealed interface CanvasWelcome {
 
     data class Created(val groupName: String, val inviteCode: String) : CanvasWelcome
 
-    /** 정원 1명으로 만든 그룹 — 초대할 사람이 없어 초대코드·공유 버튼 없이 띄운다 */
+    /** 정원 1명으로 만든 그룹 — 초대코드·공유 버튼 없이 띄운다 */
     data class CreatedSolo(val groupName: String) : CanvasWelcome
 }
 
