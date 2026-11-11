@@ -471,3 +471,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-11] change | C-001 환영 배너 문구·공유 버튼 (Figma `5456:20958`)
 참여 갈래 보조 문구 `+ 버튼을` → `추가 버튼을` · 생성 갈래 버튼 `복사하기`(클립보드 + `복사완료` 재발행) → `공유하기`(아이콘 없음, `ACTION_SEND` 공유 시트) · `YGAlert`·`YGAlertItem`의 `buttonIconResource`가 `Int?`가 됨 · OQ-P-339 ③④(복사 재시도·실패 표현) 소멸 · 공유 시트 호출이 `core:util:android` `extension/Context.kt#shareText` 하나로 모임(C-001 환영 배너·S-101 그룹 설정 공용, 초대 문구 `group_invite_message`는 `core:ui`에 남고 호출부가 채운다)
+
+## [2026-11-11] change | C-001 정원 1명 그룹 생성 배너
+`NavKeyCanvasMain.welcomeMemberLimit` 추가(`GroupCreateRoute`만 채움) · 정원 1이면 `CanvasWelcome.CreatedSolo` — 초대코드·`공유하기` 없이 `canvas_welcome_add_topping_sub`(구 `canvas_welcome_joined_sub`) 보조 문구 · Figma `5456:20958` 메모 반영
