@@ -317,7 +317,8 @@ NavKeyGroupList ─┬─ 생성 ─▶ NavKeyGroupCreate(nickName) ──(확�
 
 - ~~복귀는 `goToSingleClearTop(NavKeyGroupList)`다~~ → 🔁 **종착지가 목록에서 캔버스로 옮겨졌다
   (2026-09-01, PR #411)**. 두 갈래 다 `replaceAll(NavKeyGroupList)`로 흐름 화면을 통째로 걷어낸 뒤
-  **곧바로 `goTo(NavKeyCanvasMain(groupId, welcomeGroupName, welcomeInviteCode))`**를 쌓는다. 목록을
+  **곧바로 `goTo(NavKeyCanvasMain(...))`**를 쌓는다(생성은 `groupId`·`welcomeGroupName`·`welcomeInviteCode`·
+  `welcomeMemberLimit`, 참여는 `groupId`·`welcomeGroupName`). 목록을
   깔아 두는 이유를 두 Route가 같은 주석으로 적는다 — 캔버스만 남기면 뒤로가기가 앱 종료가 된다.
   그래서 이 경계의 관용구는 이제 `replaceAll` 하나가 아니라 **`replaceAll` + `goTo` 두 줄 조합**이고,
   `goToSingleClearTop`의 소비처는 그룹 생성·참여에서 사라졌다.
@@ -844,8 +845,8 @@ A-005를 연다(#222). 현재 그 `nickName`은 `GroupListUiState` 기본값 moc
 (`GroupCreateViewModel`·`SegmentationViewModel`·`GroupNickNameViewModel`(#244)·`TermAgreeViewModel`(#242)·
 `CanvasMainViewModel`(#268)·`GroupSettingViewModel`(#285)·`CanvasBGEditViewModel`(#329)).
 **Assisted 파라미터가 여럿이면 이름표를 붙인다**(#411) — `CanvasMainViewModel`이 `welcomeGroupName`·
-`welcomeInviteCode` 둘을 함께 받으면서 `@Assisted(ASSISTED_WELCOME_GROUP_NAME)`처럼 **문자열 키로
-구분**한다(둘 다 `String?`이라 타입만으로는 못 가른다). 팩토리 인터페이스와 생성자 양쪽에 같은 키를
+`welcomeInviteCode`·`welcomeMemberLimit` 셋을 함께 받으면서 `@Assisted(ASSISTED_WELCOME_GROUP_NAME)`처럼
+**문자열 키로 구분**한다(앞의 둘은 모두 `String?`이라 타입만으로는 못 가른다). 팩토리 인터페이스와 생성자 양쪽에 같은 키를
 적어야 하고, 어긋나면 컴파일이 아니라 Hilt 생성 코드에서 깨진다.
 **생성 위치는 두 형태가 공존한다** — 엔트리 빌더에서 만들어 Route 파라미터로 넘기거나(`GroupNickName`),
 Route의 기본 인자에서 만들거나(`TermAgree`·`CanvasMain`). 후자는 Route가 인자 값을 받아 팩토리에 넘긴다.

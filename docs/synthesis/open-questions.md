@@ -5982,9 +5982,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-09-01] 환영 배너가 정책 소스 없이 코드로 확정됐고, 1회 노출이 ViewModel 수명에 걸려 있다
 
 - **ID**: OQ-P-339
-- **출처**: `CanvasMainViewModel` init(`welcomeGroupName`·`welcomeInviteCode` assisted 인자)·
+- **출처**: `CanvasMainViewModel` init(`welcomeGroupName`·`welcomeInviteCode`·`welcomeMemberLimit` assisted 인자,
+  갈래 `CanvasWelcome.Joined`·`Created`·`CreatedSolo`)·
   `CanvasMainRoute#CanvasMainEffect.ShowWelcome`·`feature/groups/canvas/impl` `strings.xml`
-  (`canvas_welcome_joined_title`·`_sub`·`canvas_welcome_created_title`·`_sub`·`canvas_welcome_invite_share`) — 그룹을 만들거나 참여한 직후
+  (`canvas_welcome_joined_title`·`canvas_welcome_add_topping_sub`·`canvas_welcome_created_title`·`_sub`·`canvas_welcome_invite_share`) — 그룹을 만들거나 참여한 직후
   캔버스에 들어오면 배너가 1회 뜨고, 생성 갈래에는 `공유하기` 버튼(아이콘 없음, 시스템 공유 시트)이 붙는다
   (정원 1명이면 초대코드·버튼을 뺀다).
   ① **위키에 이 배너의 정책 문서가 없다** — 문구는 Figma `5456:20958`(생성 갈래)을 따르지만 갈래
