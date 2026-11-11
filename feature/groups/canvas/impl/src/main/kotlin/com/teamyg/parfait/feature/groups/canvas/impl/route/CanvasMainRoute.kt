@@ -81,6 +81,7 @@ internal fun CanvasMainRoute(
                 groupIdValue = navKey.groupId,
                 welcomeGroupName = navKey.welcomeGroupName,
                 welcomeInviteCode = navKey.welcomeInviteCode,
+                welcomeMemberLimit = navKey.welcomeMemberLimit,
             )
         },
     ),
@@ -108,7 +109,7 @@ internal fun CanvasMainRoute(
     val todayCanvasErrorMessage = stringResource(R.string.canvas_main_today_canvas_error)
     val toppingFlowStartErrorMessage = stringResource(R.string.canvas_main_topping_flow_start_error)
     val welcomeJoinedTitleFormat = stringResource(R.string.canvas_welcome_joined_title)
-    val welcomeJoinedSub = stringResource(R.string.canvas_welcome_joined_sub)
+    val welcomeAddToppingSub = stringResource(R.string.canvas_welcome_add_topping_sub)
     val welcomeCreatedTitleFormat = stringResource(R.string.canvas_welcome_created_title)
     val welcomeCreatedSubFormat = stringResource(R.string.canvas_welcome_created_sub)
     val welcomeInviteShareText = stringResource(R.string.canvas_welcome_invite_share)
@@ -269,7 +270,12 @@ internal fun CanvasMainRoute(
                 is CanvasMainEffect.ShowWelcome -> when (val welcome = effect.welcome) {
                     is CanvasWelcome.Joined -> alertPolicy.show(
                         title = welcomeJoinedTitleFormat.format(welcome.groupName),
-                        sub = welcomeJoinedSub,
+                        sub = welcomeAddToppingSub,
+                    )
+
+                    is CanvasWelcome.CreatedSolo -> alertPolicy.show(
+                        title = welcomeCreatedTitleFormat.format(welcome.groupName),
+                        sub = welcomeAddToppingSub,
                     )
 
                     is CanvasWelcome.Created -> alertPolicy.show(
