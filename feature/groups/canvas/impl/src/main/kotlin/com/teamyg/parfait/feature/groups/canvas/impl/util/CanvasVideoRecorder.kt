@@ -65,11 +65,15 @@ internal suspend fun recordCanvasVideo(
             advanceFrame(frameIndex)
 
             val bitmap = captureLayer.toImageBitmap().asAndroidBitmap()
+            var encoded = false
             try {
                 // 인코더가 멈춰도 취소(시간 초과)가 대기를 끊도록 인터럽트를 허용한다
                 runInterruptible(Dispatchers.Default) { encoder.encodeFrame(bitmap) }
+                encoded = true
             } finally {
-                bitmap.recycle()
+                // 인터럽트는 대기만 끊고 인코더 스레드의 작업은 계속 돈다. 중단으로 빠져나왔으면 그 스레드가
+                // 아직 이 비트맵을 그리는 중일 수 있어 재활용하지 않고 GC 에 맡긴다
+                if (encoded) bitmap.recycle()
             }
         }
 
