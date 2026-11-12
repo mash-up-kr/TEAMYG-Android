@@ -154,6 +154,36 @@ class CanvasImageSaveViewModelTest {
     }
 
     @Test
+    fun imageSave_dispatchesImageResultWithoutRecording() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = CanvasImageSaveViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasImageSaveIntent.RequestImageSave("canvas_capture.png"))
+
+            assertEquals(
+                CanvasImageSaveEffect.DispatchSave(CanvasSaveResult.Image("canvas_capture.png")),
+                awaitItem(),
+            )
+        }
+        assertTrue(viewModel.state.value.isBusy)
+    }
+
+    @Test
+    fun imageSave_thenShareTap_dispatchesOnlySave() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = CanvasImageSaveViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasImageSaveIntent.RequestImageSave("canvas_capture.png"))
+            assertTrue(awaitItem() is CanvasImageSaveEffect.DispatchSave)
+
+            // 저장 직후 다른 버튼을 눌러도 — 이미 하나를 내보냈으니 더 내보내지 않는다
+            viewModel.processIntent(CanvasImageSaveIntent.RequestImageSave("canvas_capture.png"))
+            viewModel.processIntent(CanvasImageSaveIntent.RequestImageShare("canvas_capture.png"))
+            expectNoEvents()
+        }
+    }
+
+    @Test
     fun uiState_reflectsRecordingAndBusyFlags() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = CanvasImageSaveViewModel()
         assertFalse(viewModel.state.value.isRecording)

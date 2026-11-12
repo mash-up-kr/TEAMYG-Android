@@ -34,6 +34,11 @@ internal sealed interface CanvasImageSaveIntent : UiIntent {
 
     data object RequestShare : CanvasImageSaveIntent
 
+    /** 사진 미리보기의 저장. 녹화를 기다릴 것 없이 캡처한 PNG 경로를 바로 넘긴다 */
+    data class RequestImageSave(
+        val imagePath: String,
+    ) : CanvasImageSaveIntent
+
     /** 사진 미리보기의 공유. 녹화를 기다릴 것 없이 캡처한 PNG 를 바로 넘긴다 */
     data class RequestImageShare(
         val imagePath: String,
@@ -59,7 +64,7 @@ internal sealed interface CanvasImageSaveEffect : UiSideEffect {
 
 /**
  * 저장 미리보기의 상태 기계. 무엇을 언제 내보내고 파일을 지킬지/지울지의 판단을 전부 여기 모은다.
- * 녹화를 기다리는 건 영상뿐이고, 사진 공유는 바로 내보낸다
+ * 녹화를 기다리는 건 영상뿐이고, 사진 저장·공유는 바로 내보낸다
  */
 @HiltViewModel
 internal class CanvasImageSaveViewModel
@@ -97,6 +102,11 @@ constructor() : BaseViewModel<CanvasImageSaveUiState, CanvasImageSaveIntent, Can
                 pendingAction = PreviewAction.SHARE
                 updateState { copy(isBusy = true) }
                 dispatchIfReady()
+            }
+
+            is CanvasImageSaveIntent.RequestImageSave -> {
+                updateState { copy(isBusy = true) }
+                dispatchOnce(CanvasImageSaveEffect.DispatchSave(CanvasSaveResult.Image(imagePath = intent.imagePath)))
             }
 
             is CanvasImageSaveIntent.RequestImageShare -> {

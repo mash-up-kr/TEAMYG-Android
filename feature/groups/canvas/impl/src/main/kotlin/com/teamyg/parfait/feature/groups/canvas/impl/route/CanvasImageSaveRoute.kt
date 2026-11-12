@@ -180,11 +180,7 @@ internal fun CanvasImageSaveRoute(
                     if (isVideo) {
                         viewModel.processIntent(CanvasImageSaveIntent.RequestSave)
                     } else {
-                        resultEventBus.sendResult(
-                            CANVAS_SAVE_RESULT_KEY,
-                            CanvasSaveResult.Image(imagePath = navKey.imagePath),
-                        )
-                        navigator.onBack()
+                        viewModel.processIntent(CanvasImageSaveIntent.RequestImageSave(navKey.imagePath))
                     }
                 },
                 onClickShareInstagram = {
