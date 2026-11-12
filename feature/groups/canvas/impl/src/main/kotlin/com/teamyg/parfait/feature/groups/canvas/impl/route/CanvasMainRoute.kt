@@ -175,7 +175,6 @@ internal fun CanvasMainRoute(
 
             is CanvasSaveResult.VideoFailed -> toastPolicy.showError(gallerySaveFailureMessage)
 
-            // 미리보기가 인스타그램을 띄우지 못했다(미설치·실행 실패·영상 못 만듦)
             is CanvasSaveResult.ShareFailed -> toastPolicy.showError(shareFailedMessage)
         }
     }
