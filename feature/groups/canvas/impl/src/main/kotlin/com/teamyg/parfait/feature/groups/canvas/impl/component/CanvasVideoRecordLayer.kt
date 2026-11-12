@@ -35,7 +35,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
  * 앉는다. 출력 픽셀 크기는 [Density] 를 덮어써서 맞춘다(ADR-0035).
  *
  * @param background 캔버스 메인이 `YGCanvas` 에 넘긴 것과 같은 값
- * @param retryKey 캔버스 메인과 같은 값. 0 이면 재시도 뒤에도 캐시에 앉은 옛 실패 바이트를 읽는다
+ * @param retryKey [CanvasVideoBackground] 의 `retryKey` 와 같다
  * @param onLoadStateChange 배경과 토핑을 **접은** 결과. 녹화가 이 신호 하나로 첫 프레임 시점을 정한다
  */
 @Composable

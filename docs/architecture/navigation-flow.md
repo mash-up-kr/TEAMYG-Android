@@ -622,18 +622,19 @@ C-001 캔버스 메인
 
 - **미리보기는 갤러리에 넣지 않는다.** 결과 토스트가 뜨는 자리는 캔버스 메인이고, 미리보기가 저장까지
   맡으면 알림만 남기고 사라지는 화면이 되어 실패했을 때 알릴 곳이 없다. 그래서 sealed
-  `CanvasSaveResult`로 무엇을 저장할지만 돌려준다 — 이미지는 받은 경로 그대로, 영상은 만들어 둔
-  mp4 경로다.
+  `CanvasSaveResult`로 무엇을 저장할지(이미지는 받은 경로 그대로, 영상은 만들어 둔 mp4 경로) 또는
+  알릴 실패(`VideoFailed`·`ShareFailed`)만 돌려준다.
 - **영상은 미리보기가 만들기까지 한다.** 녹화는 컴포지션을 프레임마다 읽는 일인데, 미리보기가 떠 있는
   동안 캔버스 메인은 컴포지션에서 빠져 있다. 그릴 재료는 캔버스 메인이 `goTo` 직전에
   `CanvasVideoSourceHolder`에 넣어 둔다. 미리 굽는 동안은 자유롭게 나갈 수 있고, 저장·공유를 눌러 mp4 를
-  기다리는 동안에만 두 버튼·닫기·시스템 백이 막힌다. 녹화 전체에 `RECORD_TIMEOUT_MILLIS` 상한이 있어 멈춰도 갇히지 않는다 →
+  기다리는 동안에만 두 버튼·닫기·시스템 백이 막힌다. 녹화에는 화면이 보이는 동안만 센 `RECORD_TIMEOUT_MILLIS`
+  상한이 있고, 인코더 호출은 `runInterruptible`이라 인코더가 멈춰도 취소가 대기를 끊는다 →
   [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md),
   [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md).
 - **판단은 `CanvasImageSaveViewModel`, 녹화와 결과 전송은 Route가 한다.** ViewModel은 assisted inject로
   `saveType`·`imagePath`를 받아 사진·영상 분기, 먼저 누른 동작 유지, 효과 한 번만 내기, 나갈 때 지울 mp4 판단을
-  맡는다. 녹화는 컴포지션 프레임에 묶여 Route(`PrebakeCanvasVideoEffect`)에서만 돌고, 구성 변경으로 효과가 다시 돌면
-  `needsRecording()`이 이미 구운 경우를 거른다.
+  맡는다. 녹화는 컴포지션 프레임에 묶여 화면 계층(`PrebakeCanvasVideoEffect`)에서만 돌고, 구성 변경으로 효과가 다시 돌면
+  `CanvasImageSaveUiState.needsRecording`이 이미 구운 경우를 거른다.
 - **돌아온 뒤 캔버스를 다시 캡처하지 않는다.** 사용자가 보고 확정한 그림과 갤러리에 남는 그림이
   같아야 하므로 미리보기에 들어가기 전에 구운 파일을 다시 읽는다. 권한 승인 뒤의 길과 미리보기에서 돌아온 길이
   `saveWithPermission` 한 자리로 모이는 것도 같은 이유다.

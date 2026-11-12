@@ -21,7 +21,8 @@ private val FRAME_DURATION_NANOS = 1_000_000_000L / VideoTimelineOptions.FRAMES_
 
 /**
  * 저장 전 타임랩스를 화면에서 **반복 재생**하는 미리보기.
- * @param retryKey 캔버스 메인과 같은 값. 0 이면 재시도 뒤에도 캐시에 앉은 옛 실패 바이트를 읽는다
+ *
+ * @param retryKey [CanvasVideoBackground] 의 `retryKey` 와 같다
  */
 @Composable
 internal fun CanvasVideoPreview(
