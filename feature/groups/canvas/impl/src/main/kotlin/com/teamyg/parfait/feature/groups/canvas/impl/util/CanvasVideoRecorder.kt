@@ -8,13 +8,20 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoRecordOptions
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException
 
 // 공유 FileProvider 가 캐시 전체가 아니라 이 하위 디렉터리만 열도록 전용 폴더에 둔다(canvas_share_file_paths)
 private const val VIDEO_CACHE_DIR_NAME = "canvas_video"
-private const val VIDEO_CACHE_FILE_NAME = "canvas_timelapse.mp4"
+private const val VIDEO_CACHE_FILE_PREFIX = "canvas_timelapse_"
+private const val VIDEO_CACHE_FILE_SUFFIX = ".mp4"
+
+// 저장·공유로 넘긴 mp4 는 받는 쪽(갤러리 복사·인스타그램)이 언제 다 읽었는지 알 수 없어 바로 지우지 못한다.
+// 이보다 오래된 것만 다음 녹화가 치운다
+private const val STALE_VIDEO_MILLIS = 60 * 60 * 1000L
 
 /**
  * 캔버스 타임랩스 mp4 를 캐시에 만든다.
@@ -37,11 +44,14 @@ internal suspend fun recordCanvasVideo(
     advanceFrame: suspend (frameIndex: Int) -> Unit,
 ): Result<File> = runCatching {
     val directory = File(context.cacheDir, VIDEO_CACHE_DIR_NAME).apply { mkdirs() }
-    val output = File(directory, VIDEO_CACHE_FILE_NAME)
+    withContext(Dispatchers.IO) { deleteStaleVideos(directory) }
+    // 녹화마다 새 이름을 쓴다. 고정 이름이면 취소된 이전 녹화의 close() 가 새 녹화 파일을 지우거나,
+    // 아직 갤러리·인스타그램이 읽는 파일을 새 녹화가 덮어쓴다
+    val output = File(directory, VIDEO_CACHE_FILE_PREFIX + UUID.randomUUID() + VIDEO_CACHE_FILE_SUFFIX)
 
     // 인코더 호출은 부른 스레드를 막는다(Mp4VideoEncoder KDoc). 메인에 두면 만드는 동안 화면이
     // 멈추므로 레이어 읽기만 메인에 남기고 나머지는 넘긴다
-    val encoder = withContext(Dispatchers.Default) {
+    val encoder = runInterruptible(Dispatchers.Default) {
         Mp4VideoEncoder(
             outputFile = output,
             width = VideoRecordOptions.WIDTH_PX,
@@ -56,13 +66,14 @@ internal suspend fun recordCanvasVideo(
 
             val bitmap = captureLayer.toImageBitmap().asAndroidBitmap()
             try {
-                withContext(Dispatchers.Default) { encoder.encodeFrame(bitmap) }
+                // 인코더가 멈춰도 취소(시간 초과)가 대기를 끊도록 인터럽트를 허용한다
+                runInterruptible(Dispatchers.Default) { encoder.encodeFrame(bitmap) }
             } finally {
                 bitmap.recycle()
             }
         }
 
-        withContext(Dispatchers.Default) { encoder.finish() }
+        runInterruptible(Dispatchers.Default) { encoder.finish() }
     } finally {
         // 취소된 뒤에도 닫아야 코덱이 풀리고 부분 파일이 지워진다
         withContext(NonCancellable + Dispatchers.Default) { encoder.close() }
@@ -73,4 +84,12 @@ internal suspend fun recordCanvasVideo(
 }.onFailure { throwable ->
     // runCatching 이 CancellationException 까지 접으므로 다시 던진다
     if (throwable is CancellationException) throw throwable
+}
+
+private fun deleteStaleVideos(directory: File) {
+    val threshold = System.currentTimeMillis() - STALE_VIDEO_MILLIS
+    directory
+        .listFiles()
+        ?.filter { it.name.endsWith(VIDEO_CACHE_FILE_SUFFIX) && it.lastModified() < threshold }
+        ?.forEach { it.delete() }
 }

@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * 비트맵 시퀀스를 무음 mp4 로 쓴다.
@@ -20,6 +21,10 @@ import java.util.concurrent.TimeUnit
  *
  * [finish] 를 부르지 않고 닫으면 **산출물을 지운다.** 헤더가 덜 쓰인 mp4 는 재생할 수 없는데,
  * 남겨 두면 호출부가 그것을 갤러리에 올릴 수 있다.
+ *
+ * [encodeFrame]·[finish] 가 기다리는 중 호출부 스레드가 인터럽트되면 `InterruptedException` 으로
+ * 빠져나온다 — 코루틴에서는 `runInterruptible` 로 불러 취소가 대기를 끊게 한다. 인코더 스레드는 계속 돌
+ * 수 있으므로 그 뒤에도 [close] 는 불러야 한다.
  *
  * ⚠️ 어느 스레드에서 불러도 되지만 **그 스레드를 동기적으로 막는다.** [BitmapSurfaceWriter] 의
  * EGL 컨텍스트가 생성 스레드에 묶여 있어, 생성부터 [close] 까지 전용 단일 스레드에서만 돌리고
@@ -113,7 +118,7 @@ class Mp4VideoEncoder(
 
         var muxerStopFailure: Throwable? = null
 
-        runOnEncoderThread {
+        val cleanup = executor.submit {
             runCatching { writer.close() }
             runCatching {
                 codec.stop()
@@ -130,6 +135,22 @@ class Mp4VideoEncoder(
                     coreUtilAndroidLogger.w { "중단한 mp4 를 지우지 못했다 - path: ${outputFile.absolutePath}" }
                 }
             }
+        }
+
+        // 인코더 스레드가 멈춰 있으면 정리도 그 뒤에 줄을 서 영영 돌지 않는다. 호출부를 무한정 막지 않도록
+        // 상한을 두고, 넘기면 스레드를 끊고 산출물만 이 스레드에서 지운다 — 코덱 자원은 새더라도 화면이 갇히는 것보다 낫다
+        try {
+            cleanup.get(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        } catch (e: ExecutionException) {
+            throw e.cause ?: e
+        } catch (e: TimeoutException) {
+            coreUtilAndroidLogger.w {
+                "인코더 스레드가 ${CLOSE_TIMEOUT_SECONDS}초 안에 정리를 마치지 못했다 - path: ${outputFile.absolutePath}"
+            }
+            executor.shutdownNow()
+            outputFile.delete()
+            if (isFinished) throw IllegalStateException("마감한 인코더를 닫지 못했다", e)
+            return
         }
 
         // 녹화가 끝난 뒤 전용 스레드가 남지 않게 한다
@@ -231,6 +252,9 @@ class Mp4VideoEncoder(
         const val DEQUEUE_TIMEOUT_MICROS = 10_000L
 
         const val EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS = 1L
+
+        /** [close] 가 인코더 스레드의 정리를 기다리는 상한. EOS 대기([EOS_DRAIN_TIMEOUT_MILLIS])보다 길게 잡는다 */
+        const val CLOSE_TIMEOUT_SECONDS = 5L
 
         /**
          * EOS 대기 상한. [finish] 가 호출부 스레드를 막으므로 상한이 없으면 코덱이 멈출 때
