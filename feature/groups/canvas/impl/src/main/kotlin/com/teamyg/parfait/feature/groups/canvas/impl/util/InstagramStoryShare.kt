@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import com.teamyg.parfait.core.ui.screenLogger
 import com.teamyg.parfait.feature.groups.canvas.impl.BuildConfig
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasShareMedia
 import java.io.File
 
 private object InstagramStoryShareContract {
@@ -21,13 +22,12 @@ private object InstagramStoryShareContract {
  * 파일을 직접 넘기지 않고 [CanvasShareFileProvider] content uri 로 바꿔 읽기 권한만 한시로 준다.
  * 인스타그램이 깔려 있지 않으면 받을 액티비티가 없어 `false` 로 접는다 — 호출부가 안내 토스트를 띄운다.
  *
- * @param mimeType 공유할 미디어의 MIME 타입. 사진이면 image 계열, 영상이면 video 계열
  * @return 스토리 편집기를 띄웠으면 true
  */
 internal fun shareCanvasToInstagramStory(
     context: Context,
     file: File,
-    mimeType: String,
+    media: CanvasShareMedia,
 ): Boolean {
     val uri = runCatching {
         FileProvider.getUriForFile(context, "${context.packageName}.canvas.fileprovider", file)
@@ -38,7 +38,7 @@ internal fun shareCanvasToInstagramStory(
 
     val intent = Intent(InstagramStoryShareContract.ACTION_ADD_TO_STORY).apply {
         setPackage(InstagramStoryShareContract.PACKAGE)
-        setDataAndType(uri, mimeType)
+        setDataAndType(uri, media.mimeType)
         if (BuildConfig.FACEBOOK_APP_ID.isNotEmpty()) {
             putExtra(InstagramStoryShareContract.EXTRA_SOURCE_APPLICATION, BuildConfig.FACEBOOK_APP_ID)
         }

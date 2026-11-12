@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasShareMedia
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -32,6 +33,11 @@ internal sealed interface CanvasImageSaveIntent : UiIntent {
     data object RequestSave : CanvasImageSaveIntent
 
     data object RequestShare : CanvasImageSaveIntent
+
+    /** 사진 미리보기의 공유. 녹화를 기다릴 것 없이 캡처한 PNG 를 바로 넘긴다 */
+    data class RequestImageShare(
+        val imagePath: String,
+    ) : CanvasImageSaveIntent
 }
 
 /** 미리보기에서 내보낼 것. Route 가 실제 결과 전송·공유·네비게이션으로 옮긴다 */
@@ -44,6 +50,7 @@ internal sealed interface CanvasImageSaveEffect : UiSideEffect {
     /** 이 파일을 인스타그램 스토리로 공유한다 */
     data class DispatchShare(
         val file: File,
+        val media: CanvasShareMedia,
     ) : CanvasImageSaveEffect
 
     /** 공유 실패 등 — 조용히 닫기만 한다 */
@@ -51,7 +58,8 @@ internal sealed interface CanvasImageSaveEffect : UiSideEffect {
 }
 
 /**
- * 영상 저장 미리보기의 상태 기계. 무엇을 언제 내보내고 파일을 지킬지/지울지의 판단을 전부 여기 모은다
+ * 저장 미리보기의 상태 기계. 무엇을 언제 내보내고 파일을 지킬지/지울지의 판단을 전부 여기 모은다.
+ * 녹화를 기다리는 건 영상뿐이고, 사진 공유는 바로 내보낸다
  */
 @HiltViewModel
 internal class CanvasImageSaveViewModel
@@ -90,6 +98,11 @@ constructor() : BaseViewModel<CanvasImageSaveUiState, CanvasImageSaveIntent, Can
                 updateState { copy(isBusy = true) }
                 dispatchIfReady()
             }
+
+            is CanvasImageSaveIntent.RequestImageShare -> {
+                updateState { copy(isBusy = true) }
+                dispatchOnce(CanvasImageSaveEffect.DispatchShare(File(intent.imagePath), CanvasShareMedia.IMAGE))
+            }
         }
     }
 
@@ -122,11 +135,17 @@ constructor() : BaseViewModel<CanvasImageSaveUiState, CanvasImageSaveIntent, Can
             PreviewAction.SHARE ->
                 if (file != null) {
                     consumed = true
-                    CanvasImageSaveEffect.DispatchShare(file)
+                    CanvasImageSaveEffect.DispatchShare(file, CanvasShareMedia.VIDEO)
                 } else {
                     CanvasImageSaveEffect.DispatchBack
                 }
         }
+        dispatchOnce(effect)
+    }
+
+    /** 이 화면은 효과 하나를 내보내고 닫힌다. 연타로 두 번 내보내면 백스택이 한 칸 더 빠진다 */
+    private fun dispatchOnce(effect: CanvasImageSaveEffect) {
+        if (dispatched) return
         dispatched = true
         postSideEffect(effect)
     }

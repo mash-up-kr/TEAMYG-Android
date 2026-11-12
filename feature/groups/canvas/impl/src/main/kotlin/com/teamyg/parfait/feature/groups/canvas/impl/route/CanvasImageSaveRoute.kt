@@ -53,10 +53,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageSaveVi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.LocalDate
-import java.io.File
-
-private const val IMAGE_MIME_TYPE = "image/*"
-private const val VIDEO_MIME_TYPE = "video/*"
 
 /**
  * navKey 인자와 전역 홀더로 그린다. 갤러리에 넣는 일은 결과를 받는 캔버스 메인의 몫이다.
@@ -152,7 +148,7 @@ internal fun CanvasImageSaveRoute(
                 // 띄웠으면 성공 토스트는 없다. 못 띄웠으면(인스타 미설치 등) 실패를 캔버스 메인이
                 // 알린다 — 여긴 곧 사라지는 화면이라 토스트를 걸 자리가 없다
                 is CanvasImageSaveEffect.DispatchShare -> {
-                    val shared = shareCanvasToInstagramStory(context, effect.file, VIDEO_MIME_TYPE)
+                    val shared = shareCanvasToInstagramStory(context, effect.file, effect.media)
                     if (shared.not()) {
                         resultEventBus.sendResult(CANVAS_SAVE_RESULT_KEY, CanvasSaveResult.ShareFailed)
                     }
@@ -195,16 +191,7 @@ internal fun CanvasImageSaveRoute(
                     if (isVideo) {
                         viewModel.processIntent(CanvasImageSaveIntent.RequestShare)
                     } else {
-                        // 띄웠으면 성공 토스트는 없다. 못 띄웠으면 실패를 캔버스 메인이 알린다
-                        val shared = shareCanvasToInstagramStory(
-                            context = context,
-                            file = File(navKey.imagePath),
-                            mimeType = IMAGE_MIME_TYPE,
-                        )
-                        if (shared.not()) {
-                            resultEventBus.sendResult(CANVAS_SAVE_RESULT_KEY, CanvasSaveResult.ShareFailed)
-                        }
-                        navigator.onBack()
+                        viewModel.processIntent(CanvasImageSaveIntent.RequestImageShare(navKey.imagePath))
                     }
                 },
                 modifier = Modifier

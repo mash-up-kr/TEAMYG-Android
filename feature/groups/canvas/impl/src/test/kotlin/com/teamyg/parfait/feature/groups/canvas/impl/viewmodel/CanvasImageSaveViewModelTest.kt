@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasShareMedia
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -88,7 +89,7 @@ class CanvasImageSaveViewModelTest {
             viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(file))
             viewModel.processIntent(CanvasImageSaveIntent.RequestShare)
 
-            assertEquals(CanvasImageSaveEffect.DispatchShare(file), awaitItem())
+            assertEquals(CanvasImageSaveEffect.DispatchShare(file, CanvasShareMedia.VIDEO), awaitItem())
         }
         // 공유로 넘겼으니 나갈 때 지우지 않는다
         assertNull(viewModel.fileToDeleteOnExit())
@@ -118,6 +119,36 @@ class CanvasImageSaveViewModelTest {
 
             // 같은 요청을 다시 보내도 — 이미 내보냈으니 재전송하지 않는다
             viewModel.processIntent(CanvasImageSaveIntent.RequestSave)
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun imageShare_dispatchesImageShareWithoutRecording() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = CanvasImageSaveViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasImageSaveIntent.RequestImageShare("canvas_capture.png"))
+
+            // 사진은 녹화를 기다리지 않고 바로 내보낸다
+            assertEquals(
+                CanvasImageSaveEffect.DispatchShare(File("canvas_capture.png"), CanvasShareMedia.IMAGE),
+                awaitItem(),
+            )
+        }
+        assertTrue(viewModel.state.value.isBusy)
+    }
+
+    @Test
+    fun imageShare_doubleTap_dispatchesOnce() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = CanvasImageSaveViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasImageSaveIntent.RequestImageShare("canvas_capture.png"))
+            assertTrue(awaitItem() is CanvasImageSaveEffect.DispatchShare)
+
+            // 연타로 다시 와도 내보내지 않는다 — 두 번 내보내면 백스택이 한 칸 더 빠진다
+            viewModel.processIntent(CanvasImageSaveIntent.RequestImageShare("canvas_capture.png"))
             expectNoEvents()
         }
     }
