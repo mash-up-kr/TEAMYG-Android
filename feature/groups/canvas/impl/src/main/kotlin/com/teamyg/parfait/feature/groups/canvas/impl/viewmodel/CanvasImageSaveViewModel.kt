@@ -16,12 +16,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 
 internal data class CanvasImageSaveUiState(
-    /** mp4 미리 굽기의 진행 단계. 녹화 효과가 다시 돌 때(구성 변경) 이미 구웠는지도 이것으로 가른다 */
     val recordPhase: RecordPhase = RecordPhase.IDLE,
     /** 저장·공유를 눌러 잠긴 상태 — 버튼과 닫기를 막는다 */
     val isBusy: Boolean = false,
 ) : UiState {
-    /** 녹화 레이어를 컴포지션에 붙여야 하는 동안 */
     val isRecording: Boolean get() = recordPhase == RecordPhase.RECORDING
 
     /**
@@ -45,14 +43,11 @@ internal sealed interface CanvasImageSaveIntent : UiIntent {
     data object RequestShare : CanvasImageSaveIntent
 }
 
-/** 미리보기에서 내보낼 것. Route 가 실제 결과 전송·공유·네비게이션으로 옮긴다 */
 internal sealed interface CanvasImageSaveEffect : UiSideEffect {
-    /** 저장 결과를 캔버스 메인에 보낸다 */
     data class DispatchSave(
         val result: CanvasSaveResult,
     ) : CanvasImageSaveEffect
 
-    /** 이 파일을 인스타그램 스토리로 공유한다 */
     data class DispatchShare(
         val file: File,
         val media: CanvasShareMedia,
@@ -127,10 +122,7 @@ constructor(
         dispatchIfReady()
     }
 
-    /**
-     * 누른 동작이 있고 내보낼 재료가 준비되면 효과로 내보낸다. 사진은 늘 준비돼 있다. 영상이 아직
-     * 녹화 중이면 아무 일도 하지 않고, 나중에 [finishRecording] 이 다시 불러 깨운다
-     */
+    // 영상이 아직 녹화 중이면 넘어가고, [finishRecording] 이 다시 불러 깨운다
     private fun dispatchIfReady() {
         if (dispatched) return
         val action = pendingAction ?: return
@@ -167,7 +159,7 @@ constructor(
     }
 
     /**
-     * 나갈 때 지울 파일 — 저장·공유로 넘기지 않은 미리 구운 mp4만. 없으면 null.
+     * 나갈 때 지울 파일 — 저장·공유로 넘기지 않은 미리 구운 mp4만.
      * mp4 가 있는 채로 내보낸 효과는 늘 그 파일을 넘기므로, 내보냈는지만 보면 된다.
      *
      * State 가 아니라 질의인 이유: 화면에 그릴 값이 아니고, `onDispose` 가 그 순간 동기로 읽어야 한다

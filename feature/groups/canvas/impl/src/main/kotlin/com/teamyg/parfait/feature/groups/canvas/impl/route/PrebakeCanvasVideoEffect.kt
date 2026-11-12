@@ -27,7 +27,6 @@ import java.util.concurrent.TimeoutException
  *
  * @param canRecord 굽는 데 쓸 재료가 있는지. 프로세스 재시작으로 홀더가 비었거나 캔버스를 재지 못했으면 거짓
  * @param loadState 녹화 레이어가 배경과 토핑을 다 불러왔는지. 첫 프레임을 빈 그림으로 찍지 않으려고 기다린다
- * @param onFrame 녹화할 프레임 인덱스를 녹화 레이어에 세운다
  */
 @Composable
 internal fun PrebakeCanvasVideoEffect(
@@ -63,7 +62,6 @@ internal fun PrebakeCanvasVideoEffect(
             return@LaunchedEffect
         }
 
-        // 시간 초과면 녹화가 취소되며 부분 파일을 지우고 null 이 된다 — 실패로 접는다
         val result = withForegroundTimeoutOrNull(lifecycle, VideoRecordOptions.RECORD_TIMEOUT_MILLIS) {
             recordCanvasVideo(
                 context = context,

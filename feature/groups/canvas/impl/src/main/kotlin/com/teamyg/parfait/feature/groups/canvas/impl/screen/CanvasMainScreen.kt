@@ -92,7 +92,6 @@ internal fun CanvasMainScreen(
     var isMenuExpanded by remember { mutableStateOf(false) }
     val openMenu = { isMenuExpanded = true }
 
-    // 저장 아이콘(↓)이 여는 사진/영상 선택 메뉴.
     var isSaveMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
@@ -286,8 +285,7 @@ private fun CanvasSaveTypeMenu(
     onClickSaveAsVideo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 토핑 추가 메뉴와 같은 공통 아이템([YGMenuItem])으로 쌓는다 — 테두리를 1dp 겹쳐 한 묶음으로 보인다.
-    // 배경(White75 반투명)은 공통 컴포넌트가 든다
+    // 테두리를 1dp 겹쳐 한 묶음으로 보이게 쌓는다
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy((-1).dp),

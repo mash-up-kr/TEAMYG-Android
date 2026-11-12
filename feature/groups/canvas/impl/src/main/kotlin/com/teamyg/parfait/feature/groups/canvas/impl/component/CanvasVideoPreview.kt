@@ -39,7 +39,6 @@ internal fun CanvasVideoPreview(
         while (true) {
             withFrameNanos { now ->
                 val elapsedFrames = (now - startNanos) / FRAME_DURATION_NANOS
-                // FRAME_COUNT 에 닿으면 0 으로 되감아 반복한다
                 frameIndex = (elapsedFrames % VideoTimelineOptions.FRAME_COUNT).toInt()
             }
         }

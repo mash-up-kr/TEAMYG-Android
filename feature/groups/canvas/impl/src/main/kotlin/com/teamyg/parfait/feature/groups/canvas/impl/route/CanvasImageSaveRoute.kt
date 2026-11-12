@@ -84,7 +84,6 @@ internal fun CanvasImageSaveRoute(
             if (navKey !in navigator.backStack) {
                 CanvasCaptureHolder.clear()
                 CanvasVideoSourceHolder.clear()
-                // 저장·공유로 넘기지 않은 미리 구운 mp4 는 캐시에 남기지 않는다
                 viewModel.fileToDeleteOnExit()?.delete()
             }
         }
@@ -103,14 +102,12 @@ internal fun CanvasImageSaveRoute(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                // 저장 결과는 캔버스 메인이 토스트로 알린다
                 is CanvasImageSaveEffect.DispatchSave -> {
                     resultEventBus.sendResult(CANVAS_SAVE_RESULT_KEY, effect.result)
                     navigator.onBack()
                 }
 
-                // 띄웠으면 성공 토스트는 없다. 못 띄웠으면(인스타 미설치 등) 실패를 캔버스 메인이
-                // 알린다 — 여긴 곧 사라지는 화면이라 토스트를 걸 자리가 없다
+                // 여긴 곧 사라지는 화면이라 실패 토스트는 캔버스 메인이 띄운다
                 is CanvasImageSaveEffect.DispatchShare -> {
                     val shared = shareCanvasToInstagramStory(context, effect.file, effect.media)
                     if (shared.not()) {
@@ -144,8 +141,6 @@ internal fun CanvasImageSaveRoute(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
-                // 영상 재료가 있으면 저장될 타임랩스를 반복 재생한다. 사진이거나 재료를 못 받았으면
-                // 캡처한 그림을 정적으로 보인다
                 if (recordableSource != null) {
                     CanvasVideoPreview(
                         toppings = recordableSource.toppings,
@@ -160,7 +155,6 @@ internal fun CanvasImageSaveRoute(
             }
         }
 
-        // 미리 굽는 동안에만 컴포지션에 붙는다. 화면에는 한 픽셀도 그리지 않고 프레임만 기록한다
         if (uiState.isRecording && recordableSource != null) {
             CanvasVideoRecordLayer(
                 toppings = recordableSource.toppings,

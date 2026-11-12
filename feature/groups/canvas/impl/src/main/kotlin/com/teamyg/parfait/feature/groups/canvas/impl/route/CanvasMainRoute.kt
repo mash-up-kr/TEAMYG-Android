@@ -121,7 +121,6 @@ internal fun CanvasMainRoute(
     val welcomeInviteCopiedText = stringResource(R.string.canvas_welcome_invite_copied)
     val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
 
-    // 저장 메뉴에서 고른 타입. 캡처가 끝나 미리보기로 갈 때 navKey 에 실린다
     var pendingSaveType by remember { mutableStateOf(CanvasSaveType.IMAGE) }
 
     // WRITE_EXTERNAL_STORAGE 요청은 Activity 가 있어야만 가능해, 저장할 것을 여기서 들고 있다가

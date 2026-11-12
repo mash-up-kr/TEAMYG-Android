@@ -43,7 +43,7 @@ import kotlinx.datetime.format
  * 저장 자체는 하지 않는다 — 확정을 호출부에 알리기만 하고, 갤러리에 넣는 일과 결과를 알리는
  * 일은 캔버스 메인이 맡는다.
  *
- * @param isActionEnabled 저장·공유를 눌러 결과를 기다리는 동안 거짓이다. 두 버튼을 함께 막는다
+ * @param isActionEnabled 저장·공유를 눌러 결과를 기다리는 동안 거짓이다
  * @param preview 미리보기 상자에 채울 내용. 사진이면 정적 이미지, 영상이면 타임랩스 반복 재생
  */
 @Composable

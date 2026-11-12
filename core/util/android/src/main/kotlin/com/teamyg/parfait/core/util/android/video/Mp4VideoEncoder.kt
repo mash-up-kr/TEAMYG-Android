@@ -137,8 +137,7 @@ class Mp4VideoEncoder(
             }
         }
 
-        // 인코더 스레드가 멈춰 있으면 정리도 그 뒤에 줄을 서 영영 돌지 않는다. 호출부를 무한정 막지 않도록
-        // 상한을 두고, 넘기면 스레드를 끊고 산출물만 이 스레드에서 지운다 — 코덱 자원은 새더라도 화면이 갇히는 것보다 낫다
+        // 인코더 스레드가 멈춰 있으면 정리도 영영 돌지 않는다. 코덱 자원은 새더라도 호출부를 무한정 막지 않는다
         try {
             cleanup.get(CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         } catch (e: ExecutionException) {
