@@ -61,7 +61,7 @@ fun YGMenuItem(
             .fillMaxWidth()
             .height(SizeTokens.Size44.getDp())
             .background(
-                color = YGAtomicColors.Gray.White,
+                color = YGAtomicColors.Transparency.White75,
                 shape = shape,
             ).clip(shape)
             .border(

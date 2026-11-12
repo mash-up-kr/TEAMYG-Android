@@ -10,4 +10,10 @@ internal object VideoRecordOptions {
 
     /** 이미지 로드를 기다리는 동안 닫기와 뒤로가기가 막혀 있어, 상한이 없으면 화면에 갇힌다 */
     const val SOURCE_LOAD_TIMEOUT_MILLIS: Long = 15_000L
+
+    /**
+     * 프레임 루프·인코더가 멈춰도 저장·공유를 누른 뒤 잠긴 화면에 갇히지 않도록 녹화 전체에 거는 상한.
+     * 화면이 보이는 동안 흐른 시간만 센다(withForegroundTimeoutOrNull)
+     */
+    const val RECORD_TIMEOUT_MILLIS: Long = 30_000L
 }

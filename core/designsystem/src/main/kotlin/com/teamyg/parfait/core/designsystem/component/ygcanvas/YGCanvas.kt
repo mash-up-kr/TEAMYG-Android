@@ -90,6 +90,9 @@ fun YGCanvas(
     isSaveVisible: Boolean = false,
     onClickSave: () -> Unit = {},
     saveContentDescription: String? = null,
+    // 저장 메뉴는 달력과 같은 자리(날짜 바 아래, 캡처 밖, 딤 위)에 뜬다
+    isSaveMenuVisible: Boolean = false,
+    saveMenuContent: @Composable () -> Unit = {},
     calendarContent: @Composable () -> Unit = {},
     /**
      * 넘기면 배경+토핑(테두리·모서리 컷 모양, 빈 캔버스 문구, 날짜 버튼 같은 프레임 UI는 제외)을
@@ -180,6 +183,25 @@ fun YGCanvas(
                         saveContentDescription = saveContentDescription,
                     )
                     calendarContent()
+                }
+            }
+
+            if (isSaveMenuVisible) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy((-1).dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .pointerInput(Unit) { detectTapGestures { /* 메뉴 안에서 소비 */ } },
+                ) {
+                    YGCanvasDateSelectButton(
+                        date = date,
+                        day = day,
+                        onClick = onDateSelectClick,
+                        isSaveVisible = isSaveVisible,
+                        onClickSave = onClickSave,
+                        saveContentDescription = saveContentDescription,
+                    )
+                    saveMenuContent()
                 }
             }
 

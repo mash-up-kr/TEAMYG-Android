@@ -12,17 +12,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.GraphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
-import coil3.compose.AsyncImage
-import coil3.compose.AsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
-import com.teamyg.parfait.core.designsystem.image.rememberReloadableImageRequest
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
@@ -39,7 +35,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
  * 앉는다. 출력 픽셀 크기는 [Density] 를 덮어써서 맞춘다(ADR-0035).
  *
  * @param background 캔버스 메인이 `YGCanvas` 에 넘긴 것과 같은 값
- * @param retryKey 캔버스 메인과 같은 값. 0 이면 재시도 뒤에도 캐시에 앉은 옛 실패 바이트를 읽는다
+ * @param retryKey [CanvasVideoBackground] 의 `retryKey` 와 같다
  * @param onLoadStateChange 배경과 토핑을 **접은** 결과. 녹화가 이 신호 하나로 첫 프레임 시점을 정한다
  */
 @Composable
@@ -76,39 +72,20 @@ internal fun CanvasVideoRecordLayer(
             modifier = Modifier
                 // 부모 constraints 로 clamp 되면 해상도가 조용히 줄어든다
                 .requiredSize(width = canvasWidth, height = canvasHeight)
+                // 캔버스를 빠져나간 토핑은 화면 캔버스(CanvasArea 의 clip)처럼 경계에서 잘려 기록돼야 한다 —
+                // 없으면 넘친 토핑이 영상에 통째로 찍힌다
+                .clipToBounds()
                 .drawWithContent {
                     // drawLayer 를 부르지 않는다 — 기록만 하고 화면에는 내보내지 않는다
                     captureLayer.record { this@drawWithContent.drawContent() }
                 },
         ) {
-            when (background) {
-                // 배경을 안 고른 캔버스에도 토핑은 흰 바탕 위에 깔린다
-                null -> Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(color = YGAtomicColors.Gray.White),
-                )
-
-                is YGCanvasBackground.Solid -> Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(color = background.color),
-                )
-
-                is YGCanvasBackground.Image -> AsyncImage(
-                    model = rememberReloadableImageRequest(background.url, retryKey),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    onState = { state ->
-                        backgroundState = when (state) {
-                            is AsyncImagePainter.State.Success -> CanvasLoadState.Loaded
-                            is AsyncImagePainter.State.Error -> CanvasLoadState.Failed
-                            else -> CanvasLoadState.Loading
-                        }
-                    },
-                    modifier = Modifier.matchParentSize(),
-                )
-            }
+            CanvasVideoBackground(
+                background = background,
+                retryKey = retryKey,
+                onImageLoadStateChange = { backgroundState = it },
+                modifier = Modifier.matchParentSize(),
+            )
 
             CanvasToppingLayer(
                 toppings = toppings,

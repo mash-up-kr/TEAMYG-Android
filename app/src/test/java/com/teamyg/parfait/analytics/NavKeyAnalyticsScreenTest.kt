@@ -12,6 +12,7 @@ import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveType
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
@@ -46,7 +47,8 @@ class NavKeyAnalyticsScreenTest {
             NavKeyCanvasMain(groupId = 1L) to "C-001",
             NavKeySegmentation(sourceImageUri = "uri") to "C-103",
             NavKeyCanvasToppingPlace to "C-106",
-            NavKeyCanvasImageSave(imagePath = "path", date = "2026-09-09", toppingCount = 1) to "C-001-image-save",
+            NavKeyCanvasImageSave(saveType = CanvasSaveType.IMAGE, imagePath = "path", date = "2026-09-09") to
+                "C-001-image-save",
             NavKeyAppSetting to "S-001",
             NavKeyAccountInfo to "S-002",
             NavKeyNotificationSetting to "S-105",

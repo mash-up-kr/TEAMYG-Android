@@ -7901,4 +7901,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 같은 커밋을 base·head로 비교하는 실행을 한 번 남기고, 오탐이 확인되면 캐시 시딩에서
   스크린샷 렌더 태스크를 빼거나 렌더를 같은 러너로 묶는다. 결과는 ADR-0037 「영향」 절의 위험·방어에 적는다.
 
-<!-- oq-next: 462 -->
+### [2026-11-12] 저장 미리보기의 인스타그램 스토리 공유가 기획 정책에 없다
+
+- **ID**: OQ-P-462
+- **출처**: `CanvasImageSaveScreen`(「인스타그램 스토리 공유」 버튼) · `shareCanvasToInstagramStory` · `strings.xml`의 `canvas_share_failed`·`canvas_image_save_description`·`canvas_video_save_description` × 위키 `concepts/mvp-scope-limits.md`·`concepts/canvas.md`·`concepts/toast.md`
+- **항목**: ① 위키는 저장 미리보기 CTA를 「갤러리에 저장」 하나로 두고 근거를 "외부 공유 기능 미존재"로 적는데, 앱은 인스타그램 스토리 공유 버튼을 둔다. ② 공유 실패 토스트 문구와 인스타 미설치 처리(미리보기를 닫고 캔버스 메인에 실패 토스트)는 위키에 정책이 없다. ③ 미리보기 설명 문구가 위키 서브카피(「파르페는 인스타그램 스토리 규격에 최적화되어 있어요」)와 다르다. ④ 저장 실패 토스트의 구두점이 위키 원문과 다르다(쉼표, 끝 마침표 없음).
+- **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
+- **해소 메모**: 기획이 공유를 MVP에 넣기로 하면 위키 정책과 문구를 갱신하고, 빼기로 하면 공유 버튼·`InstagramStoryShare`·`CanvasShareFileProvider`를 걷어낸다.
+
+<!-- oq-next: 463 -->

@@ -273,6 +273,7 @@ parfait-android-application = { id = "com.teamyg.parfait.plugin.android.applicat
 parfait-android-application-signing = { id = "com.teamyg.parfait.plugin.android.application.signing" }
 parfait-android-library = { id = "com.teamyg.parfait.plugin.android.library" }
 parfait-android-network = { id = "com.teamyg.parfait.plugin.android.network" }
+parfait-android-instagram-share = { id = "com.teamyg.parfait.plugin.android.instagram.share" }
 parfait-dagger-hilt-core = { id = "com.teamyg.parfait.plugin.dagger.hilt.core" }
 parfait-dagger-hilt-compose = { id = "com.teamyg.parfait.plugin.dagger.hilt.compose" }
 parfait-jetpack-compose = { id = "com.teamyg.parfait.plugin.jetpack.compose" }

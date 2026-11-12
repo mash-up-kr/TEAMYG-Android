@@ -16,6 +16,7 @@ internal object PropertySettingManager {
     private const val DEBUG_KEY_PASSWORD = "YG_DEBUG_KEY_PASSWORD"
     private const val BASE_URL_KEY = "YG_BASE_URL"
     private const val BASE_URL_FALLBACK = "https://TODO.example.com/"
+    private const val FACEBOOK_APP_ID_KEY = "YG_FACEBOOK_APP_ID"
 
     fun loadReleaseKey(
         project: Project,
@@ -78,6 +79,15 @@ internal object PropertySettingManager {
         project.findProperty(BASE_URL_KEY)?.toString()?.let { return it }
         rootProject.localProperties()?.getProperty(BASE_URL_KEY)?.let { return it }
         return BASE_URL_FALLBACK
+    }
+
+    // 비밀값이 아닌 공개 식별자다. 없으면 빈 값 — 인스타그램 스토리 귀속만 빠지고 공유는 동작한다
+    fun loadFacebookAppId(
+        project: Project,
+        rootProject: Project,
+    ): String {
+        project.findProperty(FACEBOOK_APP_ID_KEY)?.toString()?.let { return it }
+        return rootProject.localProperties()?.getProperty(FACEBOOK_APP_ID_KEY).orEmpty()
     }
 
     private fun Project.localProperties(): Properties? {

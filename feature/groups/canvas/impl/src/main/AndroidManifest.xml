@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <queries>
+        <package android:name="com.instagram.android" />
+    </queries>
+
+    <application>
+        <!-- authorities 는 CanvasShareFileProvider.authority() 와 짝이다. 한쪽만 바꾸면 공유 uri 생성이 실패한다 -->
+        <provider
+            android:name="com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasShareFileProvider"
+            android:authorities="${applicationId}.canvas.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/canvas_share_file_paths" />
+        </provider>
+    </application>
 
 </manifest>

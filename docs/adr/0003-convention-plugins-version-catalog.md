@@ -30,6 +30,7 @@ tags: [adr, parfait]
   있다고 오해하기 쉬운 자리다 → [open-questions](../synthesis/open-questions.md) OQ-P-308 ③.
   ⚠️ 이 플러그인은 `app`과 `app-preview` 둘에 걸리므로 **축소도 둘 다에 걸린다.** 축소의 실패는
   조립이 아니라 실행에서 드러나는데 릴리즈 산출물을 설치해 본 기록은 0건이다(OQ-P-308 ①).
+- `AndroidInstagramShareConventionPlugin` — 인스타그램 스토리 귀속용 `YG_FACEBOOK_APP_ID`를 `-P` 또는 `local.properties`에서 읽어(`PropertySettingManager`) `BuildConfig.FACEBOOK_APP_ID`로 싣는다. 비밀값이 아니고, 없으면 빈 값이다.
 - `AndroidApplicationSigningConventionPlugin` — 서명 키를 `local.properties`에서 로드(`PropertySettingManager`).
   🔁 **as-built(2026-08-16, PR #264)** — `setSigningConfig`이 `signingConfigs`를 만들기만 하던 것에서
   **release 빌드 타입에 release 설정을 결선**하는 데까지 갔다(`buildTypes.getByName("release")`).
