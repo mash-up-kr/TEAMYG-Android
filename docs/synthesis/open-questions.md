@@ -1501,7 +1501,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 정본과 다른 점 하나가 남는데 결함이 아니라 구현 사정이다 — 목록을 `replaceAll`로 먼저 깔고 그
   > 위에 캔버스를 쌓는다(캔버스만 남기면 뒤로가기가 앱 종료가 된다). ③(새 그룹을 목록에 어떻게
   > 보이게 할지)은 #297의 `Enter` 인텐트로 이미 닫혀 있었고, 이제는 목록 엔트리 자체가 새것이다.
-  > **남은 것은 배너 쪽**이다 — 문구·복사 동작·1회 보장에 정책 근거가 없다(OQ-P-339).
+  > **남은 것은 배너 쪽**이다 — 갈래·1회 보장에 정책 근거가 없다(OQ-P-339).
 - **해소 메모**: 반영처 — [navigation-flow](../architecture/navigation-flow.md) "그룹 생성·참여 플로우" ·
   [a005 스펙](../superpowers/specs/archive/2026-07-29-a005-group-create.md)·[s102 스펙](../superpowers/specs/archive/2026-07-22-s102-group-nickname.md)의
   "다음 화면"·"복귀 목적지" 서술. 위키 쪽은 정본과 맞았으므로 등록할 것이 없다.
@@ -5982,22 +5982,18 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-09-01] 환영 배너가 정책 소스 없이 코드로 확정됐고, 1회 노출이 ViewModel 수명에 걸려 있다
 
 - **ID**: OQ-P-339
-- **출처**: `CanvasMainViewModel` init(`welcomeGroupName`·`welcomeInviteCode` assisted 인자)·
+- **출처**: `CanvasMainViewModel` init(`welcomeGroupName`·`welcomeInviteCode`·`welcomeMemberLimit` assisted 인자,
+  갈래 `CanvasWelcome.Joined`·`Created`·`CreatedSolo`)·
   `CanvasMainRoute#CanvasMainEffect.ShowWelcome`·`feature/groups/canvas/impl` `strings.xml`
-  (`canvas_welcome_joined_title`·`_sub`·`canvas_welcome_created_title`·`_sub`·`canvas_welcome_invite_copy`·
-  `_copied`, PR #411 develop 머지) — 그룹을 만들거나 참여한 직후 캔버스에 들어오면 배너가 1회 뜨고,
-  생성 갈래에는 초대코드 복사 버튼이 붙는다. ① **위키에 이 배너의 정책 문서가 없다** — 문구 6종과
-  갈래 둘(참여/생성)을 코드가 확정했다. ② **1회 보장의 근거가 상태가 아니라 ViewModel 수명**이다 —
+  (`canvas_welcome_joined_title`·`canvas_welcome_add_topping_sub`·`canvas_welcome_created_title`·`_sub`·`canvas_welcome_invite_share`) — 그룹을 만들거나 참여한 직후
+  캔버스에 들어오면 배너가 1회 뜨고, 생성 갈래에는 `공유하기` 버튼(아이콘 없음, 시스템 공유 시트)이 붙는다
+  (정원 1명이면 초대코드·버튼을 뺀다).
+  ① **위키에 이 배너의 정책 문서가 없다** — 문구는 Figma `5456:20958`(생성 갈래)을 따르지만 갈래
+  둘(참여/생성)과 노출 조건은 코드가 정했다. ② **1회 보장의 근거가 상태가 아니라 ViewModel 수명**이다 —
   "백스택 재진입에서는 새로 만들어지지 않는다"는 주석이 방어의 전부라, 프로세스 사망 후 복원처럼
-  키가 다시 살아나는 경로에서는 배너가 다시 뜬다(인자는 `NavKey`에 그대로 남는다). ③ **복사 완료
-  표시가 같은 배너의 재발행**이다 — `복사완료`로 문구만 바꿔 `show`를 다시 부르고(얼럿에는 자동 소멸이 없어
-  스와이프할 때까지 남는다), 두 번째 배너에는 `onButtonClick`이 없어 **한 번 복사하면 그 배너에서
-  다시 복사할 수 없다**. ④ 복사 성공·실패를 사용자에게 알리는 것도 그 문구 교체뿐이다
-  (`clipboard.setClipEntry`가 실패해도 문구는 바뀐다).
+  키가 다시 살아나는 경로에서는 배너가 다시 뜬다(인자는 `NavKey`에 그대로 남는다).
 - **항목**: ① 배너 문구·노출 갈래를 기획·디자인 소스로 확정받을지. ② 1회를 무엇으로 보장할지 —
   소비 후 키에서 지우기(백스택 엔트리 교체), 화면 상태 플래그, 아니면 지금처럼 수명에 맡기기.
-  ③ 복사 후 다시 복사할 수 있어야 하는지 — 그렇다면 배너를 재발행하는 대신 버튼 상태를 갈아야 한다.
-  ④ 복사 실패 표현을 둘지(같은 화면에 토스트 큐가 이미 있다).
 - **상태**: 미해결 (**동작은 한다** — 정책 근거와 재현 조건의 문제다)
 - **해소 메모**: 정하면 [navigation-flow](../architecture/navigation-flow.md) "그룹 생성·참여 플로우"의
   진입 사유 인자 항목과 [ygalert 스펙](../superpowers/specs/archive/2026-07-23-ygalert.md) 노출 정책 절에 적는다.

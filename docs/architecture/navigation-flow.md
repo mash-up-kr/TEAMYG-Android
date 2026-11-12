@@ -317,7 +317,8 @@ NavKeyGroupList ─┬─ 생성 ─▶ NavKeyGroupCreate(nickName) ──(확�
 
 - ~~복귀는 `goToSingleClearTop(NavKeyGroupList)`다~~ → 🔁 **종착지가 목록에서 캔버스로 옮겨졌다
   (2026-09-01, PR #411)**. 두 갈래 다 `replaceAll(NavKeyGroupList)`로 흐름 화면을 통째로 걷어낸 뒤
-  **곧바로 `goTo(NavKeyCanvasMain(groupId, welcomeGroupName, welcomeInviteCode))`**를 쌓는다. 목록을
+  **곧바로 `goTo(NavKeyCanvasMain(...))`**를 쌓는다(생성은 `groupId`·`welcomeGroupName`·`welcomeInviteCode`·
+  `welcomeMemberLimit`, 참여는 `groupId`·`welcomeGroupName`). 목록을
   깔아 두는 이유를 두 Route가 같은 주석으로 적는다 — 캔버스만 남기면 뒤로가기가 앱 종료가 된다.
   그래서 이 경계의 관용구는 이제 `replaceAll` 하나가 아니라 **`replaceAll` + `goTo` 두 줄 조합**이고,
   `goToSingleClearTop`의 소비처는 그룹 생성·참여에서 사라졌다.
@@ -377,8 +378,10 @@ NavKeyGroupList ─┬─ 생성 ─▶ NavKeyGroupCreate(nickName) ──(확�
   들어왔다(OQ-P-135 해소). 정본과 다른 점은 목록을 백스택 **아래에 깔아 둔다**는 것뿐이고, 그것은
   뒤로가기가 앱을 끄지 않게 하려는 구현 사정이다.
 - 📌 **캔버스가 진입 사유를 인자로 받는다** — `NavKeyCanvasMain`에 `welcomeGroupName`·
-  `welcomeInviteCode`가 붙어, 생성 직후면 초대코드까지 실린 배너를, 참여 직후면 그룹명만 실린 배너를
-  캔버스가 1회 띄운다(평범한 진입은 둘 다 `null`). **목적지 키가 "어디로"만이 아니라 "왜 왔는가"를
+  `welcomeInviteCode`·`welcomeMemberLimit`이 붙어, 생성 직후면 초대코드까지 실린 배너를, 참여 직후면
+  그룹명만 실린 배너를 캔버스가 1회 띄운다(평범한 진입은 전부 `null`). 정원 1명으로 만든 그룹은
+  초대할 사람이 없어 생성 배너에서 초대코드·`공유하기`를 빼고 참여 배너와 같은 보조 문구를 쓴다
+  (`CanvasWelcome.CreatedSolo`, Figma `5456:20958` 메모). **목적지 키가 "어디로"만이 아니라 "왜 왔는가"를
   나르기 시작한 첫 자리**이고, 1회성은 화면 상태가 아니라 **ViewModel 생성 시점**에 기댄다 —
   백스택 재진입에서는 ViewModel이 새로 만들어지지 않아 배너가 다시 뜨지 않는다(OQ-P-339).
 
@@ -798,8 +801,9 @@ API가 없다) → [s004-terms-privacy-webview 스펙](../superpowers/specs/arch
 **인자가 데이터도 동작 플래그도 아니라 "진입 사유"인 형태가 나왔다**(2026-09-01, PR #411) —
 `NavKeyCanvasMain`의 `welcomeGroupName`·`welcomeInviteCode`는 캔버스가 그릴 데이터가 아니고
 (그룹명은 화면이 어차피 조회한다) 동작을 가르는 플래그도 아니다. **직전 화면에서 무슨 일이
-있었는지**를 나르며, 값이 있으면 배너 1회, 없으면 아무 일도 없다. 둘의 조합이 배너 갈래까지 정한다
-— 그룹명만 있으면 참여, 초대코드까지 있으면 생성이다. 그래서 이 인자는 **소비되고 나면 뜻이
+있었는지**를 나르며, 값이 있으면 배너 1회, 없으면 아무 일도 없다. 셋의 조합이 배너 갈래까지 정한다
+— 그룹명만 있으면 참여, 초대코드까지 있으면 생성, 거기에 정원이 1이면 초대 없는 생성이다.
+`welcomeMemberLimit`은 생성 흐름(`GroupCreateRoute`)만 채운다. 그래서 이 인자는 **소비되고 나면 뜻이
 없어지는데** 키에는 그대로 남는다(직렬화·복원되면 다시 실려 온다) → OQ-P-339.
 **기본값 없는 동작 인자가 처음 나왔다**(2026-08-31, PR #408) — `NavKeyCustomGalleryPicker`의
 `recentImagePick: RecentImagePick`은 앞의 둘과 달리 기본값이 없어 **호출부 둘이 값을 반드시
@@ -841,8 +845,8 @@ A-005를 연다(#222). 현재 그 `nickName`은 `GroupListUiState` 기본값 moc
 (`GroupCreateViewModel`·`SegmentationViewModel`·`GroupNickNameViewModel`(#244)·`TermAgreeViewModel`(#242)·
 `CanvasMainViewModel`(#268)·`GroupSettingViewModel`(#285)·`CanvasBGEditViewModel`(#329)).
 **Assisted 파라미터가 여럿이면 이름표를 붙인다**(#411) — `CanvasMainViewModel`이 `welcomeGroupName`·
-`welcomeInviteCode` 둘을 함께 받으면서 `@Assisted(ASSISTED_WELCOME_GROUP_NAME)`처럼 **문자열 키로
-구분**한다(둘 다 `String?`이라 타입만으로는 못 가른다). 팩토리 인터페이스와 생성자 양쪽에 같은 키를
+`welcomeInviteCode`·`welcomeMemberLimit` 셋을 함께 받으면서 `@Assisted(ASSISTED_WELCOME_GROUP_NAME)`처럼
+**문자열 키로 구분**한다(앞의 둘은 모두 `String?`이라 타입만으로는 못 가른다). 팩토리 인터페이스와 생성자 양쪽에 같은 키를
 적어야 하고, 어긋나면 컴파일이 아니라 Hilt 생성 코드에서 깨진다.
 **생성 위치는 두 형태가 공존한다** — 엔트리 빌더에서 만들어 Route 파라미터로 넘기거나(`GroupNickName`),
 Route의 기본 인자에서 만들거나(`TermAgree`·`CanvasMain`). 후자는 Route가 인자 값을 받아 팩토리에 넘긴다.

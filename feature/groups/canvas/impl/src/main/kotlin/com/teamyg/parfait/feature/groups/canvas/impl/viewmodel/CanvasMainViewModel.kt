@@ -79,6 +79,9 @@ sealed interface CanvasWelcome {
     data class Joined(val groupName: String) : CanvasWelcome
 
     data class Created(val groupName: String, val inviteCode: String) : CanvasWelcome
+
+    /** 정원 1명으로 만든 그룹 — 초대코드·공유 버튼 없이 띄운다 */
+    data class CreatedSolo(val groupName: String) : CanvasWelcome
 }
 
 data class CanvasMainUiState(
@@ -321,6 +324,7 @@ constructor(
     @Assisted groupIdValue: Long,
     @Assisted(ASSISTED_WELCOME_GROUP_NAME) welcomeGroupName: String? = null,
     @Assisted(ASSISTED_WELCOME_INVITE_CODE) welcomeInviteCode: String? = null,
+    @Assisted(ASSISTED_WELCOME_MEMBER_LIMIT) welcomeMemberLimit: Int? = null,
     private val getParfaitHistoriesUseCase: GetParfaitHistoriesUseCase,
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
@@ -359,10 +363,10 @@ constructor(
         // 백스택 재진입에서는 ViewModel 이 새로 만들어지지 않으므로, 이 배너는 그룹 생성·참여
         // 직후의 첫 진입에서 딱 한 번만 뜬다
         if (welcomeGroupName != null) {
-            val welcome = if (welcomeInviteCode != null) {
-                CanvasWelcome.Created(groupName = welcomeGroupName, inviteCode = welcomeInviteCode)
-            } else {
-                CanvasWelcome.Joined(groupName = welcomeGroupName)
+            val welcome = when {
+                welcomeInviteCode == null -> CanvasWelcome.Joined(groupName = welcomeGroupName)
+                welcomeMemberLimit == SOLO_MEMBER_LIMIT -> CanvasWelcome.CreatedSolo(groupName = welcomeGroupName)
+                else -> CanvasWelcome.Created(groupName = welcomeGroupName, inviteCode = welcomeInviteCode)
             }
             postSideEffect(CanvasMainEffect.ShowWelcome(welcome))
         }
@@ -1061,6 +1065,7 @@ constructor(
             groupIdValue: Long,
             @Assisted(ASSISTED_WELCOME_GROUP_NAME) welcomeGroupName: String?,
             @Assisted(ASSISTED_WELCOME_INVITE_CODE) welcomeInviteCode: String?,
+            @Assisted(ASSISTED_WELCOME_MEMBER_LIMIT) welcomeMemberLimit: Int?,
         ): CanvasMainViewModel
     }
 
@@ -1068,6 +1073,10 @@ constructor(
         const val ASSISTED_WELCOME_GROUP_NAME = "welcomeGroupName"
 
         const val ASSISTED_WELCOME_INVITE_CODE = "welcomeInviteCode"
+
+        const val ASSISTED_WELCOME_MEMBER_LIMIT = "welcomeMemberLimit"
+
+        const val SOLO_MEMBER_LIMIT = 1
 
         const val LOAD_PARFAIT_HISTORIES_KEY = "loadParfaitHistories"
 
