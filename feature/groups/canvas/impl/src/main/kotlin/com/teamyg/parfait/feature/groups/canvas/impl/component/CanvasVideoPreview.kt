@@ -12,11 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.layout.ContentScale
-import coil3.compose.AsyncImage
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
-import com.teamyg.parfait.core.designsystem.image.rememberReloadableImageRequest
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions
@@ -50,26 +46,11 @@ internal fun CanvasVideoPreview(
 
     // 캔버스 밖으로 나간 토핑은 영상(녹화 레이어)과 같이 경계에서 잘려 보여야 한다
     Box(modifier = modifier.clipToBounds()) {
-        when (background) {
-            null -> Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(color = YGAtomicColors.Gray.White),
-            )
-
-            is YGCanvasBackground.Solid -> Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(color = background.color),
-            )
-
-            is YGCanvasBackground.Image -> AsyncImage(
-                model = rememberReloadableImageRequest(background.url, retryKey),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize(),
-            )
-        }
+        CanvasVideoBackground(
+            background = background,
+            retryKey = retryKey,
+            modifier = Modifier.matchParentSize(),
+        )
 
         CanvasToppingLayer(
             toppings = toppings,

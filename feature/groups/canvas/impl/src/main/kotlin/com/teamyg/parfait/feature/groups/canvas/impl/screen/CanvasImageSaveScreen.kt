@@ -43,15 +43,14 @@ import kotlinx.datetime.format
  * 저장 자체는 하지 않는다 — 확정을 호출부에 알리기만 하고, 갤러리에 넣는 일과 결과를 알리는
  * 일은 캔버스 메인이 맡는다.
  *
- * @param isSaveEnabled 영상을 만드는 동안 거짓이다
+ * @param isActionEnabled 저장·공유를 눌러 결과를 기다리는 동안 거짓이다. 두 버튼을 함께 막는다
  * @param preview 미리보기 상자에 채울 내용. 사진이면 정적 이미지, 영상이면 타임랩스 반복 재생
  */
 @Composable
 internal fun CanvasImageSaveScreen(
     saveType: CanvasSaveType,
     date: LocalDate,
-    isSaveEnabled: Boolean,
-    isShareEnabled: Boolean,
+    isActionEnabled: Boolean,
     onClickClose: () -> Unit,
     onClickSave: () -> Unit,
     onClickShareInstagram: () -> Unit,
@@ -145,7 +144,7 @@ internal fun CanvasImageSaveScreen(
                     if (isVideo) R.string.canvas_video_save_confirm else R.string.canvas_image_save_confirm,
                 ),
                 buttonType = YGButtonType.Large,
-                isEnabled = isSaveEnabled,
+                isEnabled = isActionEnabled,
                 onClick = onClickSave,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -153,7 +152,7 @@ internal fun CanvasImageSaveScreen(
             YGButton(
                 text = stringResource(R.string.canvas_save_share_instagram),
                 buttonType = YGButtonType.Medium.Secondary,
-                isEnabled = isShareEnabled,
+                isEnabled = isActionEnabled,
                 onClick = onClickShareInstagram,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -176,8 +175,7 @@ private fun PreviewCanvasImageSaveScreen(
     CanvasImageSaveScreen(
         saveType = saveType,
         date = LocalDate(2026, 5, 20),
-        isSaveEnabled = true,
-        isShareEnabled = true,
+        isActionEnabled = true,
         onClickClose = {},
         onClickSave = {},
         onClickShareInstagram = {},

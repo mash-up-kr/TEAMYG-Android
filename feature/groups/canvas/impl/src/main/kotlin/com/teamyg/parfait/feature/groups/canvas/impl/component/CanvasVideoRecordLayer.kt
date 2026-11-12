@@ -15,15 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.GraphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
-import coil3.compose.AsyncImage
-import coil3.compose.AsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
-import com.teamyg.parfait.core.designsystem.image.rememberReloadableImageRequest
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
@@ -85,34 +80,12 @@ internal fun CanvasVideoRecordLayer(
                     captureLayer.record { this@drawWithContent.drawContent() }
                 },
         ) {
-            when (background) {
-                // 배경을 안 고른 캔버스에도 토핑은 흰 바탕 위에 깔린다
-                null -> Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(color = YGAtomicColors.Gray.White),
-                )
-
-                is YGCanvasBackground.Solid -> Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(color = background.color),
-                )
-
-                is YGCanvasBackground.Image -> AsyncImage(
-                    model = rememberReloadableImageRequest(background.url, retryKey),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    onState = { state ->
-                        backgroundState = when (state) {
-                            is AsyncImagePainter.State.Success -> CanvasLoadState.Loaded
-                            is AsyncImagePainter.State.Error -> CanvasLoadState.Failed
-                            else -> CanvasLoadState.Loading
-                        }
-                    },
-                    modifier = Modifier.matchParentSize(),
-                )
-            }
+            CanvasVideoBackground(
+                background = background,
+                retryKey = retryKey,
+                onImageLoadStateChange = { backgroundState = it },
+                modifier = Modifier.matchParentSize(),
+            )
 
             CanvasToppingLayer(
                 toppings = toppings,

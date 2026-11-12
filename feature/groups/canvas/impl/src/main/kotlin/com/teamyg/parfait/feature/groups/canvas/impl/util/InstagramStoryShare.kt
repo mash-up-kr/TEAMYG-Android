@@ -20,9 +20,7 @@ private object InstagramStoryShareContract {
  * 저장 전 캐시에 있는 미디어를 인스타그램 스토리 편집기의 **배경**으로 띄운다.
  *
  * 파일을 직접 넘기지 않고 [CanvasShareFileProvider] content uri 로 바꿔 읽기 권한만 한시로 준다.
- * 인스타그램이 깔려 있지 않으면 받을 액티비티가 없어 `false` 로 접는다 — 호출부가 안내 토스트를 띄운다.
- *
- * @return 스토리 편집기를 띄웠으면 true
+ * 인스타그램이 깔려 있지 않거나 실행에 실패하면 `false` 로 접는다.
  */
 internal fun shareCanvasToInstagramStory(
     context: Context,
@@ -30,7 +28,7 @@ internal fun shareCanvasToInstagramStory(
     media: CanvasShareMedia,
 ): Boolean {
     val uri = runCatching {
-        FileProvider.getUriForFile(context, "${context.packageName}.canvas.fileprovider", file)
+        FileProvider.getUriForFile(context, CanvasShareFileProvider.authority(context), file)
     }.getOrElse { throwable ->
         screenLogger.e(throwable) { "shareCanvasToInstagramStory - content uri 생성 실패: ${file.path}" }
         return false

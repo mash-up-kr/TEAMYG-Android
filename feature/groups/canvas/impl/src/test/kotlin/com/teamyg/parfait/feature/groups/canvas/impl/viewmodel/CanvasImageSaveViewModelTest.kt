@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasShareMedia
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -18,10 +19,15 @@ class CanvasImageSaveViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val file = File("canvas_timelapse.mp4")
+    private val imagePath = "canvas_capture.png"
+
+    private fun videoViewModel() = CanvasImageSaveViewModel(CanvasSaveType.VIDEO, imagePath)
+
+    private fun imageViewModel() = CanvasImageSaveViewModel(CanvasSaveType.IMAGE, imagePath)
 
     @Test
     fun recordingSucceeded_thenSave_returnsVideoAndKeepsFile() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+        val viewModel = videoViewModel()
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
@@ -39,7 +45,7 @@ class CanvasImageSaveViewModelTest {
 
     @Test
     fun recordingSucceeded_noAction_deletesFileOnExit() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+        val viewModel = videoViewModel()
         viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
         viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(file))
 
@@ -49,7 +55,7 @@ class CanvasImageSaveViewModelTest {
 
     @Test
     fun save_whileStillRecording_waitsThenDispatches() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+        val viewModel = videoViewModel()
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
@@ -68,7 +74,7 @@ class CanvasImageSaveViewModelTest {
 
     @Test
     fun recordingFailed_thenSave_returnsVideoFailedAndNothingToDelete() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+        val viewModel = videoViewModel()
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
@@ -82,7 +88,7 @@ class CanvasImageSaveViewModelTest {
 
     @Test
     fun recordingSucceeded_thenShare_returnsShareAndKeepsFile() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+        val viewModel = videoViewModel()
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
@@ -96,23 +102,24 @@ class CanvasImageSaveViewModelTest {
     }
 
     @Test
-    fun share_whenRecordingFailed_returnsBack() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+    fun share_whenRecordingFailed_returnsShareFailed() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = videoViewModel()
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
             viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
             viewModel.processIntent(CanvasImageSaveIntent.RequestShare)
 
-            assertEquals(CanvasImageSaveEffect.DispatchBack, awaitItem())
+            assertEquals(CanvasImageSaveEffect.DispatchShareFailed, awaitItem())
         }
     }
 
     @Test
     fun dispatch_onlyFiresOnce() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+        val viewModel = videoViewModel()
 
         viewModel.effect.test {
+            viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
             viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(file))
             viewModel.processIntent(CanvasImageSaveIntent.RequestSave)
             assertTrue(awaitItem() is CanvasImageSaveEffect.DispatchSave)
@@ -124,15 +131,71 @@ class CanvasImageSaveViewModelTest {
     }
 
     @Test
-    fun imageShare_dispatchesImageShareWithoutRecording() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+    fun saveThenShare_whileRecording_firstActionWins() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = videoViewModel()
 
         viewModel.effect.test {
-            viewModel.processIntent(CanvasImageSaveIntent.RequestImageShare("canvas_capture.png"))
+            viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
+            // 버튼이 잠기기 전 한 프레임에 둘이 겹쳐 와도 먼저 누른 저장이 남는다
+            viewModel.processIntent(CanvasImageSaveIntent.RequestSave)
+            viewModel.processIntent(CanvasImageSaveIntent.RequestShare)
+            viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(file))
 
-            // 사진은 녹화를 기다리지 않고 바로 내보낸다
             assertEquals(
-                CanvasImageSaveEffect.DispatchShare(File("canvas_capture.png"), CanvasShareMedia.IMAGE),
+                CanvasImageSaveEffect.DispatchSave(CanvasSaveResult.Video(file.absolutePath)),
+                awaitItem(),
+            )
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun startRecording_afterFinished_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = videoViewModel()
+        viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
+        viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(file))
+        assertFalse(viewModel.needsRecording())
+
+        // 구성 변경으로 녹화 효과가 다시 돌아도 다 구운 상태를 되돌리지 않는다
+        viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
+        assertFalse(viewModel.state.value.isRecording)
+        assertEquals(file, viewModel.fileToDeleteOnExit())
+    }
+
+    @Test
+    fun needsRecording_whileRecording_isTrue() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = videoViewModel()
+        assertTrue(viewModel.needsRecording())
+
+        // 녹화 중에 효과가 다시 돌면 이전 녹화가 취소돼 부분 파일이 지워졌다 — 다시 구워야 한다
+        viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
+        assertTrue(viewModel.needsRecording())
+    }
+
+    @Test
+    fun recordingFailed_afterSucceeded_dropsStaleFile() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = videoViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(file))
+            viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
+            viewModel.processIntent(CanvasImageSaveIntent.RequestSave)
+
+            // 지워졌을 수 있는 옛 경로를 저장으로 넘기지 않는다
+            assertEquals(CanvasImageSaveEffect.DispatchSave(CanvasSaveResult.VideoFailed), awaitItem())
+        }
+        assertNull(viewModel.fileToDeleteOnExit())
+    }
+
+    @Test
+    fun imageSave_dispatchesImageResultWithoutRecording() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = imageViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasImageSaveIntent.RequestSave)
+
+            assertEquals(
+                CanvasImageSaveEffect.DispatchSave(CanvasSaveResult.Image(imagePath)),
                 awaitItem(),
             )
         }
@@ -140,28 +203,15 @@ class CanvasImageSaveViewModelTest {
     }
 
     @Test
-    fun imageShare_doubleTap_dispatchesOnce() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+    fun imageShare_dispatchesImageShareWithoutRecording() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = imageViewModel()
 
         viewModel.effect.test {
-            viewModel.processIntent(CanvasImageSaveIntent.RequestImageShare("canvas_capture.png"))
-            assertTrue(awaitItem() is CanvasImageSaveEffect.DispatchShare)
+            viewModel.processIntent(CanvasImageSaveIntent.RequestShare)
 
-            // 연타로 다시 와도 내보내지 않는다 — 두 번 내보내면 백스택이 한 칸 더 빠진다
-            viewModel.processIntent(CanvasImageSaveIntent.RequestImageShare("canvas_capture.png"))
-            expectNoEvents()
-        }
-    }
-
-    @Test
-    fun imageSave_dispatchesImageResultWithoutRecording() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
-
-        viewModel.effect.test {
-            viewModel.processIntent(CanvasImageSaveIntent.RequestImageSave("canvas_capture.png"))
-
+            // 사진은 녹화를 기다리지 않고 바로 내보낸다
             assertEquals(
-                CanvasImageSaveEffect.DispatchSave(CanvasSaveResult.Image("canvas_capture.png")),
+                CanvasImageSaveEffect.DispatchShare(File(imagePath), CanvasShareMedia.IMAGE),
                 awaitItem(),
             )
         }
@@ -170,22 +220,22 @@ class CanvasImageSaveViewModelTest {
 
     @Test
     fun imageSave_thenShareTap_dispatchesOnlySave() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+        val viewModel = imageViewModel()
 
         viewModel.effect.test {
-            viewModel.processIntent(CanvasImageSaveIntent.RequestImageSave("canvas_capture.png"))
+            viewModel.processIntent(CanvasImageSaveIntent.RequestSave)
             assertTrue(awaitItem() is CanvasImageSaveEffect.DispatchSave)
 
-            // 저장 직후 다른 버튼을 눌러도 — 이미 하나를 내보냈으니 더 내보내지 않는다
-            viewModel.processIntent(CanvasImageSaveIntent.RequestImageSave("canvas_capture.png"))
-            viewModel.processIntent(CanvasImageSaveIntent.RequestImageShare("canvas_capture.png"))
+            // 저장 직후 연타하거나 다른 버튼을 눌러도 — 이미 하나를 내보냈으니 더 내보내지 않는다
+            viewModel.processIntent(CanvasImageSaveIntent.RequestSave)
+            viewModel.processIntent(CanvasImageSaveIntent.RequestShare)
             expectNoEvents()
         }
     }
 
     @Test
     fun uiState_reflectsRecordingAndBusyFlags() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = CanvasImageSaveViewModel()
+        val viewModel = videoViewModel()
         assertFalse(viewModel.state.value.isRecording)
         assertFalse(viewModel.state.value.isBusy)
 

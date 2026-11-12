@@ -18,6 +18,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -53,6 +54,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageSaveVi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.LocalDate
+import java.util.concurrent.TimeoutException
 
 /**
  * navKey 인자와 전역 홀더로 그린다. 갤러리에 넣는 일은 결과를 받는 캔버스 메인의 몫이다.
@@ -66,7 +68,9 @@ internal fun CanvasImageSaveRoute(
     navKey: NavKeyCanvasImageSave,
     navigator: Navigator,
     modifier: Modifier = Modifier,
-    viewModel: CanvasImageSaveViewModel = hiltViewModel(),
+    viewModel: CanvasImageSaveViewModel = hiltViewModel<CanvasImageSaveViewModel, CanvasImageSaveViewModel.Factory>(
+        creationCallback = { it.create(navKey.saveType, navKey.imagePath) },
+    ),
 ) {
     val resultEventBus = LocalResultEventBus.current
     val context = LocalContext.current
@@ -75,6 +79,8 @@ internal fun CanvasImageSaveRoute(
     val capturedBitmap = remember { CanvasCaptureHolder.peek()?.asImageBitmap() }
     val videoSource = remember { CanvasVideoSourceHolder.peek() }
     val isVideo = navKey.saveType == CanvasSaveType.VIDEO
+    // 0dp 로는 밀도를 정할 수 없어(0 으로 나눈다) 재지 못한 재료로는 영상을 그리지도 굽지도 않는다
+    val recordableSource = videoSource?.takeIf { isVideo && it.canvasWidth > 0.dp }
 
     val recordLayer = rememberGraphicsLayer()
     var recordFrameIndex by remember { mutableIntStateOf(0) }
@@ -93,46 +99,13 @@ internal fun CanvasImageSaveRoute(
         }
     }
 
-    // 미리 굽기: 영상 미리보기로 들어오는 순간 시작한다. 구경만 하고 나가면 코루틴이 취소되고
-    // 부분 파일은 지워진다(recordCanvasVideo). 녹화 자체는 화면 계층에 묶여 여기서만 돈다
-    LaunchedEffect(Unit) {
-        if (isVideo.not()) return@LaunchedEffect
-
-        // 재료가 없거나(프로세스 재시작) 캔버스를 재지 못했으면 만들 수 없다
-        if (videoSource == null || videoSource.canvasWidth <= 0.dp) {
-            viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
-            return@LaunchedEffect
-        }
-
-        viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
-
-        // 첫 프레임을 빈 그림으로 찍지 않는다 — 배경과 토핑 이미지가 다 모여야 시작한다
-        val settledLoadState = withTimeoutOrNull(VideoRecordOptions.SOURCE_LOAD_TIMEOUT_MILLIS) {
-            snapshotFlow { recordLoadState }.first { it != CanvasLoadState.Loading }
-        }
-
-        if (settledLoadState != CanvasLoadState.Loaded) {
-            viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
-            return@LaunchedEffect
-        }
-
-        recordCanvasVideo(
-            context = context,
-            frameCount = VideoTimelineOptions.FRAME_COUNT,
-            captureLayer = recordLayer,
-        ) { frameIndex ->
-            recordFrameIndex = frameIndex
-            // 상태를 세운 뒤 그려질 때까지 기다린다. **두 번**인 이유: awaiter 는
-            // Choreographer 의 ANIMATION 콜백에서 깨는데 draw 는 그 뒤 TRAVERSAL 에서
-            // 돈다 — 한 번이면 매 프레임이 한 칸씩 밀린다
-            withFrameNanos { }
-            withFrameNanos { }
-        }.fold(
-            onSuccess = { viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(it)) },
-            onFailure = { throwable ->
-                screenLogger.e(throwable) { "CanvasImageSaveRoute - 캔버스 영상 녹화 실패" }
-                viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
-            },
+    if (isVideo) {
+        PrebakeCanvasVideoEffect(
+            viewModel = viewModel,
+            canRecord = recordableSource != null,
+            recordLayer = recordLayer,
+            loadState = { recordLoadState },
+            onFrame = { recordFrameIndex = it },
         )
     }
 
@@ -155,8 +128,7 @@ internal fun CanvasImageSaveRoute(
                     navigator.onBack()
                 }
 
-                // 영상을 만들지 못해 공유로 넘기지 못했다
-                CanvasImageSaveEffect.DispatchBack -> {
+                CanvasImageSaveEffect.DispatchShareFailed -> {
                     resultEventBus.sendResult(CANVAS_SAVE_RESULT_KEY, CanvasSaveResult.ShareFailed)
                     navigator.onBack()
                 }
@@ -173,35 +145,22 @@ internal fun CanvasImageSaveRoute(
             CanvasImageSaveScreen(
                 saveType = navKey.saveType,
                 date = LocalDate.parse(navKey.date),
-                isSaveEnabled = uiState.isBusy.not(),
-                isShareEnabled = uiState.isBusy.not(),
+                isActionEnabled = uiState.isBusy.not(),
                 onClickClose = { if (uiState.isBusy.not()) navigator.onBack() },
-                onClickSave = {
-                    if (isVideo) {
-                        viewModel.processIntent(CanvasImageSaveIntent.RequestSave)
-                    } else {
-                        viewModel.processIntent(CanvasImageSaveIntent.RequestImageSave(navKey.imagePath))
-                    }
-                },
-                onClickShareInstagram = {
-                    if (isVideo) {
-                        viewModel.processIntent(CanvasImageSaveIntent.RequestShare)
-                    } else {
-                        viewModel.processIntent(CanvasImageSaveIntent.RequestImageShare(navKey.imagePath))
-                    }
-                },
+                onClickSave = { viewModel.processIntent(CanvasImageSaveIntent.RequestSave) },
+                onClickShareInstagram = { viewModel.processIntent(CanvasImageSaveIntent.RequestShare) },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
                 // 영상 재료가 있으면 저장될 타임랩스를 반복 재생한다. 사진이거나 재료를 못 받았으면
                 // 캡처한 그림을 정적으로 보인다
-                if (isVideo && videoSource != null && videoSource.canvasWidth > 0.dp) {
+                if (recordableSource != null) {
                     CanvasVideoPreview(
-                        toppings = videoSource.toppings,
-                        texts = videoSource.texts,
-                        background = videoSource.background,
-                        retryKey = videoSource.retryKey,
+                        toppings = recordableSource.toppings,
+                        texts = recordableSource.texts,
+                        background = recordableSource.background,
+                        retryKey = recordableSource.retryKey,
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
@@ -210,22 +169,86 @@ internal fun CanvasImageSaveRoute(
             }
         }
 
-        // 미리 굽는 동안에만 컴포지션에 붙는다. 화면에는 한 픽셀도 그리지 않고 프레임만 기록한다.
-        // 0dp 로는 밀도를 정할 수 없어(0 으로 나눈다) 재지 못한 재료로는 붙이지 않는다
-        if (uiState.isRecording && videoSource != null && videoSource.canvasWidth > 0.dp) {
+        // 미리 굽는 동안에만 컴포지션에 붙는다. 화면에는 한 픽셀도 그리지 않고 프레임만 기록한다
+        if (uiState.isRecording && recordableSource != null) {
             CanvasVideoRecordLayer(
-                toppings = videoSource.toppings,
-                texts = videoSource.texts,
-                background = videoSource.background,
+                toppings = recordableSource.toppings,
+                texts = recordableSource.texts,
+                background = recordableSource.background,
                 frameIndex = recordFrameIndex,
-                canvasWidth = videoSource.canvasWidth,
-                canvasHeight = videoSource.canvasHeight,
+                canvasWidth = recordableSource.canvasWidth,
+                canvasHeight = recordableSource.canvasHeight,
                 targetWidthPx = VideoRecordOptions.WIDTH_PX,
-                retryKey = videoSource.retryKey,
+                retryKey = recordableSource.retryKey,
                 captureLayer = recordLayer,
                 onLoadStateChange = { recordLoadState = it },
             )
         }
+    }
+}
+
+/**
+ * 미리 굽기: 영상 미리보기로 들어오는 순간 mp4 를 굽기 시작한다. 구경만 하고 나가면 코루틴이 취소되고
+ * 부분 파일은 지워진다(recordCanvasVideo). 녹화 자체는 화면 계층에 묶여 여기서만 돈다.
+ *
+ * 구성 변경으로 효과가 다시 돌면 ViewModel 이 이미 구웠는지 보고 거른다
+ *
+ * @param canRecord 굽는 데 쓸 재료가 있는지. 프로세스 재시작으로 홀더가 비었거나 캔버스를 재지 못했으면 거짓
+ * @param loadState 녹화 레이어가 배경과 토핑을 다 불러왔는지. 첫 프레임을 빈 그림으로 찍지 않으려고 기다린다
+ * @param onFrame 녹화할 프레임 인덱스를 녹화 레이어에 세운다
+ */
+@Composable
+private fun PrebakeCanvasVideoEffect(
+    viewModel: CanvasImageSaveViewModel,
+    canRecord: Boolean,
+    recordLayer: GraphicsLayer,
+    loadState: () -> CanvasLoadState,
+    onFrame: (Int) -> Unit,
+) {
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        if (viewModel.needsRecording().not()) return@LaunchedEffect
+
+        if (canRecord.not()) {
+            viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
+            return@LaunchedEffect
+        }
+
+        viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
+
+        val settledLoadState = withTimeoutOrNull(VideoRecordOptions.SOURCE_LOAD_TIMEOUT_MILLIS) {
+            snapshotFlow(loadState).first { it != CanvasLoadState.Loading }
+        }
+
+        if (settledLoadState != CanvasLoadState.Loaded) {
+            viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
+            return@LaunchedEffect
+        }
+
+        // 시간 초과면 녹화가 취소되며 부분 파일을 지우고 null 이 된다 — 실패로 접는다
+        val result = withTimeoutOrNull(VideoRecordOptions.RECORD_TIMEOUT_MILLIS) {
+            recordCanvasVideo(
+                context = context,
+                frameCount = VideoTimelineOptions.FRAME_COUNT,
+                captureLayer = recordLayer,
+            ) { frameIndex ->
+                onFrame(frameIndex)
+                // 상태를 세운 뒤 그려질 때까지 기다린다. **두 번**인 이유: awaiter 는
+                // Choreographer 의 ANIMATION 콜백에서 깨는데 draw 는 그 뒤 TRAVERSAL 에서
+                // 돈다 — 한 번이면 매 프레임이 한 칸씩 밀린다
+                withFrameNanos { }
+                withFrameNanos { }
+            }
+        } ?: Result.failure(TimeoutException("캔버스 영상 녹화 시간 초과"))
+
+        result.fold(
+            onSuccess = { viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(it)) },
+            onFailure = { throwable ->
+                screenLogger.e(throwable) { "CanvasImageSaveRoute - 캔버스 영상 녹화 실패" }
+                viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
+            },
+        )
     }
 }
 
