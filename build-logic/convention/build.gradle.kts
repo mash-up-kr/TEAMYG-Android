@@ -38,6 +38,10 @@ gradlePlugin {
             className = "AndroidNetwork",
         )
         pluginRegister(
+            pluginName = "android.instagram.share",
+            className = "AndroidInstagramShare",
+        )
+        pluginRegister(
             pluginName = "android.library",
             className = "AndroidLibrary",
         )
