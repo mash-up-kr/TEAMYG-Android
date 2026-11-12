@@ -13,12 +13,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -32,7 +29,6 @@ import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.core.ui.screenLogger
 import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_SAVE_RESULT_KEY
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveType
@@ -41,20 +37,15 @@ import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasVideoPreview
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasVideoRecordLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoRecordOptions
-import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasImageSaveScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasVideoSourceHolder
-import com.teamyg.parfait.feature.groups.canvas.impl.util.recordCanvasVideo
 import com.teamyg.parfait.feature.groups.canvas.impl.util.shareCanvasToInstagramStory
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageSaveEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageSaveIntent
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageSaveViewModel
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.LocalDate
-import java.util.concurrent.TimeoutException
 
 /**
  * navKey 인자와 전역 홀더로 그린다. 갤러리에 넣는 일은 결과를 받는 캔버스 메인의 몫이다.
@@ -184,71 +175,6 @@ internal fun CanvasImageSaveRoute(
                 onLoadStateChange = { recordLoadState = it },
             )
         }
-    }
-}
-
-/**
- * 미리 굽기: 영상 미리보기로 들어오는 순간 mp4 를 굽기 시작한다. 구경만 하고 나가면 코루틴이 취소되고
- * 부분 파일은 지워진다(recordCanvasVideo). 녹화 자체는 화면 계층에 묶여 여기서만 돈다.
- *
- * 구성 변경으로 효과가 다시 돌면 ViewModel 이 이미 구웠는지 보고 거른다
- *
- * @param canRecord 굽는 데 쓸 재료가 있는지. 프로세스 재시작으로 홀더가 비었거나 캔버스를 재지 못했으면 거짓
- * @param loadState 녹화 레이어가 배경과 토핑을 다 불러왔는지. 첫 프레임을 빈 그림으로 찍지 않으려고 기다린다
- * @param onFrame 녹화할 프레임 인덱스를 녹화 레이어에 세운다
- */
-@Composable
-private fun PrebakeCanvasVideoEffect(
-    viewModel: CanvasImageSaveViewModel,
-    canRecord: Boolean,
-    recordLayer: GraphicsLayer,
-    loadState: () -> CanvasLoadState,
-    onFrame: (Int) -> Unit,
-) {
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        if (viewModel.needsRecording().not()) return@LaunchedEffect
-
-        if (canRecord.not()) {
-            viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
-            return@LaunchedEffect
-        }
-
-        viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
-
-        val settledLoadState = withTimeoutOrNull(VideoRecordOptions.SOURCE_LOAD_TIMEOUT_MILLIS) {
-            snapshotFlow(loadState).first { it != CanvasLoadState.Loading }
-        }
-
-        if (settledLoadState != CanvasLoadState.Loaded) {
-            viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
-            return@LaunchedEffect
-        }
-
-        // 시간 초과면 녹화가 취소되며 부분 파일을 지우고 null 이 된다 — 실패로 접는다
-        val result = withTimeoutOrNull(VideoRecordOptions.RECORD_TIMEOUT_MILLIS) {
-            recordCanvasVideo(
-                context = context,
-                frameCount = VideoTimelineOptions.FRAME_COUNT,
-                captureLayer = recordLayer,
-            ) { frameIndex ->
-                onFrame(frameIndex)
-                // 상태를 세운 뒤 그려질 때까지 기다린다. **두 번**인 이유: awaiter 는
-                // Choreographer 의 ANIMATION 콜백에서 깨는데 draw 는 그 뒤 TRAVERSAL 에서
-                // 돈다 — 한 번이면 매 프레임이 한 칸씩 밀린다
-                withFrameNanos { }
-                withFrameNanos { }
-            }
-        } ?: Result.failure(TimeoutException("캔버스 영상 녹화 시간 초과"))
-
-        result.fold(
-            onSuccess = { viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(it)) },
-            onFailure = { throwable ->
-                screenLogger.e(throwable) { "CanvasImageSaveRoute - 캔버스 영상 녹화 실패" }
-                viewModel.processIntent(CanvasImageSaveIntent.RecordingFailed)
-            },
-        )
     }
 }
 

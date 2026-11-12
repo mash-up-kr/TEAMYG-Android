@@ -154,7 +154,7 @@ class CanvasImageSaveViewModelTest {
         val viewModel = videoViewModel()
         viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
         viewModel.processIntent(CanvasImageSaveIntent.RecordingSucceeded(file))
-        assertFalse(viewModel.needsRecording())
+        assertFalse(viewModel.state.value.needsRecording)
 
         // 구성 변경으로 녹화 효과가 다시 돌아도 다 구운 상태를 되돌리지 않는다
         viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
@@ -165,11 +165,11 @@ class CanvasImageSaveViewModelTest {
     @Test
     fun needsRecording_whileRecording_isTrue() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = videoViewModel()
-        assertTrue(viewModel.needsRecording())
+        assertTrue(viewModel.state.value.needsRecording)
 
         // 녹화 중에 효과가 다시 돌면 이전 녹화가 취소돼 부분 파일이 지워졌다 — 다시 구워야 한다
         viewModel.processIntent(CanvasImageSaveIntent.StartRecording)
-        assertTrue(viewModel.needsRecording())
+        assertTrue(viewModel.state.value.needsRecording)
     }
 
     @Test

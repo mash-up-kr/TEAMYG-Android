@@ -16,11 +16,20 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 
 internal data class CanvasImageSaveUiState(
-    /** 녹화 레이어를 컴포지션에 붙여야 하는 동안 */
-    val isRecording: Boolean = false,
+    /** mp4 미리 굽기의 진행 단계. 녹화 효과가 다시 돌 때(구성 변경) 이미 구웠는지도 이것으로 가른다 */
+    val recordPhase: RecordPhase = RecordPhase.IDLE,
     /** 저장·공유를 눌러 잠긴 상태 — 버튼과 닫기를 막는다 */
     val isBusy: Boolean = false,
-) : UiState
+) : UiState {
+    /** 녹화 레이어를 컴포지션에 붙여야 하는 동안 */
+    val isRecording: Boolean get() = recordPhase == RecordPhase.RECORDING
+
+    /**
+     * 녹화 효과가 mp4 를 구워야 하는지. 녹화 중에 효과가 다시 돌면 이전 녹화는 취소돼 부분 파일이
+     * 지워졌으므로 처음부터 다시 굽는다
+     */
+    val needsRecording: Boolean get() = recordPhase != RecordPhase.FINISHED
+}
 
 internal sealed interface CanvasImageSaveIntent : UiIntent {
     data object StartRecording : CanvasImageSaveIntent
@@ -74,7 +83,6 @@ constructor(
         ): CanvasImageSaveViewModel
     }
 
-    private var phase = RecordPhase.IDLE
     private var pendingAction: PreviewAction? = null
     private var recordedFile: File? = null
 
@@ -85,9 +93,8 @@ constructor(
         when (intent) {
             CanvasImageSaveIntent.StartRecording -> {
                 // 다 구운 뒤 녹화 효과가 다시 돌아도(구성 변경) 같은 파일을 덮어 굽지 않는다
-                if (phase == RecordPhase.FINISHED) return
-                phase = RecordPhase.RECORDING
-                updateState { copy(isRecording = true) }
+                if (state.value.recordPhase == RecordPhase.FINISHED) return
+                updateState { copy(recordPhase = RecordPhase.RECORDING) }
             }
 
             is CanvasImageSaveIntent.RecordingSucceeded -> {
@@ -116,8 +123,7 @@ constructor(
     }
 
     private fun finishRecording() {
-        phase = RecordPhase.FINISHED
-        updateState { copy(isRecording = false) }
+        updateState { copy(recordPhase = RecordPhase.FINISHED) }
         dispatchIfReady()
     }
 
@@ -130,7 +136,7 @@ constructor(
         val action = pendingAction ?: return
         val effect = when (saveType) {
             CanvasSaveType.IMAGE -> imageEffect(action)
-            CanvasSaveType.VIDEO -> if (phase == RecordPhase.FINISHED) videoEffect(action) else return
+            CanvasSaveType.VIDEO -> if (state.value.recordPhase == RecordPhase.FINISHED) videoEffect(action) else return
         }
         dispatched = true
         postSideEffect(effect)
@@ -161,14 +167,10 @@ constructor(
     }
 
     /**
-     * 녹화 효과가 mp4 를 구워야 하는지. 구성 변경으로 효과가 다시 돌 때 이미 끝났으면 거른다.
-     * 녹화 중에 다시 돌면 이전 녹화는 취소돼 부분 파일이 지워졌으므로 처음부터 다시 굽는다
-     */
-    fun needsRecording(): Boolean = phase != RecordPhase.FINISHED
-
-    /**
      * 나갈 때 지울 파일 — 저장·공유로 넘기지 않은 미리 구운 mp4만. 없으면 null.
-     * mp4 가 있는 채로 내보낸 효과는 늘 그 파일을 넘기므로, 내보냈는지만 보면 된다
+     * mp4 가 있는 채로 내보낸 효과는 늘 그 파일을 넘기므로, 내보냈는지만 보면 된다.
+     *
+     * State 가 아니라 질의인 이유: 화면에 그릴 값이 아니고, `onDispose` 가 그 순간 동기로 읽어야 한다
      */
     fun fileToDeleteOnExit(): File? = recordedFile?.takeIf { dispatched.not() }
 }
