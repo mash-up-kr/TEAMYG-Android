@@ -272,7 +272,8 @@ class CanvasToppingArrangeScreenTest {
                         onDismissBorderPanel = { dismissCount++ },
                         onSelectBorderColor = {},
                         onChangeBorderWidth = {},
-                        onToppingTransform = { _, _, _, _ -> },
+                        onToppingTransform = { _, _, _, _, _, _ -> },
+                        onToppingTransformGestureEnd = {},
                         onClickDeleteTopping = {},
                         modifier = Modifier
                             .requiredWidth(SCREEN_WIDTH)

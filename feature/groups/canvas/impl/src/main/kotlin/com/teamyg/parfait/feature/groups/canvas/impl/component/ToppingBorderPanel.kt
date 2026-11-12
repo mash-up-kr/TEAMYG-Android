@@ -26,12 +26,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygslider.YGSlider
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
@@ -215,8 +215,11 @@ private fun Modifier.sideAndBottomStroke(
     drawLine(color, Offset(0f, size.height - inset), Offset(size.width, size.height - inset), strokeWidth)
 }
 
-private class ToppingBorderPanelPreviewParameterProvider : PreviewParameterProvider<Boolean> {
-    override val values: Sequence<Boolean> = sequenceOf(false, true)
+private class ToppingBorderPanelPreviewParameterProvider : NamedPreviewParameterProvider<Boolean>() {
+    override val entries = listOf(
+        "borderPanelClosed" to false,
+        "borderPanelOpen" to true,
+    )
 }
 
 @YGPreview

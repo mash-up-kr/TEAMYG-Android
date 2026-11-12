@@ -43,4 +43,15 @@ class ContextExtensionTest {
         // Then NEW_TASK 플래그가 설정된다
         assertTrue(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
     }
+
+    @Test
+    fun buildAppNotificationSettingsIntent_anyContext_targetsAppNotificationSettings() {
+        // When 앱 알림 설정 인텐트 생성
+        val intent = context.buildAppNotificationSettingsIntent()
+
+        // Then 앱 알림 설정 화면을 자기 패키지명과 함께 가리킨다
+        assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, intent.action)
+        assertEquals(context.packageName, intent.getStringExtra(Settings.EXTRA_APP_PACKAGE))
+        assertTrue(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
+    }
 }

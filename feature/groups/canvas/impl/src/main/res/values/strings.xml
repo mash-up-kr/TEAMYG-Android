@@ -30,11 +30,10 @@
 
     <!-- 그룹 생성·참여 직후 캔버스 첫 진입에서 1회만 뜨는 환영 배너 -->
     <string name="canvas_welcome_joined_title">%1$s 그룹에 참여했어요</string>
-    <string name="canvas_welcome_joined_sub">+ 버튼을 눌러 캔버스를 꾸며 보세요</string>
+    <string name="canvas_welcome_add_topping_sub">추가 버튼을 눌러 캔버스를 꾸며 보세요</string>
     <string name="canvas_welcome_created_title">%1$s 그룹을 만들었어요</string>
     <string name="canvas_welcome_created_sub">초대코드는 %1$s이에요</string>
-    <string name="canvas_welcome_invite_copy">복사하기</string>
-    <string name="canvas_welcome_invite_copied">복사완료</string>
+    <string name="canvas_welcome_invite_share">공유하기</string>
     <string name="canvas_bg_edit_title">배경 변경</string>
     <string name="canvas_bg_edit_save">저장하기</string>
     <string name="canvas_bg_edit_topping_delete">삭제</string>
@@ -58,12 +57,21 @@
     <string name="canvas_topping_place_image_not_ready">사진을 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
     <!-- 갤러리에 저장하기 전, 무엇이 저장될지 보여 주는 미리보기 화면 -->
-    <string name="canvas_image_save_title">이미지 미리보기</string>
+    <string name="canvas_image_save_title">사진 미리보기</string>
+    <string name="canvas_video_save_title">영상 미리보기</string>
     <string name="canvas_image_save_preview_content_description">저장할 캔버스 미리보기</string>
-    <string name="canvas_image_save_question_suffix">의 캔버스를 갤러리에 저장할까요?</string>
-    <string name="canvas_image_save_description">이 이미지 그대로 갤러리에 저장돼요\n파르페는 인스타그램 스토리 규격에 최적화되어 있어요</string>
+    <string name="canvas_image_save_question_suffix">의 캔버스를 저장할까요?</string>
+    <string name="canvas_image_save_description">이 이미지 그대로 갤러리에 저장돼요\n인스타그램 스토리에 바로 공유할 수 있어요</string>
+    <string name="canvas_video_save_description">이 영상 그대로 갤러리에 저장돼요\n인스타그램 스토리에 바로 공유할 수 있어요</string>
     <string name="canvas_image_save_confirm">사진으로 저장</string>
-    <string name="canvas_image_save_video">영상으로 저장</string>
+    <string name="canvas_video_save_confirm">영상으로 저장</string>
+    <string name="canvas_save_share_instagram">인스타그램 스토리 공유</string>
+    <string name="canvas_share_failed">스토리 공유에 실패했어요, 나중에 다시 시도해 주세요</string>
+
+    <!-- 캔버스 메인 저장 메뉴 (다운로드 아이콘) -->
+    <string name="canvas_main_save_as_image">사진으로 저장</string>
+    <string name="canvas_main_save_as_video">영상으로 저장</string>
+
 
     <string name="canvas_spotlight_dismiss">사진 강조 닫기</string>
     <string name="canvas_spotlight_time_just_now">방금 전</string>

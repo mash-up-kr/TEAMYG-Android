@@ -19,7 +19,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
@@ -40,6 +39,7 @@ import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuItem
+import com.teamyg.parfait.core.designsystem.component.ygmenuitem.YGMenuItem
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGNametagChip
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGNametagChipStyle
@@ -49,6 +49,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarCanvas
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
@@ -69,7 +70,8 @@ internal fun CanvasMainScreen(
     onClickGallery: () -> Unit,
     onClickTextInput: () -> Unit,
     onClickEditCanvasBG: () -> Unit,
-    onClickSaveToGallery: () -> Unit,
+    onClickSaveAsImage: () -> Unit,
+    onClickSaveAsVideo: () -> Unit,
     onClickGoToToday: () -> Unit,
     onDismissCalendar: () -> Unit,
     onSelectYear: (Int) -> Unit,
@@ -89,6 +91,8 @@ internal fun CanvasMainScreen(
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     val openMenu = { isMenuExpanded = true }
+
+    var isSaveMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -168,7 +172,7 @@ internal fun CanvasMainScreen(
             },
             background = canvasState.canvasBackground.toYGCanvasBackground(),
             isSaveVisible = canvasState.isCanvasSaveVisible,
-            onClickSave = onClickSaveToGallery,
+            onClickSave = { isSaveMenuExpanded = true },
             saveContentDescription = stringResource(R.string.canvas_main_save_to_gallery),
             captureGraphicsLayer = graphicsLayer,
             overlayContent = {
@@ -177,12 +181,27 @@ internal fun CanvasMainScreen(
                     YGAlertHost(policy = alertPolicy, modifier = Modifier.fillMaxWidth())
                 }
             },
+            isSaveMenuVisible = isSaveMenuExpanded,
+            saveMenuContent = {
+                CanvasSaveTypeMenu(
+                    isVideoEnabled = canvasState.isVideoSaveEnabled,
+                    onClickSaveAsImage = {
+                        isSaveMenuExpanded = false
+                        onClickSaveAsImage()
+                    },
+                    onClickSaveAsVideo = {
+                        isSaveMenuExpanded = false
+                        onClickSaveAsVideo()
+                    },
+                )
+            },
             isEmpty = canvasState.isCanvasEmpty,
             emptyMessage = stringResource(R.string.canvas_main_empty_message),
-            // 메뉴와 캘린더 모두 캔버스를 가린 채 뜬다 — 어느 쪽이든 바깥을 누르면 닫힌다
-            isDimmed = isMenuExpanded || canvasState.isCalendarVisible,
+            // 메뉴·캘린더·저장 메뉴 모두 캔버스를 가린 채 뜬다 — 어느 쪽이든 바깥을 누르면 닫힌다
+            isDimmed = isMenuExpanded || canvasState.isCalendarVisible || isSaveMenuExpanded,
             onDimClick = {
                 isMenuExpanded = false
+                isSaveMenuExpanded = false
                 onDismissCalendar()
             },
             isMenuExpanded = isMenuExpanded,
@@ -256,6 +275,34 @@ internal fun CanvasMainScreen(
 }
 
 /**
+ * 저장 아이콘(↓)이 여는 사진/영상 선택 메뉴. 캔버스 상단 오버레이 자리에 뜬다. 영상은 쌓인
+ * 토핑이 있어야 성립해, [isVideoEnabled] 가 거짓이면 흐리게 두고 누르지 못하게 한다.
+ */
+@Composable
+private fun CanvasSaveTypeMenu(
+    isVideoEnabled: Boolean,
+    onClickSaveAsImage: () -> Unit,
+    onClickSaveAsVideo: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // 테두리를 1dp 겹쳐 한 묶음으로 보이게 쌓는다
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy((-1).dp),
+    ) {
+        YGMenuItem(
+            text = stringResource(R.string.canvas_main_save_as_image),
+            onClick = onClickSaveAsImage,
+        )
+        YGMenuItem(
+            text = stringResource(R.string.canvas_main_save_as_video),
+            onClick = onClickSaveAsVideo,
+            isEnabled = isVideoEnabled,
+        )
+    }
+}
+
+/**
  * 배경이 미설정이거나 앱이 모르는 type 이면 null 이 온다. 색을 못 읽었을 때도 미설정으로
  * 떨어뜨린다 — 캔버스를 못 그리는 것보다 [YGCanvas] 의 기본 배경을 깔아 주는 편이 낫다.
  */
@@ -266,7 +313,7 @@ internal fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground? = whe
 }
 
 private class CanvasMainScreenPreviewParameterProvider :
-    PreviewParameterProvider<CanvasMainUiState> {
+    NamedPreviewParameterProvider<CanvasMainUiState>() {
     private val today = LocalDate(2026, 5, 20)
 
     private val memberChips = listOf(
@@ -279,22 +326,21 @@ private class CanvasMainScreenPreviewParameterProvider :
         GroupMemberChip(GroupMemberId(7L), "박서연", YGColorChipType.NametagChip2),
     )
 
-    override val values: Sequence<CanvasMainUiState>
-        get() = sequenceOf(
-            CanvasMainUiState(
-                groupName = "그룹이름은최대열글자",
-                memberChips = memberChips,
-                today = today,
-                selectedDate = today,
-            ),
-            // 지난 캔버스 — 아래 버튼이 저장·오늘로 가기로 바뀐다
-            CanvasMainUiState(
-                groupName = "그룹이름은최대열글자",
-                memberChips = memberChips,
-                today = today,
-                selectedDate = LocalDate(2026, 5, 3),
-            ),
-        )
+    override val entries = listOf(
+        "todayCanvas" to CanvasMainUiState(
+            groupName = "그룹이름은최대열글자",
+            memberChips = memberChips,
+            today = today,
+            selectedDate = today,
+        ),
+        // 지난 캔버스 — 아래 버튼이 저장·오늘로 가기로 바뀐다
+        "pastCanvas" to CanvasMainUiState(
+            groupName = "그룹이름은최대열글자",
+            memberChips = memberChips,
+            today = today,
+            selectedDate = LocalDate(2026, 5, 3),
+        ),
+    )
 }
 
 @YGPreview
@@ -311,7 +357,8 @@ private fun PreviewCanvasMainScreen(
         onClickGallery = {},
         onClickTextInput = {},
         onClickEditCanvasBG = {},
-        onClickSaveToGallery = {},
+        onClickSaveAsImage = {},
+        onClickSaveAsVideo = {},
         onClickGoToToday = {},
         onDismissCalendar = {},
         onSelectYear = {},
@@ -349,7 +396,8 @@ private fun PreviewCanvasMainScreenWithGallerySaveToast() = PreviewBox {
         onClickGallery = {},
         onClickTextInput = {},
         onClickEditCanvasBG = {},
-        onClickSaveToGallery = {},
+        onClickSaveAsImage = {},
+        onClickSaveAsVideo = {},
         onClickGoToToday = {},
         onDismissCalendar = {},
         onSelectYear = {},
@@ -391,7 +439,8 @@ private fun PreviewCanvasMainScreenWithClosedCanvasAlert() = PreviewBox {
         onClickGallery = {},
         onClickTextInput = {},
         onClickEditCanvasBG = {},
-        onClickSaveToGallery = {},
+        onClickSaveAsImage = {},
+        onClickSaveAsVideo = {},
         onClickGoToToday = {},
         onDismissCalendar = {},
         onSelectYear = {},

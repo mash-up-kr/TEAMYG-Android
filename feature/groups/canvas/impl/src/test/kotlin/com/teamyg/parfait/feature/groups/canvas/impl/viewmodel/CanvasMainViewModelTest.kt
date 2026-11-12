@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
@@ -139,10 +141,12 @@ class CanvasMainViewModelTest {
     private fun viewModel(
         welcomeGroupName: String? = null,
         welcomeInviteCode: String? = null,
+        welcomeMemberLimit: Int? = null,
     ) = CanvasMainViewModel(
         groupIdValue = GROUP_ID,
         welcomeGroupName = welcomeGroupName,
         welcomeInviteCode = welcomeInviteCode,
+        welcomeMemberLimit = welcomeMemberLimit,
         getParfaitHistoriesUseCase = getParfaitHistories,
         getParfaitYearsUseCase = getParfaitYears,
         getTodayParfaitFlowUseCase = getTodayParfaitFlow,
@@ -812,6 +816,15 @@ class CanvasMainViewModelTest {
                 awaitItem(),
             )
         }
+        // 그리고 format=image 로 저장 완료 이벤트를 남긴다
+        verify {
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    type = AnalyticsEventType.CANVAS_SAVE_GALLERY_SAVED,
+                    params = mapOf("format" to "image"),
+                ),
+            )
+        }
     }
 
     @Test
@@ -1203,6 +1216,15 @@ class CanvasMainViewModelTest {
                 awaitItem(),
             )
         }
+        // 그리고 format=video 로 저장 완료 이벤트를 남긴다(OQ-P-437 — 전엔 안 찍혔다)
+        verify {
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    type = AnalyticsEventType.CANVAS_SAVE_GALLERY_SAVED,
+                    params = mapOf("format" to "video"),
+                ),
+            )
+        }
     }
 
     @Test
@@ -1223,6 +1245,15 @@ class CanvasMainViewModelTest {
                 awaitItem(),
             )
             assertFalse(videoFile.exists())
+        }
+        // 실패했으니 저장 완료 이벤트는 안 남긴다
+        verify(exactly = 0) {
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    type = AnalyticsEventType.CANVAS_SAVE_GALLERY_SAVED,
+                    params = mapOf("format" to "video"),
+                ),
+            )
         }
     }
 
@@ -1269,6 +1300,53 @@ class CanvasMainViewModelTest {
         // Given, When 그룹명과 초대코드가 함께 실려 온 진입(그룹 생성 직후)
         viewModel(welcomeGroupName = GROUP_NAME, welcomeInviteCode = INVITE_CODE).effect.test {
             // Then 생성 환영 배너(초대코드 포함)를 1회 띄운다
+            assertEquals(
+                CanvasMainEffect.ShowWelcome(
+                    CanvasWelcome.Created(groupName = GROUP_NAME, inviteCode = INVITE_CODE),
+                ),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun init_withWelcomeInviteCodeAndSoloMemberLimit_showsCreatedSoloWelcome() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given, When 정원 1명으로 그룹을 만든 직후의 진입
+            viewModel(
+                welcomeGroupName = GROUP_NAME,
+                welcomeInviteCode = INVITE_CODE,
+                welcomeMemberLimit = 1,
+            ).effect.test {
+                // Then 초대코드·공유 버튼 없는 생성 환영 배너를 1회 띄운다
+                assertEquals(
+                    CanvasMainEffect.ShowWelcome(CanvasWelcome.CreatedSolo(groupName = GROUP_NAME)),
+                    awaitItem(),
+                )
+            }
+        }
+
+    @Test
+    fun init_withSoloMemberLimitButNoInviteCode_showsJoinedWelcome() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 초대코드 없이 정원만 실려 온 진입 — 정원은 생성 갈래에서만 뜻이 있다
+        viewModel(welcomeGroupName = GROUP_NAME, welcomeMemberLimit = 1).effect.test {
+            // Then 정원을 무시하고 참여 환영 배너를 띄운다
+            assertEquals(
+                CanvasMainEffect.ShowWelcome(CanvasWelcome.Joined(groupName = GROUP_NAME)),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun init_withWelcomeInviteCodeAndMemberLimitOverOne_showsCreatedWelcome() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 정원 2명 이상으로 그룹을 만든 직후의 진입
+        viewModel(
+            welcomeGroupName = GROUP_NAME,
+            welcomeInviteCode = INVITE_CODE,
+            welcomeMemberLimit = 2,
+        ).effect.test {
+            // Then 초대코드·공유 버튼이 있는 생성 환영 배너를 띄운다
             assertEquals(
                 CanvasMainEffect.ShowWelcome(
                     CanvasWelcome.Created(groupName = GROUP_NAME, inviteCode = INVITE_CODE),

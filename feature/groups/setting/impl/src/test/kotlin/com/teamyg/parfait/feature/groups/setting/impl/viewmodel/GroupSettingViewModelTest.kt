@@ -3,6 +3,8 @@ package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
@@ -34,13 +36,13 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -52,7 +54,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GroupSettingViewModelTest {
@@ -329,63 +330,27 @@ class GroupSettingViewModelTest {
     }
 
     @Test
-    fun clickCopyInviteCode_marksCopiedAndEmitsCopyEffect() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickShareInviteCode_emitsShareEffect() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초기 상태의 화면
         val viewModel = viewModel()
         val inviteCode = viewModel.state.value.inviteCode.value
 
-        // When 복사 버튼
+        // When 공유 버튼
         viewModel.effect.test {
-            viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
+            viewModel.processIntent(GroupSettingIntent.ClickShareInviteCode)
 
-            // Then 클립보드 SideEffect가 코드와 함께 나가고 카드 문구가 복사됨으로 바뀐다
-            assertEquals(GroupSettingSideEffect.CopyInviteCode(inviteCode), awaitItem())
+            // Then 공유 SideEffect가 코드와 함께 나간다
+            assertEquals(GroupSettingSideEffect.ShareInviteCode(inviteCode), awaitItem())
         }
-        assertTrue(viewModel.state.value.isCodeCopied)
-    }
 
-    @Test
-    fun clickCopyInviteCode_afterTwoSeconds_resetsIsCodeCopied() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 초기 상태의 화면
-        val viewModel = viewModel()
-
-        // When 복사 버튼을 누르고 2초 직전까지 시간이 흐름
-        viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
-        advanceTimeBy(1_999.milliseconds)
-
-        // Then 아직 복사됨 상태가 유지된다
-        assertTrue(viewModel.state.value.isCodeCopied)
-
-        // When 나머지 시간이 흘러 2초를 채움
-        advanceTimeBy(1.milliseconds)
-        runCurrent()
-
-        // Then 복사됨 상태가 풀리고 원래 문구로 돌아간다
-        assertFalse(viewModel.state.value.isCodeCopied)
-    }
-
-    @Test
-    fun clickCopyInviteCode_rapidReclickBeforeTimeout_resetsTimerToLatestClick() =
-        runTest(mainDispatcherRule.dispatcher) {
-            // Given 복사 버튼을 누르고 1초가 지난 상태
-            val viewModel = viewModel()
-            viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
-            advanceTimeBy(1_000.milliseconds)
-
-            // When 1초 시점에 다시 눌러 타이머를 리셋한 뒤 1.5초가 더 지남
-            viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
-            advanceTimeBy(1_500.milliseconds)
-
-            // Then 첫 타이머가 취소되었으므로(첫 타이머 기준으로는 이미 지났을 시점) 여전히 복사됨 상태다
-            assertTrue(viewModel.state.value.isCodeCopied)
-
-            // When 두 번째 클릭 기준 2초를 마저 채움
-            advanceTimeBy(500.milliseconds)
-            runCurrent()
-
-            // Then 복사됨 상태가 풀린다
-            assertFalse(viewModel.state.value.isCodeCopied)
+        // And 공유 이벤트만 남고 복사 이벤트는 남지 않는다
+        verify(exactly = 1) {
+            analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_SHARE))
         }
+        verify(exactly = 0) {
+            analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_COPIED))
+        }
+    }
 
     @Test
     fun clickLeaveGroup_showsLeaveDialog() = runTest(mainDispatcherRule.dispatcher) {
@@ -690,9 +655,7 @@ class GroupSettingViewModelTest {
 
     @Test
     fun init_myAccountReadThrows_doesNotCrashAndShowsDetail() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 계정 정보 조회가 저장소 IO 실패로 예외를 던진다(회귀 방지 - 예전엔 이 구독이
-        // BaseViewModel.launch 가드 안에 있어 잡혔지만, viewModelScope.launch 직접 호출로
-        // 바뀌며 잡히지 않게 됐었다)
+        // Given 계정 정보 조회가 저장소 IO 실패로 예외를 던진다
         every { getMyAccountFlow() } returns flow { throw IllegalStateException("디스크 IO 실패") }
 
         // When 화면이 열린다 — 예외가 앱을 죽이지 않아야 한다

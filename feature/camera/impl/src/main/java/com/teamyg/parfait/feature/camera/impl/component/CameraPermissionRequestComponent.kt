@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
@@ -32,11 +33,10 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.R
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun CameraPermissionRequestComponent(
-    isInit: Boolean,
+    isInitialized: Boolean,
     onClickOpenAppSettings: () -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
@@ -49,7 +49,7 @@ internal fun CameraPermissionRequestComponent(
             .background(YGAtomicColors.Gray.White)
             .windowInsetsPadding(WindowInsets.systemBars),
     ) {
-        if (isInit) {
+        if (isInitialized) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -111,7 +111,7 @@ internal fun CameraPermissionRequestComponent(
 @Composable
 private fun PreviewCameraPermissionRequestComponent() = PreviewBox {
     CameraPermissionRequestComponent(
-        isInit = true,
+        isInitialized = true,
         onClickOpenAppSettings = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
@@ -18,18 +19,22 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarTitle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.AngleGuideLines
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CenterGuideLines
 import com.teamyg.parfait.feature.groups.canvas.impl.component.EditableLayerEntry
 import com.teamyg.parfait.feature.groups.canvas.impl.component.EditableTextTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.component.EditableToppingImage
@@ -49,8 +54,11 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CENTER_GUIDE_THRESHOLD_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.animateToppingSnapSettleDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.animateToppingSnapSettleRotation
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelFocusCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingArrangeUiState
 
@@ -64,6 +72,7 @@ private const val INPUT_TAG = "topping_arrange_input"
  * 위치와 목록 순서는 그대로다.
  *
  * @param onToppingTransform `panX`/`panY` 는 px 가 아니라 Canvas-Area 대비 비율이다.
+ * @param onToppingTransformGestureEnd 이동 제스처가 끝났다(손을 뗐다). 중앙 가이드를 끈다.
  * @param toastPolicy 이 화면이 헤더 아래 캔버스 윗변에 직접 띄운다. 로딩 덮개보다 아래 층이다.
  */
 @Composable
@@ -78,7 +87,15 @@ internal fun CanvasToppingArrangeScreen(
     onDismissBorderPanel: () -> Unit,
     onSelectBorderColor: (Int?) -> Unit,
     onChangeBorderWidth: (Float) -> Unit,
-    onToppingTransform: (panX: Float, panY: Float, zoom: Float, rotationDelta: Float) -> Unit,
+    onToppingTransform: (
+        panX: Float,
+        panY: Float,
+        zoom: Float,
+        rotationDelta: Float,
+        thresholdRatioX: Float,
+        thresholdRatioY: Float,
+    ) -> Unit,
+    onToppingTransformGestureEnd: () -> Unit,
     onClickDeleteTopping: () -> Unit,
     modifier: Modifier = Modifier,
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
@@ -118,6 +135,11 @@ internal fun CanvasToppingArrangeScreen(
             val density = LocalDensity.current
             val canvasWidthPx = with(density) { canvasWidth.toPx() }
             val canvasHeightPx = with(density) { canvasHeight.toPx() }
+            // ViewModel 은 캔버스의 실제 dp/px 크기를 모르므로, 중앙 가이드 임계값(dp)을
+            // 이 프레임의 캔버스 크기로 나눠 비율로 미리 바꿔 보낸다
+            val centerGuideThresholdPx = with(density) { CENTER_GUIDE_THRESHOLD_DP.dp.toPx() }
+            val thresholdRatioX = centerGuideThresholdPx / canvasWidthPx
+            val thresholdRatioY = centerGuideThresholdPx / canvasHeightPx
 
             val drawEntries = rememberEditableToppingDrawEntries(
                 toppings = uiState.toppings,
@@ -145,28 +167,49 @@ internal fun CanvasToppingArrangeScreen(
             val focusedLayer = myLayers.firstOrNull { it.key == uiState.focusedKey }
             var isToppingGestureActive by remember { mutableStateOf(false) }
 
+            var wasToppingGestureActive by remember { mutableStateOf(false) }
+            LaunchedEffect(isToppingGestureActive) {
+                if (wasToppingGestureActive && !isToppingGestureActive) onToppingTransformGestureEnd()
+                wasToppingGestureActive = isToppingGestureActive
+            }
+
             // 그리는 자리. 이미지와 선택 박스가 같은 자리에 오려면 같은 값을 봐야 한다.
             // 패널은 사진에만 열리므로 텍스트는 늘 제자리다
             val focusFraction by animatePanelFocusFraction(uiState.isBorderPanelOpen)
-            val focusedDrawnCenter = when (focusedLayer) {
-                is EditableLayerEntry.Image ->
-                    lerp(
-                        focusedLayer.entry.draw.center,
-                        panelFocusCenter(DpSize(canvasWidth, canvasHeight)),
-                        focusFraction,
-                    )
 
+            val focusedRawCenter = when (focusedLayer) {
+                is EditableLayerEntry.Image -> focusedLayer.entry.draw.center
                 is EditableLayerEntry.Text -> focusedLayer.entry.center
-
+                null -> null
+            }
+            val focusedRawRotationDegrees = when (focusedLayer) {
+                is EditableLayerEntry.Image -> focusedLayer.entry.topping.rotationDegrees
+                is EditableLayerEntry.Text -> focusedLayer.entry.text.rotationDegrees
                 null -> null
             }
 
-            // zIndex 가 아니라 컴포지션 순서로 올린다 — 겹침 순서가 노드 순서와 갈리지 않는다.
-            // 패널 상태가 아니라 애니메이션을 본다 — 제자리로 돌아오는 동안에도 위에 있어야 한다
-            val myLayersInDrawOrder = if (focusFraction > 0f && focusedLayer is EditableLayerEntry.Image) {
-                myLayers.filterNot { it === focusedLayer } + focusedLayer
-            } else {
-                myLayers
+            val animatedFocusedCenterX by
+                animateToppingSnapSettleDp(focusedRawCenter?.x ?: 0.dp, uiState.isCenterGuideXVisible)
+            val animatedFocusedCenterY by
+                animateToppingSnapSettleDp(focusedRawCenter?.y ?: 0.dp, uiState.isCenterGuideYVisible)
+            val animatedFocusedRotationDegrees by
+                animateToppingSnapSettleRotation(focusedRawRotationDegrees ?: 0f, uiState.isAngleGuideVisible)
+            val animatedFocusedRawCenter = focusedRawCenter
+                ?.let { DpOffset(animatedFocusedCenterX, animatedFocusedCenterY) }
+
+            val focusedDrawnCenter = when (focusedLayer) {
+                is EditableLayerEntry.Image ->
+                    animatedFocusedRawCenter?.let { rawCenter ->
+                        lerp(
+                            rawCenter,
+                            panelFocusCenter(DpSize(canvasWidth, canvasHeight)),
+                            focusFraction,
+                        )
+                    }
+
+                is EditableLayerEntry.Text -> animatedFocusedRawCenter
+
+                null -> null
             }
 
             @Composable
@@ -181,6 +224,7 @@ internal fun CanvasToppingArrangeScreen(
                         alpha = 1f,
                         onClick = onClick,
                         centerOverride = focusedDrawnCenter.takeIf { layer === focusedLayer },
+                        rotationOverride = animatedFocusedRotationDegrees.takeIf { layer === focusedLayer },
                     )
 
                     is EditableLayerEntry.Text -> EditableTextTopping(
@@ -188,6 +232,8 @@ internal fun CanvasToppingArrangeScreen(
                         canvasWidth = canvasWidth,
                         onBoxSizeChange = { size -> textBoxSizes[layer.entry.text.parfaitTextId] = size },
                         onClick = onClick,
+                        centerOverride = focusedDrawnCenter.takeIf { layer === focusedLayer },
+                        rotationOverride = animatedFocusedRotationDegrees.takeIf { layer === focusedLayer },
                     )
                 }
             }
@@ -208,7 +254,28 @@ internal fun CanvasToppingArrangeScreen(
 
                 ToppingArrangeCanvasDim()
 
-                myLayersInDrawOrder.forEach { layer ->
+                // 가이드라인이 "포커스 안 된 본인 토핑"보다 위, "이동 중 토핑"보다 아래에
+                // 오도록 포커스된 레이어를 따로 떼 맨 마지막에 그린다(스펙 레이어 순서)
+                myLayers.filterNot { it === focusedLayer }.forEach { layer ->
+                    key(layer.key) { Layer(layer = layer, onClick = { onHit(layer) }) }
+                }
+
+                CenterGuideLines(
+                    showVertical = uiState.isCenterGuideXVisible,
+                    showHorizontal = uiState.isCenterGuideYVisible,
+                    modifier = Modifier.matchParentSize(),
+                )
+
+                // 위치 가이드 위, 이동 중 토핑 아래(기획 레이어 순서)
+                AngleGuideLines(
+                    isVisible = uiState.isAngleGuideVisible,
+                    isHorizontal = uiState.isAngleGuideHorizontal,
+                    centerOffset = (focusedDrawnCenter ?: DpOffset.Zero)
+                        .let { if (uiState.isAngleGuideHorizontal) it.y else it.x },
+                    modifier = Modifier.matchParentSize(),
+                )
+
+                focusedLayer?.let { layer ->
                     key(layer.key) { Layer(layer = layer, onClick = { onHit(layer) }) }
                 }
 
@@ -233,6 +300,8 @@ internal fun CanvasToppingArrangeScreen(
                                     pan.y / canvasHeightPx,
                                     zoom,
                                     rotationDelta,
+                                    thresholdRatioX,
+                                    thresholdRatioY,
                                 )
                             },
                             onGestureActiveChange = { isToppingGestureActive = it },
@@ -247,7 +316,8 @@ internal fun CanvasToppingArrangeScreen(
                     target = focusedTarget,
                     center = focusedDrawnCenter,
                     onClickDelete = onClickDeleteTopping,
-                    showActionButtons = !isToppingGestureActive,
+                    actionButtonsEnabled = !isToppingGestureActive,
+                    rotationOverride = animatedFocusedRotationDegrees,
                 )
             }
         }
@@ -258,8 +328,11 @@ internal fun CanvasToppingArrangeScreen(
 private const val PREVIEW_TOPPING_MODEL =
     "android.resource://com.teamyg.parfait.feature.groups.canvas.impl/drawable/nukkiii"
 
-private class CanvasToppingArrangePreviewParameterProvider : PreviewParameterProvider<Boolean> {
-    override val values: Sequence<Boolean> = sequenceOf(false, true)
+private class CanvasToppingArrangePreviewParameterProvider : NamedPreviewParameterProvider<Boolean>() {
+    override val entries = listOf(
+        "borderPanelClosed" to false,
+        "borderPanelOpen" to true,
+    )
 }
 
 @YGPreview
@@ -313,7 +386,8 @@ private fun PreviewCanvasToppingArrangeScreen(
         onDismissBorderPanel = {},
         onSelectBorderColor = {},
         onChangeBorderWidth = {},
-        onToppingTransform = { _, _, _, _ -> },
+        onToppingTransform = { _, _, _, _, _, _ -> },
+        onToppingTransformGestureEnd = {},
         onClickDeleteTopping = {},
         modifier = Modifier.fillMaxSize(),
     )

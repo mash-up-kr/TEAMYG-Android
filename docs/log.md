@@ -435,3 +435,42 @@ conventions 불일치 행 앱 칸 · DTO·VO KDoc 서버 상태 서술을 포인
 
 ## [2026-10-28] change | 캔버스 영상 토핑 즉시 등장
 팝인(0.6배 확대·easeOutBack·페이드) 제거, `toppingPopProgresses` → `visibleToppingCount`(iOS `toppingVisibilities` 와 같은 경계) · OQ-P-429 옛 ③(팝인 중 띠 잘림) 소멸
+
+## [2026-11-04] change | PR 스크린샷 비교 CI 문서
+ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘트 확인으로
+
+## [2026-11-05] change | 스크린샷 비교 렌더 캐시·파라미터 이름
+`gradle-cache-seed.yml`에 record·compare 스텝 추가(ui-diff 렌더를 빌드 캐시로) · `@PreviewParameter`는 `NamedPreviewParameterProvider`로 이름을 붙이고 `UiSnapshotPreviewTester`가 누락·형식·중복을 막음 · 기준 파일명이 순서 번호에서 이름으로 바뀜 · ADR-0037·스펙 반영
+
+## [2026-11-05] change | 시스템 글자 크기 무시
+`YGCustomTheme` `LocalDensity` `fontScale = 1` · `YGModalPopup`·`CustomCalendar` 창 content 재고정 · 약관 웹뷰 `textZoom` · 실기기(SM-A356N) `font_scale` 1.0·2.0 비교로 홈·캔버스·달력 팝업·모달 확인 · ADR-0036
+
+## [2026-11-06] change | 푸시 type 서버 값 그대로 분석
+`PushNotificationType` enum 제거, `PushDeepLink.type: String?` · `APP_PUSH_OPENED` 가 `data.type` 을 가공 없이 기록 · OQ-P-445 해소
+
+## [2026-11-08] change | 앱 설정 약관 영역을 YGTextButton 풋터로 교체
+목록(`YGListItem` forEach)을 고정 두 줄(`YGTextButton` 쌍)로 교체 · 이용약관·개인정보처리방침은 타입별 조회 실패 시 줄은 유지하고 클릭만 no-op(표시·클릭 가능 여부 분리) · 오픈소스 라이선스·아동 안전 정책도 같은 줄 형태로 흡수 · status.md S-001 반영(해소된 OQ-P-231 설명 제거 — 그 트레이드오프 자체가 없어짐)
+
+## [2026-11-08] change | 알림 설정 화면(S-105)
+`NavKeyNotificationSetting` 진입 · 캔버스·활동 알림 토글(낙관적 반영 + 스위치별 직렬 저장·롤백) · 기기 알림 꺼짐 안내 · Mock `NotificationSettingRepositoryImpl`(서버 API 전)
+
+## [2026-11-08] change | 알림 설정 분석 이벤트
+`app_setting_notification_tapped`(S-001) · `app_notification_setting_changed`(저장 성공 시, `enabled` 차원) · `app_notification_device_settings_tapped`(S-105) 배선 · 설계는 user-events-design
+
+## [2026-11-08] audit | b508c3b32 — #659 그룹 목록 v2 · #661 영상 토핑 즉시 등장 · #663 CSAE · #668 초대 코드 공유 · #670 카메라 줌 · #684·#686 스크린샷 비교 CI · #685 글자 크기 고정 · #687 카메라 정리 · #689 푸시 type 원문 · #682 S-105·약관 풋터 · #695
+227파일 +9151/-1597 · 유닛 1655 · 계측 106 · OQ 신설 OQ-P-461 · 해소 없음(OQ-P-231 재개)
+
+## [2026-11-08] change | 공지사항 목록·상세
+`feature/app/notice` 신규 · `YGChipNew`·`ListItemMenuSub`(notice impl)·`YGListItem` `isNew` · Mock `NoticeRepositoryImpl`(서버 API 전)
+
+## [2026-11-09] change | 공지사항 분석 이벤트
+`screen_view` S-106(`NavKeyNoticeList`)·S-106-detail(`NavKeyNoticeDetail`) · `app_setting_notice_tapped`(S-001) · `app_notice_item_tapped`(`notice_id`·`is_new`, NEW 칩 여부는 탭 시점 목록 상태 기준) · 맞춤 측정기준 `notice_id`·`is_new` 등록 필요
+
+## [2026-11-10] change | 앱 설정 약관 풋터(#680) 되돌림 · 알림 설정·공지사항 진입 임시 숨김
+`YGTextButton` 풋터와 `YGTextButton` 컴포넌트를 되돌려 약관 영역이 다시 `state.policies` 를 순회하는 `YGListItem` 목록이 됨 · status.md S-001 복원(OQ-P-231 트레이드오프 설명 되살림) · 설정 화면의 알림 설정·공지사항 행을 주석 처리해 알림 설정·공지 목록·공지 상세에 들어갈 수 없음(진입 경로가 그 두 행뿐). 이 PR 을 되돌리면 풋터와 두 행이 함께 돌아온다
+
+## [2026-11-11] change | C-001 환영 배너 문구·공유 버튼 (Figma `5456:20958`)
+참여 갈래 보조 문구 `+ 버튼을` → `추가 버튼을` · 생성 갈래 버튼 `복사하기`(클립보드 + `복사완료` 재발행) → `공유하기`(아이콘 없음, `ACTION_SEND` 공유 시트) · `YGAlert`·`YGAlertItem`의 `buttonIconResource`가 `Int?`가 됨 · OQ-P-339 ③④(복사 재시도·실패 표현) 소멸 · 공유 시트 호출이 `core:util:android` `extension/Context.kt#shareText` 하나로 모임(C-001 환영 배너·S-101 그룹 설정 공용, 초대 문구 `group_invite_message`는 `core:ui`에 남고 호출부가 채운다)
+
+## [2026-11-11] change | C-001 정원 1명 그룹 생성 배너
+`NavKeyCanvasMain.welcomeMemberLimit` 추가(`GroupCreateRoute`만 채움) · 정원 1이면 `CanvasWelcome.CreatedSolo` — 초대코드·`공유하기` 없이 `canvas_welcome_add_topping_sub`(구 `canvas_welcome_joined_sub`) 보조 문구 · Figma `5456:20958` 메모 반영

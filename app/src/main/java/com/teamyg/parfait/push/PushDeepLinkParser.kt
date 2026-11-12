@@ -2,7 +2,6 @@ package com.teamyg.parfait.push
 
 import com.teamyg.parfait.domain.model.push.PushDeepLink
 import com.teamyg.parfait.domain.model.push.PushNotificationRouteType
-import com.teamyg.parfait.domain.model.push.PushNotificationType
 
 /**
  * FCM `data` payload 의 필드(FCM 페이로드 스펙 v1 §3)를 [PushDeepLink] 로 바꾼다. 파싱
@@ -17,12 +16,8 @@ object PushDeepLinkParser {
         groupId: String?,
         type: String?,
     ): PushDeepLink? = when (PushNotificationRouteType.fromKeyOrNull(route)) {
-        PushNotificationRouteType.CANVAS -> PushDeepLink.AddTopping.parse(groupId)
-
-        PushNotificationRouteType.GROUP -> PushDeepLink.GroupList(
-            type = PushNotificationType.fromKeyOrNull(type),
-        )
-
+        PushNotificationRouteType.CANVAS -> PushDeepLink.AddTopping.parse(groupId = groupId, type = type)
+        PushNotificationRouteType.GROUP -> PushDeepLink.GroupList(type = type)
         null -> null
     }
 }

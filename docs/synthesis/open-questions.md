@@ -509,16 +509,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-052
 - **출처**: `feature/camera/impl`의 `component/CameraZoomIndicatorComponent.kt`·`component/controls/ZoomLevelRow.kt`(참조 0건) + `CameraControlComponent`(`zoomRatio`·`zoomRange`·`onClickZoomLevel`을 받기만 하고 렌더에 안 씀) + `CustomCameraViewModel`(`OnZoomRangeReady`·`OnClickZoomLevel` 인텐트의 발신처 없음, `zoomRatio`는 `LaunchedEffect`로 카메라에 계속 반영). PR #182가 컨트롤 행을 셔터·플래시·전환 3종으로 재구성하면서 줌 UI만 빠졌다.
 - **항목**: ① 줌을 다시 노출할지(Figma 대응 확인 필요 — [2026-07-30 카메라 항목](#2026-07-30-카메라-컨트롤-임시-구현체-잔존--셔터-구현이-두-곳에-공존) ③에서 넘어온 질문), ② 안 쓸 거면 컴포넌트 2개와 상태·인텐트를 걷어낼지.
-- **상태**: 부분 해소 (②의 절반 — 파라미터·인텐트는 걷혔고 컴포넌트 2개는 잔존, 2026-09-20 PR #514 / ① 잔존)
-  > 📌 **파라미터와 인텐트만 걷혔다(2026-09-20, PR #514)** — `CameraControlComponent`가 받기만 하던
-  > `zoomRatio`·`zoomRange`·`onClickZoomLevel`이 시그니처에서 빠지고, `CustomCameraIntent.OnClickZoomLevel`과
-  > 그 핸들러도 사라졌다. **남은 것 셋**: `CameraZoomIndicatorComponent`·`ZoomLevelRow` 두 컴포넌트가
-  > 여전히 참조 0건이고, `CustomCameraState.zoomRatio`·`zoomRange`와 `OnZoomRangeReady` 인텐트는
-  > **살아 있다** — 死코드가 아니다. `CustomCameraRoute`가 `state.zoomRatio`를
-  > `CameraPreviewComponent`에 넘겨 `cameraControl.setZoomRatio`로 계속 반영하기 때문이고, 값이
-  > 초기값 1f에서 움직일 경로만 없다. 즉 ②는 **사용자가 줌을 바꿀 수단이 없다**는 쪽만 남았고,
-  > 그 결정은 ①에 달렸다.
-- **해소 메모**: 정하면 [c101 스펙](../superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md) 범위 표를 갱신한다.
+- **상태**: 해소됨 (2026-11-03) — Figma `BL_06`이 줌 버튼을 정의해 ①은 노출로 정해졌고, `YGCameraZoomButton`·`CameraZoomLevel`로 구현하면서 미사용 두 컴포넌트는 삭제했다([camera-zoom-button 스펙](../superpowers/specs/archive/2026-11-03-camera-zoom-button-design.md)).
 
 ### [2026-08-01] 카메라·갤러리 권한 요청 경로가 UI에 없음
 - **ID**: OQ-P-053
@@ -1510,7 +1501,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 정본과 다른 점 하나가 남는데 결함이 아니라 구현 사정이다 — 목록을 `replaceAll`로 먼저 깔고 그
   > 위에 캔버스를 쌓는다(캔버스만 남기면 뒤로가기가 앱 종료가 된다). ③(새 그룹을 목록에 어떻게
   > 보이게 할지)은 #297의 `Enter` 인텐트로 이미 닫혀 있었고, 이제는 목록 엔트리 자체가 새것이다.
-  > **남은 것은 배너 쪽**이다 — 문구·복사 동작·1회 보장에 정책 근거가 없다(OQ-P-339).
+  > **남은 것은 배너 쪽**이다 — 갈래·1회 보장에 정책 근거가 없다(OQ-P-339).
 - **해소 메모**: 반영처 — [navigation-flow](../architecture/navigation-flow.md) "그룹 생성·참여 플로우" ·
   [a005 스펙](../superpowers/specs/archive/2026-07-29-a005-group-create.md)·[s102 스펙](../superpowers/specs/archive/2026-07-22-s102-group-nickname.md)의
   "다음 화면"·"복귀 목적지" 서술. 위키 쪽은 정본과 맞았으므로 등록할 것이 없다.
@@ -1757,8 +1748,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-149
 - **출처**: `feature/camera/impl/route/CustomCameraRoute.kt` — `runCatching { withContext(Dispatchers.IO) { saveViewfinderCapture(...) } }`. `withContext`가 suspend라 촬영 저장 중 화면을 벗어나면 취소가 `Result.failure`가 되고 "저장 실패" 경로로 분기한다. [data-layer](../architecture/data-layer.md) "suspend 를 감싸는 runCatching" 참고.
 - **항목**: `core:util:jvm`의 `runSuspendCatching`으로 교체한다. 같은 부류였던 `TokenLocalDataSourceImpl.read`·`AddRecentImageUseCase`는 **PR #241로 develop에 고쳐져 들어갔고**(2026-08-15) 이 건만 남았다 — 카메라 화면이 그 브랜치 범위 밖이라 미뤘다.
-- **상태**: 미해결 (교체 대상 확정, 라운드만 대기)
-- **해소 메모**: 고칠 때 취소가 실패로 오지 않는 회귀 테스트를 함께 붙인다(`TokenLocalDataSourceImplTest`의 취소 케이스가 본보기다).
+- **상태**: 해소됨 (2026-11-05) — `CustomCameraRoute`가 촬영 저장을 `runSuspendCatching`으로 감싸고 `CancellationException`은 다시 던진다.
 
 ### [2026-08-15] 누끼 캔버스 Safe Margin +20%가 미이행 — 원본 전체 크기가 끝까지 실려 간다
 
@@ -1774,7 +1764,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-151
 - **출처**: `feature/segmentation/impl` `viewmodel/ToppingEditViewModel.kt`(`MIN_BRUSH_WIDTH_DP`·`MAX_BRUSH_WIDTH_DP`·`MIN_BORDER_WIDTH_DP`·`MAX_BORDER_WIDTH_DP`)(PR #221 develop 머지) — 위키 [[누끼-편집]]은 브러시·테두리 모두 **2~50px**인데 코드는 **2~50dp**다. 값은 같고 단위만 다르다. 코드 주석이 근거를 남겼다 — "사진 해상도나 기기 밀도가 달라도 체감 굵기가 같도록". 원본 좌표 환산은 `originPxPerDp`(미리보기 배율의 역수)로 저장 시점에 한다.
-- **항목**: ① 정책의 "px"가 화면 px인지 원본 이미지 px인지 확정 — 원본 px이면 같은 굵기가 사진 해상도에 따라 전혀 다르게 보인다, ② 코드 판단(dp)을 정책으로 승격할지, ③ 상한 3배 확대(`MAX_ZOOM`)처럼 정책 문서에 없는 값이 함께 확정된 것도 같이 적을지.
+- **항목**: ① 정책의 "px"가 화면 px인지 원본 이미지 px인지 확정 — 원본 px이면 같은 굵기가 사진 해상도에 따라 전혀 다르게 보인다, ② 코드 판단(dp)을 정책으로 승격할지, ③ 상한 12배 확대(`MAX_ZOOM`, iOS와 같은 값)처럼 정책 문서에 없는 값이 함께 확정된 것도 같이 적을지.
 - **상태**: 미해결 (코드가 근거를 적고 먼저 확정한 사례 — 정책 추인 대기)
 - **해소 메모**: 정하면 위키 [[누끼-편집]] "브러시 / 테두리 크기" 절과 [c103 스펙](../superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md) 정책 대조 표를 맞춘다.
 
@@ -3551,10 +3541,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-225
 - **출처**: `GroupSettingUiState.remainingCount`(기본값 `0`) × `GroupSettingScreen`의 `<= 0` 분기 ×
-  `YGInviteCard`(`status != Active`면 복사 버튼 비활성) — 서버 delta 반영 라운드에서 정원이 실데이터가
+  `YGInviteCard`(`status != Active`면 액션 버튼 비활성 — S-101은 공유) — 서버 delta 반영 라운드에서 정원이 실데이터가
   되면서 mock 상수 `1`이 사라졌고 기본값이 `0`이 됐다. `loadGroupDetail`의 `finally`가 실패 경로에서도
   `isLoadingDetail`을 내리므로, **캐시가 빈 채로 상세 조회가 실패하면** 로딩 덮개가 걷히고 화면이
-  "정원이 찼어요" + 죽은 초대코드 복사 버튼을 띄운다. 전에는 mock `1` 덕에 우연히 Active로 보였다.
+  "정원이 찼어요" + 죽은 초대코드 공유 버튼을 띄운다. 전에는 mock `1` 덕에 우연히 Active로 보였다.
   화면 나머지도 비어 있어 노출은 작지만, **비어 있는 것과 "가득 찼다"고 말하는 것은 다르다.**
 - **항목**: ① `remainingCount`를 널 허용으로 바꿔 "모른다"를 표현할지, 아니면 상세가 도착하기 전까지
   초대 카드를 아예 안 그릴지. ② 상세 조회 실패가 지금 토스트 하나로 끝나는데(화면은 그대로 서 있다)
@@ -3721,14 +3711,19 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **항목**: ① 실패·누락 시 토스트를 띄울지(호스트는 이미 있다). ② 아니면 조회가 실패한 동안 두 줄을
   비활성으로 보일지 — 문구가 고정이라 "누를 수 있어 보이는데 안 눌린다"가 현재 상태다.
   ③ 같은 API 실패 표현을 두 화면에서 맞출지(OQ-P-167 실패 표현 갈래와 같은 축).
-- **상태**: 해소됨 (**PR #550 develop 머지, 2026-09-28** — 약관 두 줄이 더 이상 `strings.xml` 고정
+- **상태**: 미해결 (2026-11-08 #682로 재발 — 아래 재개 메모). 이전 판정: 해소됨 (**PR #550 develop 머지, 2026-09-28** — 약관 두 줄이 더 이상 `strings.xml` 고정
   문구가 아니라 `state.policies`를 순회해 그린다. 표시 여부와 클릭 가능 여부가 항상 같아져서(그
   항목이 목록에 있으면 보이고 눌리며, 없으면 아예 안 보인다) "보이는데 눌러도 반응 없음"이던 원래
   증상은 없다. 대신 조회가 실패하면 그 화면 방문 동안 두 줄이 통째로 안 보이고 재시도 UI도 없다
   (화면을 나갔다 다시 들어가야 `AppSettingViewModel`이 새로 만들어지며 재조회된다) — 이건 새 증상이
   아니라 명시적으로 채택한 트레이드오프라 별도 OQ로 남기지 않는다)
 - **해소 메모**: [api/policy.md](../api/policy.md) "앱 동작 메모"와 [status.md](../status.md) S-001
-  항목에 반영 완료.
+  항목에 반영 완료. (2026-11-08 재개로 무효 — 아래 메모)
+  > ⚠️ **2026-11-08 재개** — #682가 약관 영역을 `state.policies` 순회에서 `YGTextButton` 고정 풋터
+  > (`AppSettingScreen`의 `PolicyLinkRow`)로 바꾸면서 원래 증상이 되살아났다. 줄은 항상 보이고, 그 타입의
+  > 정책을 `firstOrNull`로 못 찾으면 `termsId?.let`에서 끊겨 누를 때 아무 일도 없다. 이번에는
+  > `handleClickPolicy`까지 가지 않아 로그도 안 남는다. 당시 항목 대조: ① 토스트 없음 ② 비활성 표시 없음
+  > ③ 온보딩과 실패 표현이 갈리는 것 그대로 — 셋 다 다시 열렸다.
 
 ### [2026-08-18] 웹뷰 목적지가 임의 `title`·`url`을 받는 범용 화면이 됐는데 출처 검증이 없다
 
@@ -4551,8 +4546,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-08-22] 세로 고정 뒤 카메라 촬영이 기기를 든 방향을 따라가지 않는다
 
 - **ID**: OQ-P-265
-- **출처**: `feature/camera/impl/.../route/CustomCameraRoute.kt`(`ImageProxy#imageInfo.rotationDegrees`를
-  `saveViewfinderCapture`에 넘긴다)와 PR #339의 `screenOrientation="portrait"` — 이 앱은
+- **출처**: `feature/camera/impl/.../util/ViewfinderCapture.kt`(`captureViewfinder`가 `ImageProxy#imageInfo.rotationDegrees`를
+  `saveCroppedCapture`에 넘긴다)와 PR #339의 `screenOrientation="portrait"` — 이 앱은
   `ImageCapture#setTargetRotation`을 부르지 않고 `OrientationEventListener`도 두지 않는다.
   즉 보정 기준이 **표시 방향**인데 그것이 이제 항상 세로로 고정된다. 고정 전에는 액티비티가 돌면서
   기준도 함께 돌았으므로, **가로로 들고 찍었을 때의 결과가 이번 라운드에서 바뀌었다.**
@@ -5987,22 +5982,18 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-09-01] 환영 배너가 정책 소스 없이 코드로 확정됐고, 1회 노출이 ViewModel 수명에 걸려 있다
 
 - **ID**: OQ-P-339
-- **출처**: `CanvasMainViewModel` init(`welcomeGroupName`·`welcomeInviteCode` assisted 인자)·
+- **출처**: `CanvasMainViewModel` init(`welcomeGroupName`·`welcomeInviteCode`·`welcomeMemberLimit` assisted 인자,
+  갈래 `CanvasWelcome.Joined`·`Created`·`CreatedSolo`)·
   `CanvasMainRoute#CanvasMainEffect.ShowWelcome`·`feature/groups/canvas/impl` `strings.xml`
-  (`canvas_welcome_joined_title`·`_sub`·`canvas_welcome_created_title`·`_sub`·`canvas_welcome_invite_copy`·
-  `_copied`, PR #411 develop 머지) — 그룹을 만들거나 참여한 직후 캔버스에 들어오면 배너가 1회 뜨고,
-  생성 갈래에는 초대코드 복사 버튼이 붙는다. ① **위키에 이 배너의 정책 문서가 없다** — 문구 6종과
-  갈래 둘(참여/생성)을 코드가 확정했다. ② **1회 보장의 근거가 상태가 아니라 ViewModel 수명**이다 —
+  (`canvas_welcome_joined_title`·`canvas_welcome_add_topping_sub`·`canvas_welcome_created_title`·`_sub`·`canvas_welcome_invite_share`) — 그룹을 만들거나 참여한 직후
+  캔버스에 들어오면 배너가 1회 뜨고, 생성 갈래에는 `공유하기` 버튼(아이콘 없음, 시스템 공유 시트)이 붙는다
+  (정원 1명이면 초대코드·버튼을 뺀다).
+  ① **위키에 이 배너의 정책 문서가 없다** — 문구는 Figma `5456:20958`(생성 갈래)을 따르지만 갈래
+  둘(참여/생성)과 노출 조건은 코드가 정했다. ② **1회 보장의 근거가 상태가 아니라 ViewModel 수명**이다 —
   "백스택 재진입에서는 새로 만들어지지 않는다"는 주석이 방어의 전부라, 프로세스 사망 후 복원처럼
-  키가 다시 살아나는 경로에서는 배너가 다시 뜬다(인자는 `NavKey`에 그대로 남는다). ③ **복사 완료
-  표시가 같은 배너의 재발행**이다 — `복사완료`로 문구만 바꿔 `show`를 다시 부르고(얼럿에는 자동 소멸이 없어
-  스와이프할 때까지 남는다), 두 번째 배너에는 `onButtonClick`이 없어 **한 번 복사하면 그 배너에서
-  다시 복사할 수 없다**. ④ 복사 성공·실패를 사용자에게 알리는 것도 그 문구 교체뿐이다
-  (`clipboard.setClipEntry`가 실패해도 문구는 바뀐다).
+  키가 다시 살아나는 경로에서는 배너가 다시 뜬다(인자는 `NavKey`에 그대로 남는다).
 - **항목**: ① 배너 문구·노출 갈래를 기획·디자인 소스로 확정받을지. ② 1회를 무엇으로 보장할지 —
   소비 후 키에서 지우기(백스택 엔트리 교체), 화면 상태 플래그, 아니면 지금처럼 수명에 맡기기.
-  ③ 복사 후 다시 복사할 수 있어야 하는지 — 그렇다면 배너를 재발행하는 대신 버튼 상태를 갈아야 한다.
-  ④ 복사 실패 표현을 둘지(같은 화면에 토스트 큐가 이미 있다).
 - **상태**: 미해결 (**동작은 한다** — 정책 근거와 재현 조건의 문제다)
 - **해소 메모**: 정하면 [navigation-flow](../architecture/navigation-flow.md) "그룹 생성·참여 플로우"의
   진입 사유 인자 항목과 [ygalert 스펙](../superpowers/specs/archive/2026-07-23-ygalert.md) 노출 정책 절에 적는다.
@@ -6190,12 +6181,17 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > ⚠️ **③이 더 급해졌다.** 리마인드는 하루 두 번 **전 이용자**에게 나가고, 대상 조회
   > (`ReminderTargetQueryPort`)가 **토큰 보유 여부만 본다** — 끄겠다는 의사를 담을 자리가 서버 스키마에
   > 없다. 게다가 그 KDoc이 전제하는 "권한 거부 이용자는 토큰이 없다"가 앱 동작과 어긋난다 → OQ-P-384.
-  > 📌 **앱이 ①의 나머지 둘을 먼저 구현했다(2026-09-05, PR #446)** — `PushNotificationType`이
-  > `TOPPING`·**`REMIND_AM`·`REMIND_PM`** 셋이고 `route=group`이 그룹 목록으로 떨어진다. 즉 앱은
+  > 📌 **앱이 ①의 나머지 둘을 먼저 구현했다(2026-09-05, PR #446)** — `route=group`이 그룹 목록으로
+  > 떨어진다(`type`은 #689부터 앱이 값을 가르지 않는 서버 원문 문자열 `PushDeepLink.type`이다). 즉 앱은
   > **P-01/P-02/P-03 세 알림을 전제로 서 있는데 서버가 보내는 것은 하나뿐**이다. 근거로 코드가
   > 가리키는 것은 "FCM 페이로드 스펙 v1"인데 **그 문서가 어느 저장소에도 없다** → **OQ-P-361 신설**.
   > ⚠️ **④는 더 나빠졌다** — 서버가 안 손댄 것은 그대로이고, 앱은 **권한을 묻는 코드 없이** 수신부만
   > 붙였다(OQ-P-358). ③(수신 설정)도 그대로라 끄는 방법은 여전히 OS 설정뿐이다.
+  > 📌 **2026-11-08 — 앱이 ③의 UI를 먼저 만들었다(#682, S-105)**. `NotificationSettingViewModel`에
+  > 캔버스·활동 토글이 있지만 `NotificationSettingRepositoryImpl`이 메모리 stub이고, 서버 수신 설정 필드는
+  > 여전히 없다. 토글과 서버 `data.type`의 대응도 정해지지 않았다 — 문구상 캔버스는 10시/20시 알림
+  > (REMIND 계열로 보임), 활동은 "모아 받기"인데 서버에 묶음 발송이 없다. 푸시 표시 경로는 토글을 읽지
+  > 않아 꺼도 알림이 온다.
 - **해소 메모**: ①②③은 **정책 소관이라 위키 [[open-questions]]와 갈리는 자리**다 — 여기는 앱이
   무엇을 구현해야 하는지만 추적한다. 정해지면 스펙을 `specs/`에 세우고
   [api/notification.md](../api/notification.md) 미결 절을 지운다.
@@ -6401,9 +6397,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > "알림이 가리키던 날짜가 아니라 항상 그 그룹의 최신 캔버스"라고 못 박으므로 **오늘/지난 캔버스의
   > 갈림은 "항상 오늘"로 닫혔다.** ⚠️ 그런데 그 선택의 근거도 코드 한 줄이고, 계약 표는 여전히
   > `date`로 도달할 것을 요구한다 → **OQ-P-359 신설**.
-  > 📌 **③의 대가가 코드로 옮겨왔다** — `type`·`route`·`groupId` 세 키 이름과 `canvas`·`group`,
-  > `TOPPING`·`REMIND_AM`·`REMIND_PM` 값이 이제 **앱 프로덕션 코드에도 문자열 상수로** 있다
-  > (`PushDeepLinkIntent.kt`·`PushDeepLinkParser`). 서버가 값을 바꾸면 조용히 `null`이 되어
+  > 📌 **③의 대가가 코드로 옮겨왔다** — `type`·`route`·`groupId` 세 키 이름과 `route` 값 `canvas`·`group`
+  > (`PushNotificationRouteType`)이 **앱 프로덕션 코드에도 문자열 상수로** 있다
+  > (`PushDeepLinkIntent.kt`·`PushDeepLinkParser`). `type` 값 상수는 #689로 앱에서 사라졌다(`PushDeepLink.type`이
+  > 서버 원문 문자열). 서버가 `route` 값을 바꾸면 조용히 `null`이 되어
   > **딥링크가 평범한 실행과 구분되지 않는다**(OQ-P-354와 같은 축이고 복제면이 넷째로 늘었다).
   > ①(문구 승인 여부)은 그대로다 — 앱은 서버 문구를 그대로 표시하므로 승인 없이 사용자에게 닿는다.
 - **해소 메모**: ①은 정책 소관이라 위키 [[open-questions]]와 갈리는 자리다. ②③이 정해지면
@@ -6619,8 +6616,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > `NotificationRepository.registerCurrentDeviceToken()`을 붙였고, 권한 요청도 `NotificationPermissionGate`가
   > `GroupCreateRoute`·`GroupNickNameRoute` 두 자리에서 한다. **같은 문구가 OQ-P-351·OQ-P-352·
   > OQ-P-359의 상태에도 남아 있었고 2026-09-06 감사가 셋 다 걷었다.**
-  > 📌 **같은 PR이 딥링크 파싱 축을 enum으로 옮겼다** — `route`는 `PushNotificationRouteType`,
-  > `type`은 `PushNotificationType`이 각자 `key`로 물고, `groupId`를 양수로 읽는 규칙은
+  > 📌 **같은 PR이 딥링크 파싱 축을 enum으로 옮겼다** — `route`는 `PushNotificationRouteType`이
+  > `key`로 물고(`type`은 #689부터 enum 없이 서버 원문을 `PushDeepLink.type`이 그대로 든다 — 분석 전용), `groupId`를 양수로 읽는 규칙은
   > `PushDeepLink.AddTopping.parse`가 든다. **문자열 복제면이 줄어든 것이지 사라진 것은 아니다**
   > (서버 값이 바뀌면 여전히 조용히 `null`이 된다 — OQ-P-351 ③).
 - **해소 메모**: 검증은 콜드/웜 × 로그인/비로그인 네 시나리오의 실기기 수동 확인이다. 자동 테스트는
@@ -6632,10 +6629,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-361
 - **출처**: `push/PushDeepLinkParser` KDoc("FCM 페이로드 스펙 v1 §3") ·
   `ParfaitFirebaseMessagingService` KDoc("FCM 페이로드 스펙 v1은 세 알림(P-01/P-02/P-03) 모두
-  `notification` 블록을 항상 함께 보낸다") · `domain.model.push.PushNotificationType`
-  (`TOPPING`·`REMIND_AM`·`REMIND_PM`) × 서버 `NotificationMessageFactory`(문구 조립 함수 1개) ×
+  `notification` 블록을 항상 함께 보낸다") · `PushDeepLink.type`(서버 문자열 원문 — `REMIND_AM`·`REMIND_PM`은
+  서버 `ReminderType`이 정본) × 서버 `NotificationMessageFactory`(문구 조립 함수 1개) ×
   [api/notification.md](../api/notification.md) — **그 스펙 문서가 parfait에도 위키에도 서버 저장소에도
-  없다.** 앱은 `route=group`과 리마인드 2종을 파싱·라우팅까지 갖췄는데 **서버에는 그것을 보내는 코드가
+  없다.** 앱은 `route=group` 라우팅을 갖췄는데 **서버에는 그것을 보내는 코드가
   없다**(OQ-P-343 ①의 "나머지 둘").
   > 📌 **2026-09-08 — 서버가 따라붙었다**(`4789557`). `ReminderType(MORNING→"REMIND_AM",
   > EVENING→"REMIND_PM")`과 `dailyReminder`의 `data = mapOf("type" to type.dataType, "route" to "group")`이
@@ -7025,7 +7022,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **항목**: ① 그러므로 **권한을 거부한 기기의 토큰도 대상에 든다** — 서버 주석의 전제가 앱 동작과
   어긋난다. ② 발송은 성공으로 집계되고 사용자에게는 아무것도 보이지 않으므로 **틀렸다는 신호가
   어디에도 안 남는다.** ③ 더 근본적으로 **"알림을 끄겠다"는 의사를 담는 자리가 서버·앱 어디에도 없다**
-  (OQ-P-343 의 남은 갈래와 같은 자리다). ④ 하루 두 번 전원 발송이라 규모가 곧바로 붙는다.
+  (OQ-P-343 의 남은 갈래와 같은 자리다. 2026-11-08 앱에 S-105 토글 UI가 생겼으나 stub이라 이 물음은 그대로다 → OQ-P-343 ③). ④ 하루 두 번 전원 발송이라 규모가 곧바로 붙는다.
 - **상태**: 미해결
 - **해소 메모**: 갈래는 둘이다 — 앱이 권한 없을 때 토큰을 지우거나(등록 축을 되돌리는 셈이라 PR #450
   의 근거와 충돌한다), 서버에 수신 설정 필드를 두고 대상 조회가 그것을 보게 한다. 후자가 수신 설정
@@ -7717,8 +7714,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-437
 - **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본) × `CanvasMainViewModel#handleSaveRecordedVideo`·`#handleSaveCapturedCanvas`
 - **항목**: 정본은 `canvas_save_gallery_saved`의 `format`을 `"image"`/`"video"` 둘로 정하지만, 이미지 저장 경로(`handleSaveCapturedCanvas`)만 성공 시 `format=image`로 찍고 영상 저장 경로(`handleSaveRecordedVideo`)에는 로깅이 없다. 영상 저장은 집계에 잡히지 않는다.
-- **상태**: 미해결
-- **해소 메모**: 영상 저장 성공 시 `format=video`로 찍고, 두 경로의 로깅을 `CanvasMainViewModel` 테스트로 고정한다.
+- **상태**: 해소됨 (2026-10-29) — `handleSaveRecordedVideo`가 성공 시 `format=video`로 찍는다. 두 경로(이미지·영상) 모두 `CanvasMainViewModelTest`에서 로깅 여부를 고정했다(영상 실패 시엔 안 찍는 것도 함께 고정).
 
 ### [2026-10-20] C-103 「직접 선택」 얼럿이 편집 화면에서 돌아오면 다시 뜬다
 
@@ -7776,14 +7772,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결
 - **해소 메모**: 앱 측 잠정 규칙 — 텍스트 POST는 자동 재시도하지 않고 연타를 막는다. 서버 멱등 키가 생기면 재검토한다.
 
-### [2026-10-25] 앱이 `BACKGROUND`·`TEXT` 푸시 type을 모른다
-
-- **ID**: OQ-P-445
-- **출처**: [notification.md](../api/notification.md) 「이 계약이 앱에 요구하는 것」 · 서버 `NotificationMessageFactory.backgroundChanged`·`textPlaced`
-- **항목**: 서버는 `data.type`을 5종(`TOPPING`·`BACKGROUND`·`TEXT`·`REMIND_AM`·`REMIND_PM`) 보낸다. 앱 `PushNotificationType`에는 `BACKGROUND`·`TEXT`가 없다. 라우팅은 `route=canvas`로 맞게 되지만 `PushDeepLink.AddTopping`이 `type`을 `TOPPING`으로 고정해 `APP_PUSH_OPENED` 분석에서 배경·텍스트 알림 탭이 토핑으로 집계된다.
-- **상태**: 미해결
-- **해소 메모**: enum에 두 값을 더하고 `AddTopping`이 받은 type을 들게 할지 정한다.
-
 ### [2026-10-25] `TEXT` 알림이 텍스트 원문 스냅숏을 보낸다
 
 - **ID**: OQ-P-446
@@ -7814,7 +7802,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [deeplink.md](../api/deeplink.md) `GET /.well-known/assetlinks.json` · 서버 설정 `deeplink.android.sha256-cert-fingerprints`(debug + Play 앱 서명 키)
 - **항목**: 서버는 설정 문자열을 그대로 내보내고 지문이 틀리거나 비어도 200을 준다. release 지문이 Play Console 앱 서명 키와 같은지, debug 지문이 어느 키스토어 것인지 코드로 확인할 수 없다. 틀리면 `autoVerify`가 조용히 실패해 초대 링크가 브라우저로 떨어진다. 개발자마다 debug 키스토어가 다르면 그 기기의 debug 빌드는 검증되지 않는다.
 - **상태**: 미해결
-- **해소 메모**: release 빌드 실기기에서 `adb shell pm get-app-links com.teamyg.parfait`가 `parfait-app.store: verified`인지 본다. 팀 debug 키스토어 공유 여부를 정한다.
+- **해소 메모**: release 빌드 실기기에서 `adb shell pm get-app-links com.teamyg.parfait`가 `parfait-app.store: verified`인지 본다. 팀 debug 키스토어 공유 여부를 정한다. 2026-11-08 서버 `69d56b0`이 지문을 2개에서 5개로 늘리고 debug·release 구분 주석을 지웠다. 새 지문 3개가 어느 키인지 서버 쪽에 확인한다.
 
 ### [2026-10-25] 텍스트 토핑 [캔버스에 쌓기]가 저장하지 않는 스텁이다
 
@@ -7894,4 +7882,27 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
 - **해소 메모**: 기획이 ①~④를 정하면 `toToppingImage`·`YGToppingImage.followsCardRotation`을 맞추고 위키에 텍스트 토핑 정책을 남긴다. ④가 텍스트를 빼기로 정해지면 서버 계약도 바뀌어야 한다.
 
-<!-- oq-next: 460 -->
+### [2026-11-08] 스크린샷 비교의 러너 간 렌더 동일성이 확인되지 않았다
+
+- **ID**: OQ-P-461
+- **출처**: `.github/workflows/gradle-cache-seed.yml` × `.github/workflows/ui-diff.yml` ×
+  `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/UiSnapshotConfig.kt` ×
+  [ADR-0037](../adr/0037-pr-screenshot-diff-in-job-base-render.md) — 렌더가 develop 캐시 시딩의 빌드 캐시를
+  쓰면 base와 head가 다른 러너에서 렌더된 결과일 수 있다.
+- **항목**: ① 같은 머신에서 같은 커밋을 두 번 렌더해 diff 0건인 것은 확인했지만(계획 Task 3), CI 러너 간·캐시
+  경유 렌더를 같은 커밋으로 비교한 기록은 없다. ② UI와 무관해 보이는 변경이 코멘트에 뜰 때
+  오탐인지 가를 기준이 없다(예: base `9d4178d` → head `8462e00` 비교에서, 그 PR이 건드리지 않은 `:feature:camera:impl`의
+  `PreviewCustomCameraScreen` 2건이 변경으로 떴다. 오탐인지 판정하지 않았다).
+- **상태**: 미해결
+- **해소 메모**: 같은 커밋을 base·head로 비교하는 실행을 한 번 남기고, 오탐이 확인되면 캐시 시딩에서
+  스크린샷 렌더 태스크를 빼거나 렌더를 같은 러너로 묶는다. 결과는 ADR-0037 「영향」 절의 위험·방어에 적는다.
+
+### [2026-11-12] 저장 미리보기의 인스타그램 스토리 공유가 기획 정책에 없다
+
+- **ID**: OQ-P-462
+- **출처**: `CanvasImageSaveScreen`(「인스타그램 스토리 공유」 버튼) · `shareCanvasToInstagramStory` · `strings.xml`의 `canvas_share_failed`·`canvas_image_save_description`·`canvas_video_save_description` × 위키 `concepts/mvp-scope-limits.md`·`concepts/canvas.md`·`concepts/toast.md`
+- **항목**: ① 위키는 저장 미리보기 CTA를 「갤러리에 저장」 하나로 두고 근거를 "외부 공유 기능 미존재"로 적는데, 앱은 인스타그램 스토리 공유 버튼을 둔다. ② 공유 실패 토스트 문구와 인스타 미설치 처리(미리보기를 닫고 캔버스 메인에 실패 토스트)는 위키에 정책이 없다. ③ 미리보기 설명 문구가 위키 서브카피(「파르페는 인스타그램 스토리 규격에 최적화되어 있어요」)와 다르다. ④ 저장 실패 토스트의 구두점이 위키 원문과 다르다(쉼표, 끝 마침표 없음).
+- **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
+- **해소 메모**: 기획이 공유를 MVP에 넣기로 하면 위키 정책과 문구를 갱신하고, 빼기로 하면 공유 버튼·`InstagramStoryShare`·`CanvasShareFileProvider`를 걷어낸다.
+
+<!-- oq-next: 463 -->

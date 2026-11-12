@@ -40,7 +40,7 @@ data class YGAlertItem(
     val sub: String,
     val buttonText: String? = null,
     val onButtonClick: (() -> Unit)? = null,
-    @DrawableRes val buttonIconResource: Int = R.drawable.ic_caret_right,
+    @DrawableRes val buttonIconResource: Int? = R.drawable.ic_caret_right,
     val visible: Boolean = true,
 )
 
@@ -53,7 +53,7 @@ class YGAlertPolicy {
         sub: String,
         buttonText: String? = null,
         onButtonClick: (() -> Unit)? = null,
-        @DrawableRes buttonIconResource: Int = R.drawable.ic_caret_right,
+        @DrawableRes buttonIconResource: Int? = R.drawable.ic_caret_right,
     ) {
         alert = YGAlertItem(
             id = UUID.randomUUID().toString(),

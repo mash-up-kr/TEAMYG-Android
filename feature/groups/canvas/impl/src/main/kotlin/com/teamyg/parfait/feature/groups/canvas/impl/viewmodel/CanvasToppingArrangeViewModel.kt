@@ -29,6 +29,7 @@ import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CenterGuideStep
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
@@ -39,6 +40,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
+import com.teamyg.parfait.feature.groups.canvas.impl.util.resolveCenterGuideAxisRatio
+import com.teamyg.parfait.feature.groups.canvas.impl.util.stepAngleGuide
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
@@ -61,6 +64,18 @@ data class CanvasToppingArrangeUiState(
     val toppings: List<EditableTopping> = emptyList(),
     val texts: List<EditableText> = emptyList(),
     val focusedKey: CanvasToppingKey? = null,
+    /** 포커스된 토핑을 캔버스 중앙 가이드로 끌 때, 손가락이 실제로 가리키는 비율 좌표. */
+    val rawFocusedPositionX: Float? = null,
+    val rawFocusedPositionY: Float? = null,
+    val isCenterGuideXVisible: Boolean = false,
+    val isCenterGuideYVisible: Boolean = false,
+    /** 각도 가이드 스냅 전, 손가락이 실제로 누적시킨 원값(도). [rawFocusedPositionX]/[Y] 와 같은 이유로 따로 둔다 */
+    val rawFocusedRotationDegrees: Float? = null,
+    /** 실제 회전이 있었을 때만 각도 가이드·스냅을 켠다. */
+    val hasFocusedRotated: Boolean = false,
+    val isAngleGuideVisible: Boolean = false,
+    /** true 면 0/180도(가로선), false 면 90/270도(세로선) */
+    val isAngleGuideHorizontal: Boolean = false,
     /** 테두리가 없는 토핑에 두를 굵기. 색을 고르는 순간 이 굵기로 테두리가 생긴다 */
     val pendingBorderWidthDp: Float = DEFAULT_TOPPING_BORDER_WIDTH_DP,
     val isBorderPanelOpen: Boolean = false,
@@ -129,13 +144,20 @@ sealed interface CanvasToppingArrangeIntent : UiIntent {
         val widthDp: Float,
     ) : CanvasToppingArrangeIntent
 
-    /** `panX`/`panY` 는 px 가 아니라 Canvas-Area 대비 비율이다. */
+    /**
+     * `panX`/`panY` 는 px 가 아니라 Canvas-Area 대비 비율이다.
+     */
     data class OnToppingTransform(
         val panX: Float,
         val panY: Float,
         val zoom: Float,
         val rotationDelta: Float,
+        val thresholdRatioX: Float,
+        val thresholdRatioY: Float,
     ) : CanvasToppingArrangeIntent
+
+    /** 이동 제스처(드래그·핀치)가 끝났다. 중앙 가이드를 끈다 */
+    data object OnToppingTransformGestureEnd : CanvasToppingArrangeIntent
 
     data object OnClickDeleteToppingButton : CanvasToppingArrangeIntent
 
@@ -158,6 +180,9 @@ sealed interface CanvasToppingArrangeEffect : UiSideEffect {
     data class ShowError(
         val error: CanvasToppingArrangeError,
     ) : CanvasToppingArrangeEffect
+
+    /** 토핑이 캔버스 중앙·각도 가이드에 막 스냅됐다. 햅틱을 한 번 울린다 */
+    data object TriggerSnapHaptic : CanvasToppingArrangeEffect
 }
 
 @HiltViewModel(assistedFactory = CanvasToppingArrangeViewModel.Factory::class)
@@ -337,6 +362,15 @@ constructor(
 
             is CanvasToppingArrangeIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
+            CanvasToppingArrangeIntent.OnToppingTransformGestureEnd -> updateState {
+                copy(
+                    isCenterGuideXVisible = false,
+                    isCenterGuideYVisible = false,
+                    isAngleGuideVisible = false,
+                    hasFocusedRotated = false,
+                )
+            }
+
             CanvasToppingArrangeIntent.OnClickDeleteToppingButton -> handleOnClickDeleteToppingButton()
 
             CanvasToppingArrangeIntent.OnClickClose -> requestQuit()
@@ -370,7 +404,18 @@ constructor(
             current.focusedKey == CanvasToppingKey.Image(topping.parfaitImageId) ->
                 updateState { copy(isBorderPanelOpen = true) }
 
-            else -> updateState { copy(focusedKey = CanvasToppingKey.Image(topping.parfaitImageId)) }
+            else -> updateState {
+                copy(
+                    focusedKey = CanvasToppingKey.Image(topping.parfaitImageId),
+                    rawFocusedPositionX = null,
+                    rawFocusedPositionY = null,
+                    isCenterGuideXVisible = false,
+                    isCenterGuideYVisible = false,
+                    rawFocusedRotationDegrees = null,
+                    hasFocusedRotated = false,
+                    isAngleGuideVisible = false,
+                )
+            }
         }
     }
 
@@ -381,9 +426,23 @@ constructor(
 
         when {
             current.isBorderPanelOpen -> updateState { copy(isBorderPanelOpen = false) }
+
             !text.isMine -> postSideEffect(effect = CanvasToppingArrangeEffect.ShowOthersToppingNotEditable)
+
             current.focusedKey == CanvasToppingKey.Text(text.parfaitTextId) -> Unit
-            else -> updateState { copy(focusedKey = CanvasToppingKey.Text(text.parfaitTextId)) }
+
+            else -> updateState {
+                copy(
+                    focusedKey = CanvasToppingKey.Text(text.parfaitTextId),
+                    rawFocusedPositionX = null,
+                    rawFocusedPositionY = null,
+                    isCenterGuideXVisible = false,
+                    isCenterGuideYVisible = false,
+                    rawFocusedRotationDegrees = null,
+                    hasFocusedRotated = false,
+                    isAngleGuideVisible = false,
+                )
+            }
         }
     }
 
@@ -514,39 +573,103 @@ constructor(
     }
 
     private fun handleOnToppingTransform(intent: CanvasToppingArrangeIntent.OnToppingTransform) {
-        updateState {
-            if (ignoresToppingTransform(isBorderPanelOpen)) return@updateState this
+        val current = state.value
+        if (ignoresToppingTransform(current.isBorderPanelOpen)) return
 
-            when (val focused = focusedKey) {
-                null -> this
+        when (val focused = current.focusedKey) {
+            null -> Unit
 
-                is CanvasToppingKey.Image -> applyToppingTransform(focused.id) { topping ->
-                    topping.copy(
-                        positionX = topping.positionX + intent.panX,
-                        positionY = topping.positionY + intent.panY,
-                        scale = (topping.scale * intent.zoom).coerceAtLeast(TOPPING_MIN_SCALE),
-                        rotationDegrees = topping.rotationDegrees + intent.rotationDelta,
-                    )
-                }
-
-                is CanvasToppingKey.Text -> copy(
-                    texts = texts.map { text ->
-                        if (text.parfaitTextId != focused.id) {
-                            text
-                        } else {
-                            text.copy(
-                                positionX = text.positionX + intent.panX,
-                                positionY = text.positionY + intent.panY,
-                                scale = (text.scale * intent.zoom).coerceAtLeast(TEXT_TOPPING_MIN_SCALE),
-                                rotationDegrees = text.rotationDegrees + intent.rotationDelta,
-                            )
-                        }
-                    },
-                    dirtyTextIds = dirtyTextIds + focused.id,
+            is CanvasToppingKey.Image -> {
+                val topping = current.toppings.firstOrNull { it.parfaitImageId == focused.id } ?: return
+                val step = current.stepCenterGuide(
+                    currentPositionX = topping.positionX,
+                    currentPositionY = topping.positionY,
+                    currentRotationDegrees = topping.rotationDegrees,
+                    intent = intent,
                 )
+
+                updateState {
+                    applyToppingTransform(focused.id) { t ->
+                        t.copy(
+                            positionX = step.guideX.effectiveValue,
+                            positionY = step.guideY.effectiveValue,
+                            scale = (t.scale * intent.zoom).coerceAtLeast(TOPPING_MIN_SCALE),
+                            rotationDegrees = step.angle.effectiveDegrees,
+                        )
+                    }.withCenterGuideStep(step)
+                }
+                if (step.justSnapped) postSideEffect(effect = CanvasToppingArrangeEffect.TriggerSnapHaptic)
+            }
+
+            is CanvasToppingKey.Text -> {
+                val text = current.texts.firstOrNull { it.parfaitTextId == focused.id } ?: return
+                val step = current.stepCenterGuide(text.positionX, text.positionY, text.rotationDegrees, intent)
+
+                updateState {
+                    copy(
+                        texts = texts.map { t ->
+                            if (t.parfaitTextId != focused.id) {
+                                t
+                            } else {
+                                t.copy(
+                                    positionX = step.guideX.effectiveValue,
+                                    positionY = step.guideY.effectiveValue,
+                                    scale = (t.scale * intent.zoom).coerceAtLeast(TEXT_TOPPING_MIN_SCALE),
+                                    rotationDegrees = step.angle.effectiveDegrees,
+                                )
+                            }
+                        },
+                        dirtyTextIds = dirtyTextIds + focused.id,
+                    ).withCenterGuideStep(step)
+                }
+                if (step.justSnapped) postSideEffect(effect = CanvasToppingArrangeEffect.TriggerSnapHaptic)
             }
         }
     }
+
+    /**
+     * 포커스된 토핑/텍스트의 이번 프레임 중앙 가이드 판정. `rawFocusedPositionX/Y` 가 아직
+     * 없으면(막 포커스가 바뀐 첫 프레임) 지금 보이는 위치에서 시작한다.
+     */
+    private fun CanvasToppingArrangeUiState.stepCenterGuide(
+        currentPositionX: Float,
+        currentPositionY: Float,
+        currentRotationDegrees: Float,
+        intent: CanvasToppingArrangeIntent.OnToppingTransform,
+    ): CenterGuideStep {
+        val oldRawX = rawFocusedPositionX ?: currentPositionX
+        val oldRawY = rawFocusedPositionY ?: currentPositionY
+        val oldRawRotation = rawFocusedRotationDegrees ?: currentRotationDegrees
+
+        val wasSnappedX = resolveCenterGuideAxisRatio(oldRawX, intent.thresholdRatioX).isSnapped
+        val wasSnappedY = resolveCenterGuideAxisRatio(oldRawY, intent.thresholdRatioY).isSnapped
+
+        val rawX = oldRawX + intent.panX
+        val rawY = oldRawY + intent.panY
+        val guideX = resolveCenterGuideAxisRatio(rawX, intent.thresholdRatioX)
+        val guideY = resolveCenterGuideAxisRatio(rawY, intent.thresholdRatioY)
+        val angle = stepAngleGuide(
+            oldRawDegrees = oldRawRotation,
+            oldHasRotated = hasFocusedRotated,
+            rotationDelta = intent.rotationDelta,
+        )
+        val justSnapped = (guideX.isSnapped && !wasSnappedX) ||
+            (guideY.isSnapped && !wasSnappedY) ||
+            angle.justSnapped
+        return CenterGuideStep(rawX, rawY, guideX, guideY, angle, justSnapped)
+    }
+
+    private fun CanvasToppingArrangeUiState.withCenterGuideStep(step: CenterGuideStep): CanvasToppingArrangeUiState =
+        copy(
+            rawFocusedPositionX = step.rawX,
+            rawFocusedPositionY = step.rawY,
+            isCenterGuideXVisible = step.guideX.isSnapped,
+            isCenterGuideYVisible = step.guideY.isSnapped,
+            rawFocusedRotationDegrees = step.angle.rawDegrees,
+            hasFocusedRotated = step.angle.hasRotated,
+            isAngleGuideVisible = step.angle.isVisible,
+            isAngleGuideHorizontal = step.angle.isHorizontal,
+        )
 
     /**
      * 캔버스 밖으로 나가는 부분은 화면에서 클립되어 안 보이므로 여기서 위치를 되돌리지 않는다.

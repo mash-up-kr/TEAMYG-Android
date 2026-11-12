@@ -19,6 +19,7 @@ import com.teamyg.parfait.core.designsystem.theme.shapes.YGShapesDefaults
 import com.teamyg.parfait.core.designsystem.theme.typography.YGTypography
 import com.teamyg.parfait.core.designsystem.theme.typography.YGTypographyDefaults
 import com.teamyg.parfait.core.designsystem.utils.createPreviewBitmap
+import com.teamyg.parfait.core.util.android.extension.ProvideFixedFontScale
 
 internal val LocalYGColorScheme: ProvidableCompositionLocal<YGColorScheme> = staticCompositionLocalOf {
     error("Not Init ColorScheme")
@@ -78,6 +79,7 @@ fun YGCustomTheme(
         LocalYGTypography provides YGTypographyDefaults.YGDefaultTypography,
         LocalYGShapes provides YGShapesDefaults.YGDefaultShapes,
         LocalYGLayout provides YGLayoutDefaults.YGDefaultLayout,
-        content = content,
-    )
+    ) {
+        ProvideFixedFontScale(content = content)
+    }
 }

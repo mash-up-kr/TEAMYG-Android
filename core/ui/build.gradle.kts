@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.parfait.test.unit)
     alias(libs.plugins.parfait.test.android)
     alias(libs.plugins.parfait.test.compose)
+    alias(libs.plugins.parfait.ui.snapshot)
 }
 
 android {

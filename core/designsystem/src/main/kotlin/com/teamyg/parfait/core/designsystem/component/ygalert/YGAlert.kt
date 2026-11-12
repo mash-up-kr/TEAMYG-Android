@@ -27,7 +27,7 @@ fun YGAlert(
     modifier: Modifier = Modifier,
     buttonText: String? = null,
     onButtonClick: (() -> Unit)? = null,
-    @DrawableRes buttonIconResource: Int = R.drawable.ic_caret_right,
+    @DrawableRes buttonIconResource: Int? = R.drawable.ic_caret_right,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,

@@ -16,5 +16,19 @@ fun Context.buildAppSettingsIntent(): Intent {
     }
 }
 
+fun Context.buildAppNotificationSettingsIntent(): Intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+}
+
 fun Context.isGrantedPermission(permission: String): Boolean =
     ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+
+/** 텍스트를 시스템 공유 시트로 넘긴다. */
+fun Context.shareText(text: String) {
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    startActivity(Intent.createChooser(sendIntent, null))
+}

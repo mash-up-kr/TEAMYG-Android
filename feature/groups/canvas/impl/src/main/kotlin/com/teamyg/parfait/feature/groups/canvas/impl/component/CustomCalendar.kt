@@ -24,7 +24,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.Popup
@@ -36,9 +35,11 @@ import com.teamyg.parfait.core.designsystem.component.yglistdate.YGListDate
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
+import com.teamyg.parfait.core.util.android.extension.ProvideFixedFontScale
 import com.teamyg.parfait.core.util.jvm.extension.toFirstDayOfMonth
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.feature.groups.canvas.impl.R
@@ -255,12 +256,14 @@ private fun <T> CalendarPeriodSelector(
                 onDismissRequest = onDismiss,
                 properties = PopupProperties(focusable = true),
             ) {
-                CalendarDropdown(
-                    items = items,
-                    selectedItem = selectedItem,
-                    itemLabel = itemLabel,
-                    onSelect = onSelect,
-                )
+                ProvideFixedFontScale {
+                    CalendarDropdown(
+                        items = items,
+                        selectedItem = selectedItem,
+                        itemLabel = itemLabel,
+                        onSelect = onSelect,
+                    )
+                }
             }
         }
     }
@@ -331,35 +334,34 @@ private data class CustomCalendarPreviewData(
 )
 
 /** 줄 수가 고정이 아님을 바로 보도록 주 수가 갈리는 달을 고른다 */
-private class CustomCalendarPreviewParameterProvider : PreviewParameterProvider<CustomCalendarPreviewData> {
-    override val values: Sequence<CustomCalendarPreviewData>
-        get() = sequenceOf(
-            // 6주 — 토요일 시작 31일. 앞뒤 달 날짜가 모두 나오고, 오늘 다음 날부터는 잠긴다
-            CustomCalendarPreviewData(
-                displayedMonth = LocalDate(2026, 8, 1),
-                today = LocalDate(2026, 8, 15),
-                selectedDate = LocalDate(2026, 8, 12),
-                uploadedDates = setOf(
-                    LocalDate(2026, 8, 3),
-                    LocalDate(2026, 8, 12),
-                    LocalDate(2026, 8, 15),
-                ),
+private class CustomCalendarPreviewParameterProvider : NamedPreviewParameterProvider<CustomCalendarPreviewData>() {
+    override val entries = listOf(
+        // 6주 — 토요일 시작 31일. 앞뒤 달 날짜가 모두 나오고, 오늘 다음 날부터는 잠긴다
+        "sixWeeks" to CustomCalendarPreviewData(
+            displayedMonth = LocalDate(2026, 8, 1),
+            today = LocalDate(2026, 8, 15),
+            selectedDate = LocalDate(2026, 8, 12),
+            uploadedDates = setOf(
+                LocalDate(2026, 8, 3),
+                LocalDate(2026, 8, 12),
+                LocalDate(2026, 8, 15),
             ),
-            // 4주 — 일요일 시작 28일. 앞뒤 달 날짜가 하나도 없다
-            CustomCalendarPreviewData(
-                displayedMonth = LocalDate(2026, 2, 1),
-                today = LocalDate(2026, 8, 15),
-                selectedDate = null,
-                uploadedDates = setOf(LocalDate(2026, 2, 14)),
-            ),
-            // 5주 — 오늘·선택·업로드가 모두 없는 지난달. 미래가 섞이지 않아 전부 고를 수 있다
-            CustomCalendarPreviewData(
-                displayedMonth = LocalDate(2026, 7, 1),
-                today = LocalDate(2026, 8, 15),
-                selectedDate = null,
-                uploadedDates = emptySet(),
-            ),
-        )
+        ),
+        // 4주 — 일요일 시작 28일. 앞뒤 달 날짜가 하나도 없다
+        "fourWeeks" to CustomCalendarPreviewData(
+            displayedMonth = LocalDate(2026, 2, 1),
+            today = LocalDate(2026, 8, 15),
+            selectedDate = null,
+            uploadedDates = setOf(LocalDate(2026, 2, 14)),
+        ),
+        // 5주 — 오늘·선택·업로드가 모두 없는 지난달. 미래가 섞이지 않아 전부 고를 수 있다
+        "fiveWeeksPastMonth" to CustomCalendarPreviewData(
+            displayedMonth = LocalDate(2026, 7, 1),
+            today = LocalDate(2026, 8, 15),
+            selectedDate = null,
+            uploadedDates = emptySet(),
+        ),
+    )
 }
 
 @YGPreview

@@ -42,6 +42,7 @@ include(
     ":core:util:jvm",
     ":core:navigation",
     ":core:testing",
+    ":core:testing:android",
 )
 include(":data")
 include(":domain")
@@ -59,6 +60,8 @@ include(
 )
 
 include(
+    ":feature:app:notice:api",
+    ":feature:app:notice:impl",
     ":feature:app:setting:api",
     ":feature:app:setting:impl",
 )

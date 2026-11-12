@@ -8,21 +8,26 @@ package com.teamyg.parfait.domain.model.push
  */
 sealed interface PushDeepLink {
     /**
-     * 라우팅에는 안 쓴다(각 하위 타입의 KDoc 참고) — 탭 분석 등 라우팅 밖의 용도로 들고 있는다.
-     * 서버가 보낸 `type` 값이 아는 값이 아니면(향후 필드 추가 등) `null`.
+     * FCM `data.type` 을 서버가 보낸 그대로 들고 있다. 라우팅에는 안 쓰고(각 하위 타입의 KDoc 참고)
+     * 탭 분석에만 쓴다. enum 으로 좁히지 않는 이유: 서버가 값을 추가·변경해도 분석이 그 값을
+     * 그대로 따라가야 해서다. 키가 없으면 `null`.
      */
-    val type: PushNotificationType?
+    val type: String?
 
     /** P-01 토핑 등록 알림. 알림이 가리키던 날짜가 아니라 항상 그 그룹의 최신 캔버스로 연다. */
-    data class AddTopping(val groupId: Long) : PushDeepLink {
-        override val type: PushNotificationType get() = PushNotificationType.TOPPING
-
+    data class AddTopping(
+        val groupId: Long,
+        override val type: String?,
+    ) : PushDeepLink {
         companion object {
             /** @param groupId FCM `data` 는 전부 String 이라 숫자가 아닌 값도 온다. */
-            fun parse(groupId: String?): AddTopping? {
+            fun parse(
+                groupId: String?,
+                type: String?,
+            ): AddTopping? {
                 val id = groupId?.toLongOrNull() ?: return null
 
-                return if (id <= 0) null else AddTopping(groupId = id)
+                return if (id <= 0) null else AddTopping(groupId = id, type = type)
             }
         }
     }
@@ -30,5 +35,5 @@ sealed interface PushDeepLink {
     /**
      * P-02/P-03 리마인드 알림. 그룹 목록으로 연다.
      */
-    data class GroupList(override val type: PushNotificationType?) : PushDeepLink
+    data class GroupList(override val type: String?) : PushDeepLink
 }

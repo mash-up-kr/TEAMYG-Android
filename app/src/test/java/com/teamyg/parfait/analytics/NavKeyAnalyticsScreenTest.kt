@@ -1,14 +1,18 @@
 package com.teamyg.parfait.analytics
 
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.feature.app.notice.api.NavKeyNoticeDetail
+import com.teamyg.parfait.feature.app.notice.api.NavKeyNoticeList
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
+import com.teamyg.parfait.feature.app.setting.api.NavKeyNotificationSetting
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveType
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
@@ -43,9 +47,13 @@ class NavKeyAnalyticsScreenTest {
             NavKeyCanvasMain(groupId = 1L) to "C-001",
             NavKeySegmentation(sourceImageUri = "uri") to "C-103",
             NavKeyCanvasToppingPlace to "C-106",
-            NavKeyCanvasImageSave(imagePath = "path", date = "2026-09-09", toppingCount = 1) to "C-001-image-save",
+            NavKeyCanvasImageSave(saveType = CanvasSaveType.IMAGE, imagePath = "path", date = "2026-09-09") to
+                "C-001-image-save",
             NavKeyAppSetting to "S-001",
             NavKeyAccountInfo to "S-002",
+            NavKeyNotificationSetting to "S-105",
+            NavKeyNoticeList to "S-106",
+            NavKeyNoticeDetail(noticeId = 1L) to "S-106-detail",
             NavKeyGroupSetting(groupId = 1L) to "S-101",
             NavKeyWebView(title = "약관", url = "https://example.com") to "S-004",
         )

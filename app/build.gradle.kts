@@ -74,6 +74,8 @@ dependencies {
     implementation(projects.feature.intro.api)
     implementation(projects.feature.intro.impl)
 
+    implementation(projects.feature.app.notice.api)
+    implementation(projects.feature.app.notice.impl)
     implementation(projects.feature.app.setting.api)
     implementation(projects.feature.app.setting.impl)
 

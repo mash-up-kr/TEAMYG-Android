@@ -57,7 +57,7 @@ sealed interface YGButtonType {
 
         override val bottomPadding: Dp
             @Composable
-            get() = YGTheme.layout.padding.padding3
+            get() = YGTheme.layout.padding.padding4
 
         override val colors: YGButtonColors
             @Composable

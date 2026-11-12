@@ -1,0 +1,181 @@
+name: UI diff comment
+
+# UI diff 런의 아티팩트를 받아 PR 에 비교 코멘트를 남긴다. 쓰기 권한이 있는 잡이라 PR 코드는 체크아웃하지 않는다.
+# 아티팩트는 PR 코드가 만든 것이라 전부 신뢰하지 않는다. 값은 report.py 검증을 거친 것만 쓰고,
+# 메타의 PR·head 는 이 이벤트의 head 와 PR API 로 다시 묶는다.
+on:
+  workflow_run:
+    workflows: [UI diff]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ui-diff-comment-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      EVENT_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+      EVENT_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      REPORT: ${{ github.workspace }}/.github/scripts/ui_diff/report.py
+    steps:
+      # workflow_run 은 default 브랜치에서 돈다. 스크립트만 쓰고 PR 코드는 받지 않는다
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Download meta
+        run: |
+          WORK="$RUNNER_TEMP/ui-diff"
+          echo "WORK=$WORK" >> "$GITHUB_ENV"
+          mkdir -p "$WORK"
+          gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -n ui-diff-meta -D "$WORK/meta"
+
+      # 남의 PR 번호와 그 PR 의 공개 head SHA 를 적어 넣은 메타를 막으려고, head_sha 를 이 런의 head 와 맞춘다
+      - name: Read meta
+        id: meta
+        run: python3 "$REPORT" meta --meta "$WORK/meta/meta.json" --expected-head "$EVENT_HEAD_SHA" --github-output "$GITHUB_OUTPUT"
+
+      # PR 의 head 저장소·브랜치도 이 런과 같은지 본다. head 가 그새 움직였으면 아무것도 쓰지 않고 끝낸다
+      - name: Verify pull request
+        id: verify
+        env:
+          PR: ${{ steps.meta.outputs.pr }}
+        run: |
+          pr_json=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR")
+          head_repo=$(jq -r '.head.repo.full_name // ""' <<< "$pr_json")
+          head_ref=$(jq -r '.head.ref' <<< "$pr_json")
+          current=$(jq -r '.head.sha' <<< "$pr_json")
+          if [ "$head_repo" != "$EVENT_HEAD_REPO" ] || [ "$head_ref" != "$EVENT_HEAD_BRANCH" ]; then
+            echo "pull request $PR does not belong to this workflow run" >&2
+            exit 1
+          fi
+          rc=0
+          python3 "$REPORT" check-head --meta "$WORK/meta/meta.json" --current-head "$current" || rc=$?
+          case "$rc" in
+            0) echo "stale=false" >> "$GITHUB_OUTPUT" ;;
+            3) echo "head moved to $current; skipping"; echo "stale=true" >> "$GITHUB_OUTPUT" ;;
+            *) exit 1 ;;
+          esac
+
+      - name: Download results
+        if: steps.verify.outputs.stale == 'false' && steps.meta.outputs.status == 'ok'
+        run: gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -n ui-diff-results -D "$WORK/results"
+
+      - name: Collect
+        id: collect
+        if: steps.verify.outputs.stale == 'false'
+        run: >-
+          python3 "$REPORT" collect --results-root "$WORK/results"
+          --base-list "$WORK/meta/base-list.txt" --meta "$WORK/meta/meta.json"
+          --out-entries "$WORK/entries.json" --out-files "$WORK/files"
+          --github-output "$GITHUB_OUTPUT"
+
+      # 이미지는 별도 디렉터리의 새 저장소에 collect 가 고른 파일만 복사해 orphan 커밋으로 올린다.
+      # 아티팩트 트리를 work tree 로 쓰면 그 안의 .gitattributes·.gitignore 가 커밋에 끼어든다
+      - name: Push images
+        id: push
+        if: steps.verify.outputs.stale == 'false' && steps.collect.outputs.total != '0'
+        env:
+          PR: ${{ steps.meta.outputs.pr }}
+          HEAD_SHA: ${{ steps.meta.outputs.head_sha }}
+        run: |
+          if [ ! -s "$WORK/files" ]; then
+            echo "sha=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          snap="$WORK/snapshots"
+          mkdir "$snap"
+          python3 -I - "$WORK/results" "$WORK/files" "$snap" <<'EOF'
+          import os, shutil, stat, sys
+          src, listing, dst = sys.argv[1:]
+          with open(listing, "rb") as f:
+              names = [n.decode("utf-8") for n in f.read().split(b"\0") if n]
+          for rel in names:
+              source = os.path.join(src, rel)
+              if not stat.S_ISREG(os.lstat(source).st_mode):
+                  sys.exit(f"not a regular file: {rel}")
+              target = os.path.join(dst, rel)
+              os.makedirs(os.path.dirname(target), exist_ok=True)
+              shutil.copyfile(source, target)
+          EOF
+          git -C "$snap" init -q
+          git -C "$snap" --literal-pathspecs add --pathspec-from-file="$WORK/files" --pathspec-file-nul
+          git -C "$snap" -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            -c commit.gpgsign=false commit -q -m "ui-snapshots: pr-$PR ${HEAD_SHA:0:7}"
+          sha=$(git -C "$snap" rev-parse HEAD)
+          # 이미지 push 직전에 head 를 다시 본다. 그새 움직였으면 브랜치를 덮지 않는다
+          current=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha)
+          rc=0
+          python3 "$REPORT" check-head --meta "$WORK/meta/meta.json" --current-head "$current" || rc=$?
+          case "$rc" in
+            0) ;;
+            3) echo "head moved to $current; skipping"; echo "stale=true" >> "$GITHUB_OUTPUT"; exit 0 ;;
+            *) exit 1 ;;
+          esac
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+          echo "::add-mask::$auth"
+          GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0="http.$GITHUB_SERVER_URL/.extraheader" \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth" \
+            git -C "$snap" push -q --force "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "HEAD:refs/heads/ui-snapshots/pr-$PR"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Render
+        if: steps.verify.outputs.stale == 'false' && steps.push.outputs.stale != 'true'
+        env:
+          IMAGE_SHA: ${{ steps.push.outputs.sha }}
+        run: >-
+          python3 "$REPORT" render --entries "$WORK/entries.json" --meta "$WORK/meta/meta.json"
+          --repo "$GITHUB_REPOSITORY" --image-sha "$IMAGE_SHA" --out "$WORK/comment.md"
+
+      # 쓰기 직전에 head 를 다시 본다. 기존 코멘트가 없을 때는 비교할 게 없거나 no-base-setup 이면 새로 달지 않는다.
+      # no-base-setup 은 develop 에 스크린샷 구성이 없는 동안 모든 PR 에 붙을 안내라 기존 코멘트 갱신에만 쓴다
+      - name: Write comment
+        if: steps.verify.outputs.stale == 'false' && steps.push.outputs.stale != 'true'
+        env:
+          PR: ${{ steps.meta.outputs.pr }}
+          STATUS: ${{ steps.meta.outputs.status }}
+          FAILED_MODULES: ${{ steps.meta.outputs.failed_modules }}
+          TOTAL: ${{ steps.collect.outputs.total }}
+        run: |
+          current=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha)
+          rc=0
+          python3 "$REPORT" check-head --meta "$WORK/meta/meta.json" --current-head "$current" || rc=$?
+          case "$rc" in
+            0) ;;
+            3) echo "head moved to $current; skipping"; exit 0 ;;
+            *) exit 1 ;;
+          esac
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and ((.body // "") | contains("<!-- parfait-ui-diff-report -->"))) | .id')
+          existing=${ids%%$'\n'*}
+          if [ -z "$existing" ]; then
+            if [ "$STATUS" = no-base-setup ]; then
+              echo "no base setup and no existing comment"
+              exit 0
+            fi
+            if [ "$TOTAL" = 0 ] && [ "$STATUS" = ok ] && [ "$FAILED_MODULES" = 0 ]; then
+              echo "nothing to report"
+              exit 0
+            fi
+          fi
+          python3 -c 'import json, sys; json.dump({"body": open(sys.argv[1], encoding="utf-8").read()}, open(sys.argv[2], "w", encoding="utf-8"))' \
+            "$WORK/comment.md" "$WORK/comment.json"
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" --input "$WORK/comment.json" > /dev/null
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --input "$WORK/comment.json" > /dev/null
+          fi

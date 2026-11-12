@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -60,6 +61,8 @@ fun <T> VerticalGridLayout(
 @Preview
 @Composable
 fun VerticalGridLayoutPreview() {
+    // 시드를 고정하지 않으면 렌더마다 색이 달라져 스크린샷 비교가 매번 변경으로 잡힌다.
+    val random = remember { Random(seed = 0) }
     Box(modifier = Modifier.fillMaxWidth()) {
         VerticalGridLayout(
             items = listOf(
@@ -75,7 +78,7 @@ fun VerticalGridLayoutPreview() {
             horizontalPadding = 10.dp,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            val color = Random.nextLong(0xFF000000, 0xFFFFFFFF)
+            val color = remember { random.nextLong(0xFF000000, 0xFFFFFFFF) }
             Box(
                 modifier = Modifier
                     .fillMaxHeight()

@@ -1,27 +1,27 @@
 package com.teamyg.parfait.core.designsystem.component.ygiconbutton
 
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 
 data class YGIconButtonPreviewData(
     val buttonIconSize: YGIconButtonSize,
     val isEnabled: Boolean,
 )
 
-class YGIconButtonPreviewParameterProvider : PreviewParameterProvider<YGIconButtonPreviewData> {
-    override val values = sequenceOf(
-        YGIconButtonPreviewData(
+class YGIconButtonPreviewParameterProvider : NamedPreviewParameterProvider<YGIconButtonPreviewData>() {
+    override val entries = listOf(
+        "size44" to YGIconButtonPreviewData(
             buttonIconSize = YGIconButtonSize.SIZE_44,
             isEnabled = true,
         ),
-        YGIconButtonPreviewData(
+        "size44Disabled" to YGIconButtonPreviewData(
             buttonIconSize = YGIconButtonSize.SIZE_44,
             isEnabled = false,
         ),
-        YGIconButtonPreviewData(
+        "size48" to YGIconButtonPreviewData(
             buttonIconSize = YGIconButtonSize.SIZE_48,
             isEnabled = true,
         ),
-        YGIconButtonPreviewData(
+        "size48Disabled" to YGIconButtonPreviewData(
             buttonIconSize = YGIconButtonSize.SIZE_48,
             isEnabled = false,
         ),

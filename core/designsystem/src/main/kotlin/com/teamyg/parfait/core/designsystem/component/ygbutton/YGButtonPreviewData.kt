@@ -1,14 +1,14 @@
 package com.teamyg.parfait.core.designsystem.component.ygbutton
 
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 
 data class YGButtonPreviewData(
     val name: String,
     val buttonType: YGButtonType,
 )
 
-class YGButtonPreviewParameterProvider : PreviewParameterProvider<YGButtonPreviewData> {
-    override val values = sequenceOf(
+class YGButtonPreviewParameterProvider : NamedPreviewParameterProvider<YGButtonPreviewData>() {
+    override val entries = listOf(
         YGButtonPreviewData(
             name = "SmallSquare",
             buttonType = YGButtonType.SmallSquare,
@@ -29,5 +29,5 @@ class YGButtonPreviewParameterProvider : PreviewParameterProvider<YGButtonPrevie
             name = "Large",
             buttonType = YGButtonType.Large,
         ),
-    )
+    ).map { it.name to it }
 }

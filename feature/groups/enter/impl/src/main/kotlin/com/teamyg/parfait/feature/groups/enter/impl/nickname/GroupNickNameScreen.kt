@@ -17,7 +17,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormFieldDefaults
@@ -26,6 +25,7 @@ import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.text.NameFieldType
@@ -125,23 +125,22 @@ internal fun GroupNickNameScreen(
 }
 
 private class GroupNickNameScreenPreviewParameterProvider :
-    PreviewParameterProvider<GroupNickNameUiState> {
-    override val values: Sequence<GroupNickNameUiState>
-        get() = sequenceOf(
-            GroupNickNameUiState(groupName = GROUP_NAME),
-            GroupNickNameUiState(groupName = GROUP_NAME, nickName = "he"),
-            GroupNickNameUiState(groupName = GROUP_NAME, nickName = "hello"),
-            GroupNickNameUiState(
-                groupName = GROUP_NAME,
-                nickName = " hello",
-                nicknameError = NameValidResult.Error.SpaceAtEdge,
-            ),
-            GroupNickNameUiState(
-                groupName = GROUP_NAME,
-                nickName = "hello",
-                isConfirmPopupVisible = true,
-            ),
-        )
+    NamedPreviewParameterProvider<GroupNickNameUiState>() {
+    override val entries = listOf(
+        "empty" to GroupNickNameUiState(groupName = GROUP_NAME),
+        "partial" to GroupNickNameUiState(groupName = GROUP_NAME, nickName = "he"),
+        "full" to GroupNickNameUiState(groupName = GROUP_NAME, nickName = "hello"),
+        "spaceAtEdgeError" to GroupNickNameUiState(
+            groupName = GROUP_NAME,
+            nickName = " hello",
+            nicknameError = NameValidResult.Error.SpaceAtEdge,
+        ),
+        "confirmPopup" to GroupNickNameUiState(
+            groupName = GROUP_NAME,
+            nickName = "hello",
+            isConfirmPopupVisible = true,
+        ),
+    )
 
     private companion object {
         const val GROUP_NAME = "모카의 파르페"

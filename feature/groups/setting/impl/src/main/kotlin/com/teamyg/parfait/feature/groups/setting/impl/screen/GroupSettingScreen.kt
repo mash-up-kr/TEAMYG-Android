@@ -17,7 +17,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.card.YGInviteCard
 import com.teamyg.parfait.core.designsystem.component.card.YGInviteCardStatus
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
@@ -29,6 +28,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.focus.clearFocusOnTap
@@ -49,7 +49,7 @@ internal fun GroupSettingScreen(
     onNicknameChange: (String) -> Unit,
     onNicknameFocusChange: (Boolean) -> Unit,
     onConfirmNickname: () -> Unit,
-    onClickCopyInviteCode: () -> Unit,
+    onClickShareInviteCode: () -> Unit,
     onClickLeaveGroup: () -> Unit,
     onClickReportGroup: () -> Unit,
     onConfirmLeaveGroup: () -> Unit,
@@ -105,10 +105,11 @@ internal fun GroupSettingScreen(
                 YGInviteCard(
                     label = stringResource(R.string.group_setting_invite_label),
                     inviteCode = state.inviteCode.value,
-                    subText = inviteCardSubText(state.remainingCount, state.isCodeCopied),
+                    subText = inviteCardSubText(state.remainingCount),
                     status = inviteCardStatus(state.remainingCount),
-                    copyButtonText = stringResource(R.string.group_setting_copy),
-                    onCopyClick = onClickCopyInviteCode,
+                    actionText = stringResource(R.string.group_setting_share),
+                    onActionClick = onClickShareInviteCode,
+                    endIconResource = null,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -182,40 +183,35 @@ internal fun GroupSettingScreen(
 }
 
 @Composable
-private fun inviteCardSubText(
-    remainingCount: Int,
-    isCodeCopied: Boolean,
-): String = when {
-    remainingCount <= 0 -> stringResource(R.string.group_setting_invite_full)
-    isCodeCopied -> stringResource(R.string.group_setting_invite_copied)
-    else -> stringResource(R.string.group_setting_invite_remaining, remainingCount)
+private fun inviteCardSubText(remainingCount: Int): String = if (remainingCount <= 0) {
+    stringResource(R.string.group_setting_invite_full)
+} else {
+    stringResource(R.string.group_setting_invite_remaining, remainingCount)
 }
 
 private fun inviteCardStatus(remainingCount: Int): YGInviteCardStatus =
     if (remainingCount > 0) YGInviteCardStatus.Active else YGInviteCardStatus.Invalid
 
 private class GroupSettingPreviewParameterProvider :
-    PreviewParameterProvider<GroupSettingUiState> {
-    override val values: Sequence<GroupSettingUiState>
-        get() = sequenceOf(
-            GroupSettingUiState(),
-            GroupSettingUiState(isCodeCopied = true),
-            GroupSettingUiState(remainingCount = 0),
-            GroupSettingUiState(
-                groupName = GroupName("열글자를꽉채운그룹명"),
-                myNickname = GroupNickname("열다섯글자를꽉꽉채운닉네임야호"),
-                nicknameInput = "열다섯글자를꽉꽉채운닉네임야호",
-            ),
-            GroupSettingUiState(
-                isEditing = true,
-                nicknameInput = "바꾼닉네임",
-            ),
-            GroupSettingUiState(
-                isEditing = true,
-                nicknameInput = " 잘못된닉네임",
-                nicknameError = NameValidResult.Error.SpaceAtEdge,
-            ),
-        )
+    NamedPreviewParameterProvider<GroupSettingUiState>() {
+    override val entries = listOf(
+        "default" to GroupSettingUiState(),
+        "noRemaining" to GroupSettingUiState(remainingCount = 0),
+        "longText" to GroupSettingUiState(
+            groupName = GroupName("열글자를꽉채운그룹명"),
+            myNickname = GroupNickname("열다섯글자를꽉꽉채운닉네임야호"),
+            nicknameInput = "열다섯글자를꽉꽉채운닉네임야호",
+        ),
+        "editing" to GroupSettingUiState(
+            isEditing = true,
+            nicknameInput = "바꾼닉네임",
+        ),
+        "spaceAtEdgeError" to GroupSettingUiState(
+            isEditing = true,
+            nicknameInput = " 잘못된닉네임",
+            nicknameError = NameValidResult.Error.SpaceAtEdge,
+        ),
+    )
 }
 
 @YGPreview
@@ -230,7 +226,7 @@ private fun GroupSettingScreenPreview(
         onNicknameChange = {},
         onNicknameFocusChange = {},
         onConfirmNickname = {},
-        onClickCopyInviteCode = {},
+        onClickShareInviteCode = {},
         onClickLeaveGroup = {},
         onClickReportGroup = {},
         onConfirmLeaveGroup = {},

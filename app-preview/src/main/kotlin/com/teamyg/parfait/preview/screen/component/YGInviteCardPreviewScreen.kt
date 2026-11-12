@@ -33,8 +33,8 @@ internal fun YGInviteCardPreviewScreen(
                         inviteCode = "ABC123",
                         subText = "유효한 코드입니다",
                         status = YGInviteCardStatus.Active,
-                        copyButtonText = "복사",
-                        onCopyClick = {},
+                        actionText = "복사",
+                        onActionClick = {},
                     )
                 }
             }
@@ -45,8 +45,8 @@ internal fun YGInviteCardPreviewScreen(
                         inviteCode = "------",
                         subText = "만료된 코드입니다",
                         status = YGInviteCardStatus.Invalid,
-                        copyButtonText = "복사",
-                        onCopyClick = {},
+                        actionText = "복사",
+                        onActionClick = {},
                     )
                 }
             }

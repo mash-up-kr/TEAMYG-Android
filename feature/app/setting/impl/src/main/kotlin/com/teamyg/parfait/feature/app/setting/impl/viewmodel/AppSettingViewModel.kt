@@ -1,5 +1,8 @@
 package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -49,6 +52,10 @@ sealed interface AppSettingIntent : UiIntent {
 
     data object ClickAccount : AppSettingIntent
 
+    data object ClickNotification : AppSettingIntent
+
+    data object ClickNotice : AppSettingIntent
+
     data class ClickPolicy(val termsId: TermsId) : AppSettingIntent
 
     data object ClickCsaePolicy : AppSettingIntent
@@ -68,6 +75,10 @@ sealed interface AppSettingSideEffect : UiSideEffect {
     data object NavigateBack : AppSettingSideEffect
 
     data object NavigateToAccountInfo : AppSettingSideEffect
+
+    data object NavigateToNotificationSetting : AppSettingSideEffect
+
+    data object NavigateToNotice : AppSettingSideEffect
 
     data class NavigateToPolicyDetail(
         val title: String,
@@ -92,6 +103,7 @@ constructor(
     private val withdraw: WithdrawUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
     private val getPolicies: GetPoliciesUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
     initialState = AppSettingState(),
 ) {
@@ -118,6 +130,8 @@ constructor(
         when (intent) {
             AppSettingIntent.ClickBack -> handleClickBack()
             AppSettingIntent.ClickAccount -> handleClickAccount()
+            AppSettingIntent.ClickNotification -> handleClickNotification()
+            AppSettingIntent.ClickNotice -> handleClickNotice()
             is AppSettingIntent.ClickPolicy -> handleClickPolicy(intent.termsId)
             AppSettingIntent.ClickCsaePolicy -> handleClickCsaePolicy()
             AppSettingIntent.ClickOssLicense -> handleClickOssLicense()
@@ -134,6 +148,16 @@ constructor(
 
     private fun handleClickAccount() {
         postSideEffect(AppSettingSideEffect.NavigateToAccountInfo)
+    }
+
+    private fun handleClickNotification() {
+        analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_SETTING_NOTIFICATION_TAPPED))
+        postSideEffect(AppSettingSideEffect.NavigateToNotificationSetting)
+    }
+
+    private fun handleClickNotice() {
+        analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_SETTING_NOTICE_TAPPED))
+        postSideEffect(AppSettingSideEffect.NavigateToNotice)
     }
 
     private fun loadPolicies() {

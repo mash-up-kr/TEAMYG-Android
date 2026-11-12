@@ -73,7 +73,7 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 /** 두 손가락으로 넓힐 수 있는 배율. 1배는 화면에 꽉 맞춘 처음 배치라 그보다 작게는 줄이지 않는다 */
 private const val MIN_ZOOM = 1f
-private const val MAX_ZOOM = 3f
+private const val MAX_ZOOM = 12f
 
 private const val ERASED_AREA_ALPHA = 0.5f
 private const val MASK_TINT_ALPHA = 0.5f

@@ -43,7 +43,7 @@ Navigation3 위에 자체 Navigator·엔트리 빌더를 얹는다. 결정 근�
     `popUpTo<NavKeyCanvasMain>()`, `PictureConfirmRoute`(`returnResultOnly = true`)의 확인 →
     `popUpTo<NavKeyCanvasBGEdit>()`
     ([segmentation-pipeline-hardening 스펙](../superpowers/specs/archive/2026-08-18-segmentation-pipeline-hardening.md)).
-- **NavKey**(각 feature `:api`, `@Serializable`) — 목적지 식별. 예: `NavKeyLogin`, `NavKeySegmentation`, `NavKeyCameraCustom`. groups·app 계열은 목적지가 많다: `NavKeyGroupList`·`NavKeyGroupSetting`·`NavKeyGroupInviteCode`, canvas의 `NavKeyCanvasMain`·`NavKeyCanvasBGEdit`(#231)·`NavKeyCanvasToppingPlace`(#290)·`NavKeyCanvasImageSave`(#445)·`NavKeyCanvasTextInput`(#636), `NavKeyAppSetting` 등(`NavKeyCanvasEdit`·`NavKeyCanvasImageSelect`·`NavKeyCanvasMove` 셋은 도달 불가로 남아 있다가 #514에서 삭제됐다). 전체 목록은 `feature/*/api`에서 확인(모듈 목록은 [module-structure](module-structure.md)).
+- **NavKey**(각 feature `:api`, `@Serializable`) — 목적지 식별. 예: `NavKeyLogin`, `NavKeySegmentation`, `NavKeyCameraCustom`. groups·app 계열은 목적지가 많다: `NavKeyGroupList`·`NavKeyGroupSetting`·`NavKeyGroupInviteCode`, canvas의 `NavKeyCanvasMain`·`NavKeyCanvasBGEdit`(#231)·`NavKeyCanvasToppingPlace`(#290)·`NavKeyCanvasImageSave`(#445)·`NavKeyCanvasTextInput`(#636), `NavKeyAppSetting`·`NavKeyNotificationSetting`·`NavKeyNoticeList`·`NavKeyNoticeDetail` 등(`NavKeyCanvasEdit`·`NavKeyCanvasImageSelect`·`NavKeyCanvasMove` 셋은 도달 불가로 남아 있다가 #514에서 삭제됐다). 전체 목록은 `feature/*/api`에서 확인(모듈 목록은 [module-structure](module-structure.md)).
 - **엔트리 빌더**(각 feature `:impl`) — `entry<NavKeyXxx> { ... }`를 등록하는 함수(예: `featureLoginEntryBuilder()`). Hilt 멀티바인딩 `Set<EntryProviderScope<NavKey>.(Navigator) -> Unit>`로 주입. **빌더 하나가 여러 entry를 등록할 수 있다** — 예: `featureCanvasEntryBuilder()`는 canvas NavKey(`Main`·`BGEdit`·`ImageSave`(#445)·`ToppingPlace`·`TextInput`(#636)·`ToppingArrange`) entry를 한 함수에서 등록(`Edit`·`ImageSelect`·`Move` 셋은 #514에서 삭제).
 - **NavTransition**(`core:navigation`, #326 신설) — 화면 전환 한 벌(`push`·`pop`·`predictivePop`)을
   묶은 값. `metadata`로 NavEntry에 실어 화면별로 앱 기본을 덮는다 → 아래 [화면 전환](#화면-전환-2026-08-22-pr-326).
@@ -211,8 +211,8 @@ TokenAuthenticator(재발급 거절) → SessionEventBusImpl.postForcedLogout()
 - **목적지는 `route` 하나가 정한다.** `type`(`TOPPING`·`REMIND_AM`·`REMIND_PM`)은 라우팅에 안 쓰고
   탭 분석 용도로 `PushDeepLink`에 실려만 간다. 모르는 `route`·잘못된 `groupId`(숫자 아님·0 이하)는
   `null`이라 **평범한 실행과 구분되지 않는다** — 파싱 실패가 화면에 보이지 않는다는 뜻이다.
-  두 문자열 축은 각각 `PushNotificationRouteType`(`canvas`·`group`)과 `PushNotificationType` enum이
-  들고 있고, `groupId`를 양수로 읽는 규칙은 `PushDeepLink.AddTopping.parse`에 있다.
+  `route` 축은 `PushNotificationRouteType`(`canvas`·`group`) enum이 들고 있고 `type` 은 서버 문자열 그대로
+  `PushDeepLink.type` 에 실리며, `groupId`를 양수로 읽는 규칙은 `PushDeepLink.AddTopping.parse`에 있다.
 - **이동 수단은 `goTo`다** — 위 세 관용구(`replaceAll`·`goToSingleClearTop`·`popUpTo`)를 쓰지 않으므로
   딥링크로 연 화면 아래에 **그때까지의 백스택이 그대로 남는다.**
 
@@ -317,7 +317,8 @@ NavKeyGroupList ─┬─ 생성 ─▶ NavKeyGroupCreate(nickName) ──(확�
 
 - ~~복귀는 `goToSingleClearTop(NavKeyGroupList)`다~~ → 🔁 **종착지가 목록에서 캔버스로 옮겨졌다
   (2026-09-01, PR #411)**. 두 갈래 다 `replaceAll(NavKeyGroupList)`로 흐름 화면을 통째로 걷어낸 뒤
-  **곧바로 `goTo(NavKeyCanvasMain(groupId, welcomeGroupName, welcomeInviteCode))`**를 쌓는다. 목록을
+  **곧바로 `goTo(NavKeyCanvasMain(...))`**를 쌓는다(생성은 `groupId`·`welcomeGroupName`·`welcomeInviteCode`·
+  `welcomeMemberLimit`, 참여는 `groupId`·`welcomeGroupName`). 목록을
   깔아 두는 이유를 두 Route가 같은 주석으로 적는다 — 캔버스만 남기면 뒤로가기가 앱 종료가 된다.
   그래서 이 경계의 관용구는 이제 `replaceAll` 하나가 아니라 **`replaceAll` + `goTo` 두 줄 조합**이고,
   `goToSingleClearTop`의 소비처는 그룹 생성·참여에서 사라졌다.
@@ -377,8 +378,10 @@ NavKeyGroupList ─┬─ 생성 ─▶ NavKeyGroupCreate(nickName) ──(확�
   들어왔다(OQ-P-135 해소). 정본과 다른 점은 목록을 백스택 **아래에 깔아 둔다**는 것뿐이고, 그것은
   뒤로가기가 앱을 끄지 않게 하려는 구현 사정이다.
 - 📌 **캔버스가 진입 사유를 인자로 받는다** — `NavKeyCanvasMain`에 `welcomeGroupName`·
-  `welcomeInviteCode`가 붙어, 생성 직후면 초대코드까지 실린 배너를, 참여 직후면 그룹명만 실린 배너를
-  캔버스가 1회 띄운다(평범한 진입은 둘 다 `null`). **목적지 키가 "어디로"만이 아니라 "왜 왔는가"를
+  `welcomeInviteCode`·`welcomeMemberLimit`이 붙어, 생성 직후면 초대코드까지 실린 배너를, 참여 직후면
+  그룹명만 실린 배너를 캔버스가 1회 띄운다(평범한 진입은 전부 `null`). 정원 1명으로 만든 그룹은
+  초대할 사람이 없어 생성 배너에서 초대코드·`공유하기`를 빼고 참여 배너와 같은 보조 문구를 쓴다
+  (`CanvasWelcome.CreatedSolo`, Figma `5456:20958` 메모). **목적지 키가 "어디로"만이 아니라 "왜 왔는가"를
   나르기 시작한 첫 자리**이고, 1회성은 화면 상태가 아니라 **ViewModel 생성 시점**에 기댄다 —
   백스택 재진입에서는 ViewModel이 새로 만들어지지 않아 배너가 다시 뜨지 않는다(OQ-P-339).
 
@@ -592,19 +595,21 @@ C-001 캔버스 메인
                                  writeToCanvasCaptureCache(Dispatchers.IO)
                                    성공 ─▶ CanvasCaptureHolder.put(bitmap)
                                            CanvasVideoSourceHolder.put(videoSource)
-                                           goTo(NavKeyCanvasImageSave(imagePath, date, toppingCount))
+                                           goTo(NavKeyCanvasImageSave(saveType, imagePath, date))
                                    실패 ─▶ 토스트(canvas_main_capture_failure)
                                               │
-                              C-001 저장 미리보기(CanvasImageSaveRoute, ViewModel 없음)
+                              C-001 저장 미리보기(CanvasImageSaveRoute + CanvasImageSaveViewModel)
                                    remember { CanvasCaptureHolder.peek()?.asImageBitmap() }
                                      비트맵 있음 ─▶ Image(bitmap)
                                      비트맵 없음 ─▶ AsyncImage(fallbackImagePath)
+                                   영상이면 들어오는 즉시 녹화 레이어로 캐시에 mp4 를 미리 굽는다
                                    닫기 ─▶ onBack()
-                                   사진으로 저장 ─▶ sendResult(CANVAS_SAVE_RESULT_KEY,
-                                              CanvasSaveResult.Image(imagePath)) + onBack()
-                                   영상으로 저장 ─▶ 녹화 레이어를 붙여 캐시에 mp4 를 만든 뒤
-                                              sendResult(CanvasSaveResult.Video(videoPath)
-                                                         | CanvasSaveResult.VideoFailed) + onBack()
+                                   저장·공유 ─▶ [VM] RequestSave | RequestShare (먼저 누른 하나만)
+                                              사진은 즉시, 영상은 mp4 가 구워진 뒤 효과 하나를 낸다
+                                     DispatchSave        ─▶ sendResult(Image | Video | VideoFailed) + onBack()
+                                     DispatchShare       ─▶ shareCanvasToInstagramStory
+                                                            실패 시 sendResult(ShareFailed) + onBack()
+                                     DispatchShareFailed ─▶ sendResult(ShareFailed) + onBack()
                                               │
   [Route] ResultEffect<CanvasSaveResult>
             Image       ─▶ readCanvasCaptureCache(Dispatchers.IO)
@@ -614,20 +619,25 @@ C-001 캔버스 메인
             Video       ─▶ 같은 권한 흐름 ─▶ 승인: SaveRecordedVideo(videoFilePath)
                                        거부: DiscardRecordedVideo + 토스트(canvas_main_gallery_save_failure)
             VideoFailed ─▶ 토스트(canvas_main_gallery_save_failure)
+            ShareFailed ─▶ 토스트(canvas_share_failed)
                       ─▶ [VM] ShowGallerySaveResult(isSuccess, date) ─▶ [Route] 토스트
 ```
 
 - **미리보기는 갤러리에 넣지 않는다.** 결과 토스트가 뜨는 자리는 캔버스 메인이고, 미리보기가 저장까지
   맡으면 알림만 남기고 사라지는 화면이 되어 실패했을 때 알릴 곳이 없다. 그래서 sealed
-  `CanvasSaveResult`로 무엇을 저장할지만 돌려준다 — 이미지는 받은 경로 그대로, 영상은 만들어 둔
-  mp4 경로다.
+  `CanvasSaveResult`로 무엇을 저장할지(이미지는 받은 경로 그대로, 영상은 만들어 둔 mp4 경로) 또는
+  알릴 실패(`VideoFailed`·`ShareFailed`)만 돌려준다.
 - **영상은 미리보기가 만들기까지 한다.** 녹화는 컴포지션을 프레임마다 읽는 일인데, 미리보기가 떠 있는
   동안 캔버스 메인은 컴포지션에서 빠져 있다. 그릴 재료는 캔버스 메인이 `goTo` 직전에
-  `CanvasVideoSourceHolder`에 넣어 둔다. 만드는 동안 두 버튼·닫기·시스템 백이 막힌다 →
+  `CanvasVideoSourceHolder`에 넣어 둔다. 미리 굽는 동안은 자유롭게 나갈 수 있고, 저장·공유를 눌러 mp4 를
+  기다리는 동안에만 두 버튼·닫기·시스템 백이 막힌다. 녹화에는 화면이 보이는 동안만 센 `RECORD_TIMEOUT_MILLIS`
+  상한이 있고, 인코더 호출은 `runInterruptible`이라 인코더가 멈춰도 취소가 대기를 끊는다 →
   [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md),
   [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md).
-- **ViewModel이 없는 두 번째 화면이다**(`NavKeyWebView` 이후) — navKey 인자와 전역 CanvasCaptureHolder만 읽어 그리면 되고 부를 API가 없다.
-  엔트리 빌더가 `navKey`를 Route에 그대로 넘기고 Route가 `LocalResultEventBus`만 잡는다.
+- **판단은 `CanvasImageSaveViewModel`, 녹화와 결과 전송은 Route가 한다.** ViewModel은 assisted inject로
+  `saveType`·`imagePath`를 받아 사진·영상 분기, 먼저 누른 동작 유지, 효과 한 번만 내기, 나갈 때 지울 mp4 판단을
+  맡는다. 녹화는 컴포지션 프레임에 묶여 화면 계층(`PrebakeCanvasVideoEffect`)에서만 돌고, 구성 변경으로 효과가 다시 돌면
+  `CanvasImageSaveUiState.needsRecording`이 이미 구운 경우를 거른다.
 - **돌아온 뒤 캔버스를 다시 캡처하지 않는다.** 사용자가 보고 확정한 그림과 갤러리에 남는 그림이
   같아야 하므로 미리보기에 들어가기 전에 구운 파일을 다시 읽는다. 권한 승인 뒤의 길과 미리보기에서 돌아온 길이
   `saveWithPermission` 한 자리로 모이는 것도 같은 이유다.
@@ -635,7 +645,7 @@ C-001 캔버스 메인
   `CanvasCaptureHolder.put(bitmap)`으로 방금 캡처한 비트맵을 넘기고, 미리보기가
   `remember { CanvasCaptureHolder.peek()?.asImageBitmap() }`로 받아 `Image`로 그린다. 파일을 열어
   전체 해상도 PNG를 디코드하고 크로스페이드하던 자리가 사라진다. **`NavKeyCanvasImageSave`는 비트맵을
-  싣지 않는다** — 키가 나르는 것은 경로·날짜·토핑 개수이고 홀더는 비트맵만 담는다(표시할 날짜의 출처를 하나로 두려는
+  싣지 않는다** — 키가 나르는 것은 저장 타입·경로·날짜이고 홀더는 비트맵만 담는다(표시할 날짜의 출처를 하나로 두려는
   것이다). 홀더는 `internal object`라 프로세스 전역이고 **읽으면서 비우지 않는다** — 미리보기는 화면에서
   사라지지 않고도 다시 컴포즈되므로(Activity 재생성·백스택 하강 후 복귀) 읽으며 비우면 그때마다 보고
   있던 그림을 잃는다. **비우는 자리는 미리보기의 `onDispose` 하나**이고(`CanvasVideoSourceHolder`도
@@ -791,8 +801,9 @@ API가 없다) → [s004-terms-privacy-webview 스펙](../superpowers/specs/arch
 **인자가 데이터도 동작 플래그도 아니라 "진입 사유"인 형태가 나왔다**(2026-09-01, PR #411) —
 `NavKeyCanvasMain`의 `welcomeGroupName`·`welcomeInviteCode`는 캔버스가 그릴 데이터가 아니고
 (그룹명은 화면이 어차피 조회한다) 동작을 가르는 플래그도 아니다. **직전 화면에서 무슨 일이
-있었는지**를 나르며, 값이 있으면 배너 1회, 없으면 아무 일도 없다. 둘의 조합이 배너 갈래까지 정한다
-— 그룹명만 있으면 참여, 초대코드까지 있으면 생성이다. 그래서 이 인자는 **소비되고 나면 뜻이
+있었는지**를 나르며, 값이 있으면 배너 1회, 없으면 아무 일도 없다. 셋의 조합이 배너 갈래까지 정한다
+— 그룹명만 있으면 참여, 초대코드까지 있으면 생성, 거기에 정원이 1이면 초대 없는 생성이다.
+`welcomeMemberLimit`은 생성 흐름(`GroupCreateRoute`)만 채운다. 그래서 이 인자는 **소비되고 나면 뜻이
 없어지는데** 키에는 그대로 남는다(직렬화·복원되면 다시 실려 온다) → OQ-P-339.
 **기본값 없는 동작 인자가 처음 나왔다**(2026-08-31, PR #408) — `NavKeyCustomGalleryPicker`의
 `recentImagePick: RecentImagePick`은 앞의 둘과 달리 기본값이 없어 **호출부 둘이 값을 반드시
@@ -834,8 +845,8 @@ A-005를 연다(#222). 현재 그 `nickName`은 `GroupListUiState` 기본값 moc
 (`GroupCreateViewModel`·`SegmentationViewModel`·`GroupNickNameViewModel`(#244)·`TermAgreeViewModel`(#242)·
 `CanvasMainViewModel`(#268)·`GroupSettingViewModel`(#285)·`CanvasBGEditViewModel`(#329)).
 **Assisted 파라미터가 여럿이면 이름표를 붙인다**(#411) — `CanvasMainViewModel`이 `welcomeGroupName`·
-`welcomeInviteCode` 둘을 함께 받으면서 `@Assisted(ASSISTED_WELCOME_GROUP_NAME)`처럼 **문자열 키로
-구분**한다(둘 다 `String?`이라 타입만으로는 못 가른다). 팩토리 인터페이스와 생성자 양쪽에 같은 키를
+`welcomeInviteCode`·`welcomeMemberLimit` 셋을 함께 받으면서 `@Assisted(ASSISTED_WELCOME_GROUP_NAME)`처럼
+**문자열 키로 구분**한다(앞의 둘은 모두 `String?`이라 타입만으로는 못 가른다). 팩토리 인터페이스와 생성자 양쪽에 같은 키를
 적어야 하고, 어긋나면 컴파일이 아니라 Hilt 생성 코드에서 깨진다.
 **생성 위치는 두 형태가 공존한다** — 엔트리 빌더에서 만들어 Route 파라미터로 넘기거나(`GroupNickName`),
 Route의 기본 인자에서 만들거나(`TermAgree`·`CanvasMain`). 후자는 Route가 인자 값을 받아 팩토리에 넘긴다.

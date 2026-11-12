@@ -1,8 +1,23 @@
-# 코드 주석·KDoc 규약
+# 코드 규약 — Compose 텍스트 글자 크기·주석·KDoc
 
-이 저장소의 Kotlin 코드에 적용되는 규약이다. 문서 트리의 범위 지도는
+이 저장소의 Kotlin 코드에 적용되는 규약이다. Compose 텍스트 글자 크기와 주석·KDoc 두 절이 있다. 문서 트리의 범위 지도는
 [`docs/index.md`](index.md)가 적고, 작업 유형 라우팅은 저장소 루트
 [`CLAUDE.md`](../CLAUDE.md)가 정본이라 여기 중복하지 않는다.
+
+## Compose 텍스트 글자 크기
+
+앱 텍스트는 OS 글자 크기(`fontScale`)와 무관하게 피그마 수치로 그린다. `YGCustomTheme`이
+`core:util:android` `extension/FixedFontScale.kt#ProvideFixedFontScale`로 `LocalDensity`의 `fontScale`을 1로 덮어쓴다.
+텍스트 호출부는 원본 `Text`·`BasicText`·`BasicTextField`를 그대로 쓴다.
+
+- ⚠️ `Dialog`·`Popup`은 새 창에서 `LocalDensity`를 기기 설정으로 되돌린다. 그 content를
+  `ProvideFixedFontScale { ... }`로 다시 감싼다. `ModalBottomSheet`·`DropdownMenu`·`TooltipBox`처럼
+  내부에서 창을 여는 material 컴포넌트를 처음 쓸 때도 같은지 확인한다.
+- 텍스트 크기를 직접 재거나 그리는 코드(`TextMeasurer`, `android.graphics.Paint`)는 `LocalDensity`에서
+  값을 얻는다. 기기 `Resources`·`Context`에서 얻으면 고정이 빠진다.
+- 캔버스 토핑의 화면 단위 덮어쓰기는 테마 고정과 별개로 남긴다 — 테마 고정을 풀어도 토핑은 고정돼야 한다.
+
+자동 강제(린트·CI)는 없다. 리뷰에서 이 절을 근거로 잡는다. 결정: [ADR-0036](adr/0036-ignore-system-font-scale.md).
 
 ## 코드 주석·KDoc
 

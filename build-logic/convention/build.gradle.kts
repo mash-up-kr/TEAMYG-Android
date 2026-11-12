@@ -18,6 +18,7 @@ dependencies {
     compileOnly(libs.kotlin.gradle.plugin)
     compileOnly(libs.compose.gradle.plugin)
     compileOnly(libs.ksp.gradle.plugin)
+    compileOnly(libs.roborazzi.gradle.plugin)
 
     compileOnly(files((libs as Any).javaClass.superclass.protectionDomain.codeSource.location))
 }
@@ -35,6 +36,10 @@ gradlePlugin {
         pluginRegister(
             pluginName = "android.network",
             className = "AndroidNetwork",
+        )
+        pluginRegister(
+            pluginName = "android.instagram.share",
+            className = "AndroidInstagramShare",
         )
         pluginRegister(
             pluginName = "android.library",
@@ -83,6 +88,10 @@ gradlePlugin {
         pluginRegister(
             pluginName = "test.compose",
             className = "TestCompose",
+        )
+        pluginRegister(
+            pluginName = "ui.snapshot",
+            className = "UiSnapshot",
         )
     }
 }

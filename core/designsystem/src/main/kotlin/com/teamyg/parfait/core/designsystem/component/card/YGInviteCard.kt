@@ -34,8 +34,8 @@ fun YGInviteCard(
     inviteCode: String,
     subText: String,
     status: YGInviteCardStatus,
-    copyButtonText: String,
-    onCopyClick: () -> Unit,
+    actionText: String,
+    onActionClick: () -> Unit,
     modifier: Modifier = Modifier,
     @DrawableRes endIconResource: Int? = R.drawable.ic_copy,
 ) {
@@ -96,10 +96,10 @@ fun YGInviteCard(
             )
 
             YGButton(
-                text = copyButtonText,
+                text = actionText,
                 buttonType = YGButtonType.SmallSquare,
                 isEnabled = status == YGInviteCardStatus.Active,
-                onClick = onCopyClick,
+                onClick = onActionClick,
                 endIconResource = endIconResource,
             )
         }
@@ -148,16 +148,16 @@ private fun PreviewYGInviteCard() = PreviewBox {
             inviteCode = "WDIDCJ",
             subText = "1명 남음",
             status = YGInviteCardStatus.Active,
-            copyButtonText = "복사",
-            onCopyClick = {},
+            actionText = "복사",
+            onActionClick = {},
         )
         YGInviteCard(
             label = "그룹 초대 코드",
             inviteCode = "WDIDCJ",
             subText = "최대 인원 도달",
             status = YGInviteCardStatus.Invalid,
-            copyButtonText = "복사",
-            onCopyClick = {},
+            actionText = "복사",
+            onActionClick = {},
         )
     }
 }

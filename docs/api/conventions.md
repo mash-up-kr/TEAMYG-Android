@@ -2,8 +2,8 @@
 id: conventions
 title: 서버 API 전역 계약
 server_module: common/response, common/error, http/global
-server_commit: 8b4a94b
-verified: 2026-10-25
+server_commit: 1a36480
+verified: 2026-11-08
 tags: [api, parfait, server-contract, conventions]
 ---
 
@@ -72,6 +72,7 @@ JSON)는 `ApiResponse`로 감싸지 않는다. 앱이 Retrofit으로 부르는 �
 | `MemberErrorCode` | `core/member/exception` | 2 |
 | `ParfaitImageErrorCode` | `core/parfaitimage/exception` | 5 |
 | `ParfaitErrorCode` | `core/parfait/exception` | 5 (2026-08-15 신설, 2026-08-16 상세 조회·배경 변경으로 2 → 5) |
+| `StatsErrorCode` | `core/stats/exception` | 2 (2026-11-08 신설, 운영 전용 [stats.md](stats.md)) |
 
 ### `CommonErrorCode`
 
@@ -139,6 +140,7 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 - `/api/v1/test/parfait-canvas/rotate` ⚠️ **테스트 전용**
 - `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` · `/link` — App Links·Universal Links
   검증 파일과 초대 링크 웹 폴백([deeplink.md](deeplink.md))
+- `/admin/stats` — 운영용 가입자 통계. JWT 대신 컨트롤러가 `X-Stats-Token` 정적 토큰을 검사한다([stats.md](stats.md))
 
 인증 실패는 `AuthErrorCode.UNAUTHORIZED`(401)로 나간다.
 
@@ -175,6 +177,10 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 `HealthController`가 매핑한 `GET /health`(`http/global/health`)는 화이트리스트에 있어 **인증 없이 열린다**.
 `/actuator/health`와는 별개 경로다.
 
+**2026-11-08 actuator 노출이 `health,metrics`로 늘었다.** `/actuator/metrics`는 화이트리스트에 없어 앱 서버
+안에서는 인증 대상이고, API 호스트 앞단 Caddy가 `/actuator/health`·`/actuator/health/*` 외의 `/actuator/*`를
+직접 404로 막는다(`deploy/caddy/Caddyfile`의 `@actuatorInternal`). 앱이 부르는 경로는 없다.
+
 ## URL 규약
 
 현재 3형태가 공존한다.
@@ -188,6 +194,7 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 | `/api/v1/test/<도메인>/<동작>` | `/api/v1/test/parfait-canvas/rotate` (테스트 전용) |
 | `/api/v2/<…>` (같은 자원의 v1과 나란히 있다) | `/api/v2/groups/{groupId}/parfaits/today` · `/api/v2/parfait-groups` |
 | `/api/<도메인>` (버전 없음) | `/api/parfait-groups` — v2는 `/api/v2/parfait-groups`라 v1에만 버전이 없다 |
+| `/admin/<도메인>` (`/api` 밖, envelope 있음) | `/admin/stats` (운영 전용) → [stats.md](stats.md) |
 | `/api` 밖(루트 도메인 웹 표면) | `/` · `/oss` · `/link` · `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` → [deeplink.md](deeplink.md) |
 
 버전 프리픽스 유무가 갈리고, **그룹을 가리키는 경로가 `groups`와 `parfait-groups` 둘**이다.

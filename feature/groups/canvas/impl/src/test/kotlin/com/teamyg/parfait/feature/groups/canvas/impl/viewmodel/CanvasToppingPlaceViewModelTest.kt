@@ -260,6 +260,118 @@ class CanvasToppingPlaceViewModelTest {
         assertUntouched(viewModel.state.value)
     }
 
+    @Test
+    fun onToppingTransform_enteringCenterGuideZone_snapsAndTriggersHapticOnce() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 캔버스 정중앙에서 50dp 밖으로 끌어 둔 상태(가이드 임계값 6dp 밖)
+            val viewModel = readyViewModel()
+            viewModel.processIntent(
+                CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(50.dp, 0.dp), zoom = 1f, rotationDelta = 0f),
+            )
+            assertFalse(viewModel.state.value.isCenterGuideXVisible)
+
+            // When 다시 중앙 6dp 안으로 끌어온다
+            viewModel.effect.test {
+                viewModel.processIntent(
+                    CanvasToppingPlaceIntent.OnToppingTransform(
+                        pan = DpOffset((-46).dp, 0.dp),
+                        zoom = 1f,
+                        rotationDelta = 0f,
+                    ),
+                )
+
+                // Then 정중앙으로 스냅되고 햅틱이 한 번 울린다
+                assertEquals(CanvasToppingPlaceEffect.TriggerSnapHaptic, awaitItem())
+                expectNoEvents()
+            }
+            assertTrue(viewModel.state.value.isCenterGuideXVisible)
+            assertEquals(130.dp, viewModel.state.value.offsetX)
+        }
+
+    @Test
+    fun onToppingTransform_leavingCenterGuideZone_hidesGuideWithoutHaptic() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 중앙 가이드에 스냅된 상태
+        val viewModel = readyViewModel()
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(50.dp, 0.dp), zoom = 1f, rotationDelta = 0f),
+        )
+        viewModel.effect.test {
+            viewModel.processIntent(
+                CanvasToppingPlaceIntent.OnToppingTransform(
+                    pan = DpOffset((-46).dp, 0.dp),
+                    zoom = 1f,
+                    rotationDelta = 0f,
+                ),
+            )
+            assertEquals(CanvasToppingPlaceEffect.TriggerSnapHaptic, awaitItem())
+            assertTrue(viewModel.state.value.isCenterGuideXVisible)
+
+            // When 다시 임계값 밖으로 끌어낸다
+            viewModel.processIntent(
+                CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(20.dp, 0.dp), zoom = 1f, rotationDelta = 0f),
+            )
+
+            // Then 가이드만 꺼지고 해제는 햅틱이 없다
+            expectNoEvents()
+        }
+        assertFalse(viewModel.state.value.isCenterGuideXVisible)
+        assertEquals(154.dp, viewModel.state.value.offsetX)
+    }
+
+    @Test
+    fun onToppingTransform_rotatingIntoNinety_showsAngleGuideAndTriggersHapticOnce() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 90도 밖(85도)까지 회전해 아직 각도 가이드가 안 뜬 상태
+            val viewModel = readyViewModel()
+            viewModel.processIntent(
+                CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 1f, rotationDelta = 85f),
+            )
+            assertFalse(viewModel.state.value.isAngleGuideVisible)
+
+            // When 3도 더 돌려 88도로 들어온다
+            viewModel.effect.test {
+                viewModel.processIntent(
+                    CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 1f, rotationDelta = 3f),
+                )
+
+                // Then 90도 세로선으로 스냅되고 햅틱이 한 번 울린다
+                assertEquals(CanvasToppingPlaceEffect.TriggerSnapHaptic, awaitItem())
+                expectNoEvents()
+            }
+            val state = viewModel.state.value
+            assertTrue(state.isAngleGuideVisible)
+            assertFalse(state.isAngleGuideHorizontal)
+            assertEquals(90f, state.rotationDegrees, SCALE_DELTA)
+        }
+
+    @Test
+    fun onToppingTransform_draggingWithoutRotation_keepsAngleGuideHidden() = runTest(mainDispatcherRule.dispatcher) {
+        // 0도 토핑을 회전 없이 드래그만 하면 각도 가이드는 뜨지 않는다(회전했을 때만 노출)
+        val viewModel = readyViewModel()
+
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(10.dp, 10.dp), zoom = 1f, rotationDelta = 0f),
+        )
+
+        assertFalse(viewModel.state.value.isAngleGuideVisible)
+        assertFalse(viewModel.state.value.hasRotatedThisGesture)
+    }
+
+    @Test
+    fun onToppingTransformGestureEnd_resetsRotationTracking() = runTest(mainDispatcherRule.dispatcher) {
+        // 제스처가 끝나면 다음 드래그가 지난 회전을 물려받지 않도록 플래그를 되돌린다
+        val viewModel = readyViewModel()
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 1f, rotationDelta = 88f),
+        )
+        assertTrue(viewModel.state.value.hasRotatedThisGesture)
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingTransformGestureEnd)
+
+        assertFalse(viewModel.state.value.hasRotatedThisGesture)
+        assertFalse(viewModel.state.value.isAngleGuideVisible)
+    }
+
     private fun assertUntouched(state: CanvasToppingPlaceUiState) {
         assertEquals(0.dp, state.offsetX)
         assertEquals(0.dp, state.offsetY)

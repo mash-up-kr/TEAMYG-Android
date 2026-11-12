@@ -94,6 +94,7 @@ fun GroupCreateRoute(
                     groupId = effect.groupId,
                     welcomeGroupName = effect.groupName,
                     welcomeInviteCode = effect.inviteCode,
+                    welcomeMemberLimit = effect.memberLimit,
                 ),
             )
         }

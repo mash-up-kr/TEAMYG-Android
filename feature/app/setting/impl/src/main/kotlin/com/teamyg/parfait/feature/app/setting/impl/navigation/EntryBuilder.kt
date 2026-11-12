@@ -7,8 +7,10 @@ import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
+import com.teamyg.parfait.feature.app.setting.api.NavKeyNotificationSetting
 import com.teamyg.parfait.feature.app.setting.impl.route.AccountInfoRoute
 import com.teamyg.parfait.feature.app.setting.impl.route.AppSettingRoute
+import com.teamyg.parfait.feature.app.setting.impl.route.NotificationSettingRoute
 
 fun EntryProviderScope<NavKey>.featureAppSettingEntryBuilder(navigator: Navigator) {
     entry<NavKeyAppSetting> {
@@ -20,6 +22,13 @@ fun EntryProviderScope<NavKey>.featureAppSettingEntryBuilder(navigator: Navigato
 
     entry<NavKeyAccountInfo> {
         AccountInfoRoute(
+            navigator = navigator,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+
+    entry<NavKeyNotificationSetting> {
+        NotificationSettingRoute(
             navigator = navigator,
             modifier = Modifier.fillMaxSize(),
         )

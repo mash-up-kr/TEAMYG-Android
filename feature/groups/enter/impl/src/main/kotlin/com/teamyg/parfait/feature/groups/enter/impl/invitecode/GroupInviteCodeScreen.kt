@@ -14,13 +14,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
@@ -133,20 +133,19 @@ internal fun GroupInviteCodeScreen(
 }
 
 private class GroupInviteCodeScreenPreviewParameterProvider :
-    PreviewParameterProvider<GroupInviteCodeUiState> {
-    override val values: Sequence<GroupInviteCodeUiState>
-        get() = sequenceOf(
-            GroupInviteCodeUiState(""),
-            GroupInviteCodeUiState(text = "he", focusedIndex = 2, isFocused = true),
-            GroupInviteCodeUiState(text = "hello", focusedIndex = 5, isFocused = true),
-            GroupInviteCodeUiState(text = "", inviteCodeError = InviteCodeError.MEMBER_LIMIT_REACHED),
-            GroupInviteCodeUiState(
-                text = "",
-                focusedIndex = 0,
-                isFocused = true,
-                clipboardInviteCode = "E54W1A",
-            ),
-        )
+    NamedPreviewParameterProvider<GroupInviteCodeUiState>() {
+    override val entries = listOf(
+        "empty" to GroupInviteCodeUiState(""),
+        "partial" to GroupInviteCodeUiState(text = "he", focusedIndex = 2, isFocused = true),
+        "full" to GroupInviteCodeUiState(text = "hello", focusedIndex = 5, isFocused = true),
+        "memberLimitError" to GroupInviteCodeUiState(text = "", inviteCodeError = InviteCodeError.MEMBER_LIMIT_REACHED),
+        "clipboardSuggestion" to GroupInviteCodeUiState(
+            text = "",
+            focusedIndex = 0,
+            isFocused = true,
+            clipboardInviteCode = "E54W1A",
+        ),
+    )
 }
 
 @YGPreview

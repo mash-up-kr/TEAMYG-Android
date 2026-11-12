@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
-import android.content.ClipData
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,8 +15,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -31,10 +28,13 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
+import com.teamyg.parfait.core.ui.R as CoreUiR
+import com.teamyg.parfait.core.util.android.extension.shareText
 import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_SAVE_RESULT_KEY
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveType
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
@@ -62,14 +62,10 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
-import com.teamyg.parfait.core.ui.R as CoreUiR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.number
-
-private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
 
 /** 작성자 정보는 지금 강조된 토핑의 것 하나만 보여야 한다. */
 private const val SPOTLIGHT_TOAST_TAG = "spotlight"
@@ -85,13 +81,13 @@ internal fun CanvasMainRoute(
                 groupIdValue = navKey.groupId,
                 welcomeGroupName = navKey.welcomeGroupName,
                 welcomeInviteCode = navKey.welcomeInviteCode,
+                welcomeMemberLimit = navKey.welcomeMemberLimit,
             )
         },
     ),
 ) {
     val canvasState by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val graphicsLayer = rememberGraphicsLayer()
 
@@ -105,6 +101,7 @@ internal fun CanvasMainRoute(
     val alertPolicy = rememberYGAlertPolicy()
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
+    val shareFailedMessage = stringResource(R.string.canvas_share_failed)
     val captureFailureMessage = stringResource(R.string.canvas_main_capture_failure)
     val closedCanvasAlertTitleFormat = stringResource(R.string.canvas_main_closed_canvas_alert_title)
     val closedCanvasAlertSubFormat = stringResource(R.string.canvas_main_closed_canvas_alert_sub)
@@ -112,15 +109,15 @@ internal fun CanvasMainRoute(
     val todayCanvasErrorMessage = stringResource(R.string.canvas_main_today_canvas_error)
     val toppingFlowStartErrorMessage = stringResource(R.string.canvas_main_topping_flow_start_error)
     val welcomeJoinedTitleFormat = stringResource(R.string.canvas_welcome_joined_title)
-    val welcomeJoinedSub = stringResource(R.string.canvas_welcome_joined_sub)
+    val welcomeAddToppingSub = stringResource(R.string.canvas_welcome_add_topping_sub)
     val welcomeCreatedTitleFormat = stringResource(R.string.canvas_welcome_created_title)
     val welcomeCreatedSubFormat = stringResource(R.string.canvas_welcome_created_sub)
-    val welcomeInviteCopyText = stringResource(R.string.canvas_welcome_invite_copy)
-    val welcomeInviteCopiedText = stringResource(R.string.canvas_welcome_invite_copied)
-    val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
+    val welcomeInviteShareText = stringResource(R.string.canvas_welcome_invite_share)
+
+    var pendingSaveType by remember { mutableStateOf(CanvasSaveType.IMAGE) }
 
     // WRITE_EXTERNAL_STORAGE 요청은 Activity 가 있어야만 가능해, 저장할 것을 여기서 들고 있다가
-    // 승인이 오면 그때 ViewModel 로 넘긴다(API 29+ 는 애초에 필요 없어 안 걸린다)
+    // 승인이 오면 그때 ViewModel 로 넘긴다
     var pendingGallerySave by remember { mutableStateOf<PendingGallerySave?>(null) }
     val galleryWritePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -169,6 +166,8 @@ internal fun CanvasMainRoute(
             is CanvasSaveResult.Video -> saveWithPermission(PendingGallerySave.Video(result.videoPath))
 
             is CanvasSaveResult.VideoFailed -> toastPolicy.showError(gallerySaveFailureMessage)
+
+            is CanvasSaveResult.ShareFailed -> toastPolicy.showError(shareFailedMessage)
         }
     }
 
@@ -222,7 +221,6 @@ internal fun CanvasMainRoute(
                     // 다른 그룹원이 토핑을 올리거나 지우면, 나중에 읽은 토핑이 이미 캡처된
                     // 그림과 어긋난다
                     val capturedState = viewModel.state.value
-                    val toppingCount = capturedState.toppings.size + capturedState.texts.size
                     val videoSource = CanvasVideoSource(
                         toppings = capturedState.toppings,
                         texts = capturedState.texts,
@@ -240,9 +238,9 @@ internal fun CanvasMainRoute(
                             CanvasVideoSourceHolder.put(videoSource)
                             navigator.goTo(
                                 destination = NavKeyCanvasImageSave(
+                                    saveType = pendingSaveType,
                                     imagePath = file.absolutePath,
                                     date = selectedDate.toString(),
-                                    toppingCount = toppingCount,
                                 ),
                             )
                         }.onFailure { toastPolicy.showError(captureFailureMessage) }
@@ -272,30 +270,22 @@ internal fun CanvasMainRoute(
                 is CanvasMainEffect.ShowWelcome -> when (val welcome = effect.welcome) {
                     is CanvasWelcome.Joined -> alertPolicy.show(
                         title = welcomeJoinedTitleFormat.format(welcome.groupName),
-                        sub = welcomeJoinedSub,
+                        sub = welcomeAddToppingSub,
+                    )
+
+                    is CanvasWelcome.CreatedSolo -> alertPolicy.show(
+                        title = welcomeCreatedTitleFormat.format(welcome.groupName),
+                        sub = welcomeAddToppingSub,
                     )
 
                     is CanvasWelcome.Created -> alertPolicy.show(
                         title = welcomeCreatedTitleFormat.format(welcome.groupName),
                         sub = welcomeCreatedSubFormat.format(welcome.inviteCode),
-                        buttonText = welcomeInviteCopyText,
-                        buttonIconResource = DesignSystemR.drawable.ic_copy,
+                        buttonText = welcomeInviteShareText,
+                        buttonIconResource = null,
                         onButtonClick = {
-                            scope.launch {
-                                clipboard.setClipEntry(
-                                    ClipEntry(
-                                        ClipData.newPlainText(
-                                            CLIP_LABEL_INVITE_MESSAGE,
-                                            inviteMessageTemplate.format(welcome.inviteCode),
-                                        ),
-                                    ),
-                                )
-                            }
-                            alertPolicy.show(
-                                title = welcomeCreatedTitleFormat.format(welcome.groupName),
-                                sub = welcomeCreatedSubFormat.format(welcome.inviteCode),
-                                buttonText = welcomeInviteCopiedText,
-                                buttonIconResource = DesignSystemR.drawable.ic_copy,
+                            context.shareText(
+                                context.getString(CoreUiR.string.group_invite_message, welcome.inviteCode),
                             )
                         },
                     )
@@ -374,7 +364,14 @@ internal fun CanvasMainRoute(
             onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
             onClickTextInput = { viewModel.processIntent(CanvasMainIntent.OnClickTextInput) },
             onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
-            onClickSaveToGallery = { viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery) },
+            onClickSaveAsImage = {
+                pendingSaveType = CanvasSaveType.IMAGE
+                viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery)
+            },
+            onClickSaveAsVideo = {
+                pendingSaveType = CanvasSaveType.VIDEO
+                viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery)
+            },
             onClickGoToToday = { viewModel.processIntent(CanvasMainIntent.OnClickGoToToday) },
             onDismissCalendar = { viewModel.processIntent(CanvasMainIntent.DismissCalendar) },
             onSelectYear = { viewModel.processIntent(CanvasMainIntent.SelectYear(it)) },

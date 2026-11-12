@@ -13,6 +13,14 @@ enum class AnalyticsEventType(
      */
     APP_LINK_OPENED(eventId = "AppLink", eventName = "AppLink"),
     APP_ACCOUNT_NICKNAME_CHANGED(eventId = "S-002-01", eventName = "app_account_nickname_changed"),
+    APP_SETTING_NOTIFICATION_TAPPED(eventId = "S-001-01", eventName = "app_setting_notification_tapped"),
+    APP_SETTING_NOTICE_TAPPED(eventId = "S-001-02", eventName = "app_setting_notice_tapped"),
+    APP_NOTICE_ITEM_TAPPED(eventId = "S-106-01", eventName = "app_notice_item_tapped"),
+    APP_NOTIFICATION_SETTING_CHANGED(eventId = "S-105-01", eventName = "app_notification_setting_changed"),
+    APP_NOTIFICATION_DEVICE_SETTINGS_TAPPED(
+        eventId = "S-105-02",
+        eventName = "app_notification_device_settings_tapped",
+    ),
 
     CANVAS_CAMERA_RETAKE_TAPPED(eventId = "C-101-01", eventName = "canvas_camera_retake_tapped"),
     CANVAS_CAMERA_PHOTO_SELECTED(eventId = "C-102-01", eventName = "canvas_camera_photo_selected"),
@@ -31,7 +39,10 @@ enum class AnalyticsEventType(
     GROUP_LIST_JOINED(eventId = "G-001-02", eventName = "group_list_joined"),
     GROUP_LIST_REFRESHED(eventId = "G-001-03", eventName = "group_list_refreshed"),
     GROUP_LIST_INVITE_CODE_PASTED(eventId = "A-004-01", eventName = "group_list_invite_code_pasted"),
+
+    /** 복사 시절 지표를 이어 보려고 남긴 상수. 초대 코드 버튼이 공유로 바뀐 뒤로는 보내지 않는다 */
     GROUP_MENU_INVITE_CODE_COPIED(eventId = "S-101-01", eventName = "group_menu_invite_code_copied"),
+    GROUP_MENU_INVITE_CODE_SHARE(eventId = "S-101-04", eventName = "group_menu_invite_code_share"),
     GROUP_MENU_LEFT(eventId = "S-101-02", eventName = "group_menu_left"),
     GROUP_MENU_NICKNAME_CHANGED(eventId = "S-101-03", eventName = "group_menu_nickname_changed"),
 }

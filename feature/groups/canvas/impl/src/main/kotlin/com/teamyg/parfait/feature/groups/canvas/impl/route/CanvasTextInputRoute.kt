@@ -6,9 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.util.android.extension.triggerSnapHaptic
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
@@ -29,6 +31,7 @@ internal fun CanvasTextInputRoute(
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val toastPolicy = rememberYGToastPolicy()
+    val context = LocalContext.current
     val placeFailedMessage = stringResource(R.string.canvas_text_place_failed)
     val placeFailedPermanentlyMessage = stringResource(R.string.canvas_text_place_failed_permanently)
     val placeUncertainMessage = stringResource(R.string.canvas_text_place_uncertain)
@@ -46,6 +49,8 @@ internal fun CanvasTextInputRoute(
                         PlaceFailure.Uncertain -> placeUncertainMessage
                     },
                 )
+
+                CanvasTextInputEffect.TriggerSnapHaptic -> context.triggerSnapHaptic()
             }
         }
     }
@@ -73,6 +78,9 @@ internal fun CanvasTextInputRoute(
                 viewModel.processIntent(
                     CanvasTextInputIntent.OnToppingTransform(pan = pan, zoom = zoom, rotationDelta = rotationDelta),
                 )
+            },
+            onToppingTransformGestureEnd = {
+                viewModel.processIntent(CanvasTextInputIntent.OnToppingTransformGestureEnd)
             },
             onDragPlacementSeed = { offsetX, offsetY ->
                 viewModel.processIntent(CanvasTextInputIntent.OnDragPlacementSeed(offsetX = offsetX, offsetY = offsetY))
