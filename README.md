@@ -147,8 +147,8 @@ https://github.com/user-attachments/assets/98fd44c5-935f-4207-a45a-6282f05b0d05
 - **네트워크** — [Retrofit](https://github.com/square/retrofit) + [OkHttp](https://github.com/square/okhttp), kotlinx.serialization 컨버터
 - **카메라, 이미지** — [CameraX](https://developer.android.com/training/camerax), [ML Kit Subject Segmentation](https://developers.google.com/ml-kit/vision/subject-segmentation)(토핑 누끼), [ExifInterface](https://developer.android.com/reference/androidx/exifinterface/media/ExifInterface)
 - **저장, 인증** — [DataStore](https://developer.android.com/topic/libraries/architecture/datastore), [Kakao SDK](https://developers.kakao.com/docs/latest/ko/kakaologin/android)(로그인)
-- **관측** — [Firebase](https://firebase.google.com/) Analytics·Crashlytics, [Kermit](https://github.com/touchlab/Kermit)(로깅 추상화)
-- **테스트** — [JUnit4](https://junit.org/junit4/), [kotlin.test](https://kotlinlang.org/api/latest/kotlin.test/), [MockK](https://mockk.io/), [Turbine](https://github.com/cashapp/turbine), [MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver), Compose UI Test
+- **관측** — [Firebase](https://firebase.google.com/) Analytics·Crashlytics·Cloud Messaging(푸시 알림), [Kermit](https://github.com/touchlab/Kermit)(로깅 추상화)
+- **테스트** — [JUnit4](https://junit.org/junit4/), [kotlin.test](https://kotlinlang.org/api/latest/kotlin.test/), [MockK](https://mockk.io/), [Turbine](https://github.com/cashapp/turbine), [MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver), Compose UI Test, [Roborazzi](https://github.com/takahirom/roborazzi) + [Robolectric](https://robolectric.org/) + [ComposablePreviewScanner](https://github.com/sergio-sastre/ComposablePreviewScanner)(스크린샷 테스트)
 - **빌드, 품질** — [Gradle 컨벤션 플러그인](build-logic), [버전 카탈로그](gradle/libs.versions.toml), [ktlint](https://github.com/JLLeitschuh/ktlint-gradle), GitHub Actions
 
 <br />
@@ -167,10 +167,12 @@ https://github.com/user-attachments/assets/98fd44c5-935f-4207-a45a-6282f05b0d05
                                  ├── app
                                  ├── app-preview
                                  ├── core
+                                 │   ├── analytics
                                  │   ├── designsystem
                                  │   ├── ui
                                  │   ├── navigation
                                  │   ├── testing
+                                 │   │   └── android
                                  │   └── util
                                  │       ├── android
                                  │       └── jvm
@@ -185,7 +187,9 @@ https://github.com/user-attachments/assets/98fd44c5-935f-4207-a45a-6282f05b0d05
                                  │   │   ├── enter
                                  │   │   ├── canvas
                                  │   │   └── setting
-                                 │   ├── app/setting
+                                 │   ├── app
+                                 │   │   ├── notice
+                                 │   │   └── setting
                                  │   └── common/terms
                                  ├── data
                                  └── domain
