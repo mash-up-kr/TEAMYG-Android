@@ -1647,3 +1647,30 @@ append-only다. 앞 항목을 고치지 않는다.
   가리키는 노드 0건이라 추출 뒤 prune은 불필요했다
 - 검증: `lint.py` 위반 0건(경고 21건 — `브리지` 18, `그래프고립` 3),
   `check_status.py` 위반 0건. `그래프stale` 경고 해소
+
+## [2026-11-13] ingest | Notion 정책·회의록과 Figma 정책·주석 59건
+
+- 원본: Notion `기획문서 및 정책` 허브 10건, Notion `회의록` DB 36건(43건 중 운영·마케팅
+  7건 제외 — 04-11 계획, 06-16 엠준위, 10-16·10-24·10-29·11-11 릴스, 11-28 쫑파티),
+  Figma `[디자인] 파르페 v0.1` 정책 7건과 디자인 페이지별 주석 6건. 전부 2026-11-13에
+  브라우저 화면에서 옮겼다(API 미사용)
+- raw 배치: 정책은 `wiki/raw/` 루트, 회의록은 `wiki/raw/meetings/`, Figma 주석은
+  `wiki/raw/figma/`. Figma 정책 카드 중 기존 raw와 같은 판본 13건은 넣지 않았다
+- **`conventions.md` §10의 "추가는 Deep Research 산출물에 한한다"와 맞지 않는다.** 앞선
+  기능정의서 v7과 마찬가지로 사용자 지시에 따른 원본 추가다. 규칙 문면을 고칠지는 정하지
+  않았다
+- 민감 데이터: 팀원 실명은 역할 코드로, UT·인터뷰 외부 참가자 8명은 이름만 지웠다.
+  팀원 집 주소 1건과 숙소 주소 1건을 `[주소 삭제]`로 바꿨다. 수집 당시 Notion 글자 색과
+  Figma 목록 번호는 빠졌다
+- 판본 관계: 6건 대체 — `C-001` 캔버스 v0.2 → v0.3, 정책설계 v0.3 → `G-001` 정책 v0.4,
+  `S-002` 두 문서 → 노션판, `S-102` 두 문서 → 노션판. 푸시 v0.1 → v0.4.
+  **`G-001-Empty` 동작 명세 v0.3과 툴팁 정책 v0.1의 관계는 정하지 못해 둘 다 현행**으로 두고
+  [[open-questions]]에 남겼다
+- 신규 개념: `text-topping`, `notice-board`, `target-users`, `product-origin`,
+  `first-upload-problem`
+- 하류 반영: `canvas`, `topping-placement-pipeline`, `group`, `account`,
+  `infinite-parfait`, `push-notification`, `toast`, `screen-id-scheme`,
+  `mvp-scope-limits`, `parfait`, `spec-version-history`, `open-questions`, `overview`,
+  `index`
+- `canvas`의 "그룹 구성원이면 누구나 자유롭게 편집한다"를 받쳐 주는 원본이 없어 "자기
+  것만 편집"으로 정정했다(05-28, 08-27 2차 UT, `C-202`, UX_1)
