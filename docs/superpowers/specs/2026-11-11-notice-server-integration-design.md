@@ -33,7 +33,7 @@ tags: [spec, parfait, notice, data-flow]
 
 ## 범위
 
-- 포함: 공지 인메모리 SSoT, 읽음 id 영속, NEW 판정, 설정 화면 칩, 목록 화면의 SSoT 구독, 상세 화면의 NavKey 입력화, 로그아웃 시 캐시 정리, Mock 제거.
+- 포함: 공지 인메모리 SSoT, 읽음 id 영속, NEW 판정, 설정 화면 칩, 목록 화면의 SSoT 구독, 상세 화면이 id 만 받아 캐시에서 찾기, 로그아웃 시 캐시 정리, Mock 제거.
 - 제외: 푸시·딥링크로 공지 상세에 직접 진입(id만으로 여는 경로), 페이지네이션, 계정별 읽음 분리, 공지 본문 갱신 반영(열려 있는 상세), 분석 이벤트 변경(이미 [log 스펙](2026-10-06-user-events-design.md)에 있는 이벤트는 그대로).
 
 ## 서버 계약 요약
@@ -77,9 +77,10 @@ tags: [spec, parfait, notice, data-flow]
 
 ### feature/app/notice
 
-- `NavKeyNoticeDetail(noticeId: Long, title: String, date: String, content: String)`. 공지 한 건이라 백스택에 실려도 작고, 프로세스가 복원돼도 내용이 그대로라 상세에는 폴백이 필요 없다. `date`는 표시 형식(`2026.11.17`)이다. 상세가 그리지 않는 `isNew`는 싣지 않는다.
-- `NoticeListViewModel`: `GetNoticeItemsUseCase()`를 구독한다. 값이 `null`(캐시 없음)이면 `RefreshNoticesUseCase()`를 한 번 호출한다 — 프로세스 복원 직후처럼 설정 화면을 거치지 않고 목록이 열린 경우를 위한 폴백이다. 실패하면 기존대로 에러 토스트. 행을 누르면 그 공지의 필드로 `NavKeyNoticeDetail`을 만들어 이동한다. 탭 분석 이벤트(`notice_id`·`is_new`)는 행의 `isNew`를 그대로 쓴다.
-- `NoticeDetailViewModel`: Assisted 인자를 NavKey 값으로 바꾸고, 서버·UseCase 조회와 로딩·에러 상태를 없앤다. `init`에서 `MarkNoticeReadUseCase(noticeId)`를 호출한다.
+- `NavKeyNoticeDetail(noticeId: Long)`. 내용은 싣지 않고 id 만 받는다. 상세가 캐시에서 이 id 로 공지를 찾는다. 서버 본문(길이 제한 없는 텍스트)과 표시용 날짜 문자열이 내비게이션 계약과 백스택 복원 상태에 실리지 않게 하고, id 만으로 상세를 열 수 있게 하려는 것이다.
+- `NoticeListViewModel`: `GetNoticeItemsUseCase()`를 구독한다. 값이 `null`(캐시 없음)이면 `RefreshNoticesUseCase()`를 한 번 호출한다 — 프로세스 복원 직후처럼 설정 화면을 거치지 않고 목록이 열린 경우를 위한 폴백이다. 실패하면 기존대로 에러 토스트. 행을 누르면 그 공지의 id 로 `NavKeyNoticeDetail`을 만들어 이동한다(`NavigateToDetail(id)`). 탭 분석 이벤트(`notice_id`·`is_new`)는 행의 `isNew`를 그대로 쓴다.
+- `NoticeDetailViewModel`: Assisted 인자는 `NavKeyNoticeDetail`이고, 목록 ViewModel과 같은 방식으로 `GetNoticeItemsUseCase()`를 구독해 id 로 공지를 찾는다. 값이 `null`(프로세스 복원 직후·로그아웃으로 캐시가 비워진 경우)이면 `RefreshNoticesUseCase()`를 한 번 호출하고, 실패하면 `isUnavailable`로 안내 문구를 보인다. 목록을 받았는데 그 id 가 없으면(서버에서 내려간 공지) 같은 안내 문구를 보인다. 읽음 처리(`MarkNoticeReadUseCase(noticeId)`)는 공지를 찾았을 때만, 이 화면에서 처음 한 번 한다 — 없는 id 를 읽음으로 저장하지 않고, 캐시가 다시 방출해도 중복 저장하지 않는다. 실패는 토스트 없이 화면의 안내 문구 하나로 알린다.
+- 상세의 날짜 표시: `NoticeVO.publishedDate`를 상세 화면이 `yyyy.MM.dd`로 포맷한다.
 - 목록 행의 날짜 표시: `NoticeVO.publishedDate`를 화면이 `yyyy.MM.dd`로 포맷한다.
 
 ## 오류 처리
@@ -105,7 +106,7 @@ tags: [spec, parfait, notice, data-flow]
 
 - **SSoT를 인메모리로, 읽음만 영속으로 나눴다.** 공지는 서버가 정본이라 영속할 이유가 없고(그룹과 같은 판단), 읽음은 서버가 모르는 앱 로컬 사실이라 영속이 필요하다.
 - **`isNew`를 캐시에 두지 않고 UseCase에서 파생한다.** 읽음 처리와 날짜 경과로 값이 바뀌는데 캐시에 넣으면 갱신 지점이 늘어난다.
-- **상세만 NavKey로 받는다.** 목록 전체를 NavKey로 넘기면 용량·낡은 값 문제가 생기지만 공지 한 건은 작고, 상세에서 폴백 경로를 통째로 없앤다. 대가는 id만으로 상세를 열 수 없다는 것이다.
+- **NavKey에는 id 만 싣고 상세가 캐시에서 찾는다.** 처음에는 상세에서 폴백 경로를 없애려고 공지 한 건(제목·날짜·본문)을 NavKey로 통째로 넘겼으나, 서버가 준 임의 길이 본문과 표시용 날짜 문자열이 내비게이션 계약과 백스택 복원 상태에 실리는 것이 부담이라 id 만 넘기는 것으로 바꿨다. 대가는 캐시가 비는 경우(프로세스 복원 직후, 로그아웃으로 캐시 정리)를 상세가 스스로 처리해야 한다는 것이다 — 목록과 같은 `null → 재조회` 폴백을 상세도 갖고, 로딩·열 수 없음 상태가 돌아왔다. 서버 단건 조회(`getNotice`)는 되살리지 않는다. 목록 응답이 이미 본문을 담고 있어 캐시 조회로 충분하다.
 - **읽음은 기기 단위로 유지한다.** 공지는 계정과 무관한 전체 공지라 계정별 분리의 이득이 작다.
 
 ## 미결

@@ -131,6 +131,8 @@
 
 ### Task 5: feature/app/notice — 목록 구독 · 상세 NavKey
 
+> 📌 이후 변경: 상세 NavKey는 `noticeId`만 갖고 상세가 캐시에서 찾는 구조로 바뀌었다. 아래 단계가 말하는 `NavKeyNoticeDetail(noticeId, title, date, content)`는 이전 설계다 → [설계 스펙](../specs/2026-11-11-notice-server-integration-design.md)의 `feature/app/notice` 절.
+
 **Files:**
 - Modify: `feature/app/notice/api/.../NavKeyNoticeDetail.kt`
 - Modify: `feature/app/notice/impl/.../viewmodel/{NoticeListViewModel,NoticeListState,NoticeListSideEffect,NoticeDetailViewModel,NoticeDetailState,NoticeDetailSideEffect}.kt`, `.../route/{NoticeListRoute,NoticeDetailRoute}.kt`, `.../screen/{NoticeListScreen,NoticeDetailScreen}.kt`
