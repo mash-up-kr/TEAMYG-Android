@@ -2,8 +2,8 @@
 id: notification
 title: 알림(기기 FCM 토큰 등록 · 푸시 발송)
 server_module: http/notification
-server_commit: 8b4a94b
-verified: 2026-10-25
+server_commit: 64a5a80
+verified: 2026-11-15
 android_status: partial
 related_spec:
 related_adr: ADR-0013, ADR-0017
@@ -19,7 +19,7 @@ tags: [api, parfait, server-contract, notification]
 [서버가 보내는 푸시](#서버가-보내는-푸시--그룹-이벤트-알림outbox)부터가 **HTTP 응답 스키마가 아닌 계약**이라
 엔드포인트를 세는 방식으로는 이 계약의 변화가 보이지 않는다.
 
-푸시는 **5종**이다. `data.type` 문자열 기준이다.
+푸시는 **6종**이다. `data.type` 문자열 기준이다.
 
 | `data.type` | 트리거 | 수신자 | 경로 | `data.route` |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ tags: [api, parfait, server-contract, notification]
 | `TEXT` | 텍스트 토핑 배치(`PlaceParfaitTextService.place`) | 같은 그룹의 남은 구성원 − 작성자 | Outbox · 단건 | `canvas` |
 | `REMIND_AM` | 매일 10:00 KST 배치 | 활성 그룹이 있고 토큰이 있는 이용자 전원 | 배치 · 멀티캐스트 | `group` |
 | `REMIND_PM` | 매일 20:00 KST 배치 | 같음 | 배치 · 멀티캐스트 | `group` |
+| `ACTIVITY_DIGEST` | `activityDigestEnabled=true`인 수신자의 10분 묶음 윈도우가 닫힐 때(`ActivityDigestCoordinator`가 연 예약 행의 `scheduled_at` 도달) | 그 활동(토핑·배경·텍스트)을 겪은 단일 수신자 본인 | Outbox · 단건(예약 행) | `canvas` |
 
 **캔버스 마감·그룹 초대·텍스트 수정/삭제·토핑 재배치·토핑 일괄 수정은 발송 코드가 없다.**
 
@@ -236,6 +237,11 @@ outbox에 담는다. 발송 전에 텍스트가 수정·삭제돼도 디스패�
 | 수신자가 그룹을 나갔다 | 구성원 조회가 널이거나 `leftAt != null` | `CANCELLED_RECEIVER_LEFT` |
 | 수신자에게 등록된 기기 토큰이 없다 | `findByMemberId`가 빈 목록 | `NO_DEVICE_TOKEN` |
 | (`TEXT`만) 미리보기가 빈 문자열 | `generateTextPreview`가 널 | `CANCELLED_EMPTY_PREVIEW` |
+| (`ACTIVITY_DIGEST`만) 발송 시점에 모아 받기가 꺼져 있다 | `NotificationSettingsQueryPort.findByMemberId(...).activityDigestEnabled`가 `false` | `CANCELLED_DIGEST_DISABLED` |
+| (`ACTIVITY_DIGEST`만) 묶인 활동이 전부 지워졌다 | `coordinator.countAlive(dedupKey)`가 0(토핑·텍스트 삭제, 배경은 삭제 불가라 셈에서 안 빠짐) | `CANCELLED_EMPTY_DIGEST` |
+
+`ACTIVITY_DIGEST`는 **윈도우를 연 시점**이 아니라 **발송 시점의 설정값**을 다시 읽는다 — 윈도우가 열린
+뒤 모아 받기를 꺼도 그 윈도우의 예약 발송은 취소된다.
 
 **행위자가 그룹을 나간 경우는 취소가 아니라 문구 치환이다**(정책 E-05, 위 표의 `누군가`). **캔버스·토핑·
 텍스트 자체의 존재는 검사하지 않는다** — 그룹이 살아 있으면 대상이 지워져도 나간다.
@@ -257,9 +263,13 @@ outbox에 담는다. 발송 전에 텍스트가 수정·삭제돼도 디스패�
 | `TOPPING` | `TOPPING` / `TOPPING_PLACED` | `topping-placed:{toppingId}:{수신자}` |
 | `BACKGROUND` | `PARFAIT` / `BACKGROUND_CHANGED` | `background-changed:{parfaitId}:{변경시각 yyyyMMddHHmmssSSS}:{수신자}` |
 | `TEXT` | `TEXT` / `TEXT_PLACED` | `text-placed:{textId}:{수신자}` |
+| `ACTIVITY_DIGEST` | `GROUP` / `ACTIVITY_DIGEST` | `activity-digest:{수신자}:{groupId}:{parfaitDate}:{윈도우시작 yyyyMMddHHmmssSSS}` |
 
   `BACKGROUND`의 키에 변경 시각(`saved.updatedAt`, 밀리초)이 들어가므로 **변경 한 번마다 별개의 알림**이다.
   같은 밀리초 안의 두 변경만 하나로 접힌다.
+  `ACTIVITY_DIGEST`의 `scheduled_at`(발송 시각)은 윈도우 시작 + 10분이지만, **그 캔버스의 마감(다음 날
+  03:00 KST)을 넘기지 않는다**(`NotificationOutbox.digestWindowEnd`) — 03:00 가까이 열린 윈도우는 10분보다
+  짧게 끝난다.
 - **지연은 폴링 주기에 걸린다.** `OutboxPollingWorker`가 기본 2초(`notification.outbox.poll-interval-ms`)
   간격으로 돌고, 위 리스너가 커밋 직후 워커를 즉시 깨우므로 정상 경로는 거의 즉시다. **깨우는 신호가
   유실돼도 다음 폴링이 잡는다.**
@@ -575,8 +585,10 @@ base intent로 남아 되살릴 때 다시 오는 것은 `FLAG_ACTIVITY_LAUNCHED
 - 세션 없는(`session_id` 널) 행을 로그아웃이 못 지우는 구간을 서버가 닫을지, 앱이 재등록으로 덮을지
   → [open-questions](../synthesis/open-questions.md) OQ-P-342
 - ~~알림 종류가 토핑 등록 1종뿐이고(커밋 제목의 "3종"과 어긋난다)~~ → ✅ **3종이 됐다**(2026-09-04,
-  `[Feat/#128]` — 토핑 등록 · `REMIND_AM` · `REMIND_PM`) — OQ-P-343의 그 갈래는 해소. **남은 것은
-  수신 설정이다** — 알림을 끄겠다는 의사를 담는 자리가 서버·앱 어디에도 없다
+  `[Feat/#128]` — 토핑 등록 · `REMIND_AM` · `REMIND_PM`) — OQ-P-343의 그 갈래는 해소. ~~**남은 것은
+  수신 설정이다** — 알림을 끄겠다는 의사를 담는 자리가 서버·앱 어디에도 없다~~ → ✅ **생겼다**(2026-11-05,
+  S-105 — 위 [알림 설정 조회·변경](#알림-설정-조회변경s-105)). 다만 **캔버스만 진짜로 끌 수 있고
+  활동 쪽은 묶음 전환일 뿐 차단이 아니다** — "꺼도 알림은 그대로 온다"는 활동 쪽에서는 여전히 사실이다
   → [open-questions](../synthesis/open-questions.md) OQ-P-343
 - 리마인드 대상 산출이 **알림 권한을 보지 않는다** — 서버 KDoc의 "권한 거부 이용자는 토큰이 없다"는
   전제가 앱 동작(권한과 무관한 세션 축 등록)과 어긋난다

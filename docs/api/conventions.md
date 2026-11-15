@@ -141,6 +141,8 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 - `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` · `/link` — App Links·Universal Links
   검증 파일과 초대 링크 웹 폴백([deeplink.md](deeplink.md))
 - `/admin/stats` — 운영용 가입자 통계. JWT 대신 컨트롤러가 `X-Stats-Token` 정적 토큰을 검사한다([stats.md](stats.md))
+- `/admin/notices` · `/admin/notices/**` — 공지사항 등록·수정. JWT 대신 컨트롤러가 `X-Notice-Token` 정적
+  토큰을 검사한다(`NoticeAdminTokenVerifier`, 토큰 미설정 시 전 요청 거절)
 
 인증 실패는 `AuthErrorCode.UNAUTHORIZED`(401)로 나간다.
 
@@ -169,6 +171,14 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 ([notification.md](notification.md)). 화이트리스트는 이번에도 바뀌지 않았고, 그 엔드포인트는 회원과
 세션을 **요청이 아니라 토큰에서** 정한다 — 남의 기기를 지목할 경로가 없다.
 
+**2026-11-05 delta의 신규 2건**(알림 설정 조회·변경, S-105)**도 화이트리스트 밖이라 인증 대상**이다
+([notification.md](notification.md)).
+
+**2026-11-05~10 delta로 공지사항 도메인이 신설됐다.** 회원용 목록 조회(`GET /api/v1/notices`)는
+화이트리스트 밖이라 **인증 대상**이지만, 운영자용 등록·수정(`/admin/notices`·`/admin/notices/**`)은
+위에서 보듯 **화이트리스트에 들어왔다** — JWT가 아니라 컨트롤러 자체 토큰 검사로 막는다. `/admin/stats`와
+같은 패턴이다.
+
 **2026-08-11 member 2건·parfait-image 2건도 화이트리스트 밖이라 전부 인증 대상**이다
 ([member.md](member.md)·[parfait-image.md](parfait-image.md)). 네 엔드포인트 모두 대상 회원을 요청이 아니라
 **토큰에서** 정한다 — 남의 계정을 지목할 경로가 없다. 다만 토핑 배치(POST)는 배치자 대조가 없어
@@ -187,14 +197,14 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 
 | 형태 | 예 |
 |---|---|
-| `/api/v1/<도메인>` | `/api/v1/auth/kakao` · `/api/v1/auth/apple` · `/api/v1/auth/signup` · `/api/v1/auth/reissue` · `/api/v1/auth/logout` · `/api/v1/policies` · `/api/v1/images` |
+| `/api/v1/<도메인>` | `/api/v1/auth/kakao` · `/api/v1/auth/apple` · `/api/v1/auth/signup` · `/api/v1/auth/reissue` · `/api/v1/auth/logout` · `/api/v1/policies` · `/api/v1/images` · `/api/v1/notices` · `/api/v1/notifications/settings` |
 | `/api/v1/<도메인>/{id}/<동작>` | `/api/v1/images/{imageId}/confirm` |
 | `/api/v1/<도메인>/me/<하위>` | `/api/v1/users/me` · `/api/v1/users/me/nickname` |
 | `/api/v1/groups/{groupId}/<하위>` | `/api/v1/groups/{groupId}/parfaits` · `.../parfaits/year` · `.../parfaits/today` · `.../parfaits/{parfaitId}` · `.../parfaits/{parfaitId}/background` · `.../parfaits/{parfaitId}/images/{parfaitImageId}/border` |
 | `/api/v1/test/<도메인>/<동작>` | `/api/v1/test/parfait-canvas/rotate` (테스트 전용) |
 | `/api/v2/<…>` (같은 자원의 v1과 나란히 있다) | `/api/v2/groups/{groupId}/parfaits/today` · `/api/v2/parfait-groups` |
 | `/api/<도메인>` (버전 없음) | `/api/parfait-groups` — v2는 `/api/v2/parfait-groups`라 v1에만 버전이 없다 |
-| `/admin/<도메인>` (`/api` 밖, envelope 있음) | `/admin/stats` (운영 전용) → [stats.md](stats.md) |
+| `/admin/<도메인>` (`/api` 밖, envelope 있음) | `/admin/stats` (운영 전용) → [stats.md](stats.md) · `/admin/notices`(등록) · `/admin/notices/{id}`(수정, PATCH) — 공지사항 운영자 API, 화이트리스트 |
 | `/api` 밖(루트 도메인 웹 표면) | `/` · `/oss` · `/link` · `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` → [deeplink.md](deeplink.md) |
 
 버전 프리픽스 유무가 갈리고, **그룹을 가리키는 경로가 `groups`와 `parfait-groups` 둘**이다.
