@@ -10,8 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 /**
- * 목록은 [NoticeLocalDataSource] 인메모리 캐시가 SSoT 다. 조회는 캐시를 읽는 [Flow] 하나,
- * 서버 재조회는 [refreshNotices] 로 갈라 둔다(그룹 목록과 같은 형태).
+ * 목록은 [NoticeLocalDataSource] 인메모리 캐시가 SSoT 다(그룹 목록과 같은 형태).
  */
 class NoticeRepositoryImpl @Inject constructor(
     private val noticeRemoteDataSource: NoticeRemoteDataSource,

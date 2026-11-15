@@ -49,7 +49,7 @@ constructor(
         launch(key = KEY_OBSERVE) {
             getNoticeItems().collect { items ->
                 if (items == null) {
-                    // 설정 화면을 거치지 않고 열린 경우(프로세스 복원 직후 등)에만 직접 채운다
+                    // 설정 화면의 갱신이 아직 끝나지 않았거나 실패했을 때만 직접 채운다
                     refresh()
                 } else {
                     updateState { copy(notices = items) }

@@ -40,7 +40,6 @@ constructor(
         launch(key = KEY_OBSERVE) {
             getNoticeItems().collect { items ->
                 if (items == null) {
-                    // 목록 화면을 거치지 않고 열린 경우(프로세스 복원 직후 등)에만 직접 채운다
                     refresh()
                 } else {
                     showNotice(items.firstOrNull { it.notice.id == key.noticeId }?.notice)
@@ -67,8 +66,8 @@ constructor(
     }
 
     // 읽음 저장이 실패해도 화면은 열려 있어야 한다. 다음에 NEW 칩이 한 번 더 보일 뿐이다.
-    // 읽음 저장이 만드는 재방출로 한 번 더 불려도 같은 id 의 재저장이고, readNoticeIds 가
-    // 값이 같으면 방출하지 않아 거기서 끝난다 — 중복 호출을 막는 장치는 두지 않는다
+    // 재방출로 한 번 더 불려도 같은 id 의 재저장이고 readNoticeIds 가 distinct 라 거기서 끝난다
+    // — 중복 호출을 막는 장치는 두지 않는다
     private fun markRead() {
         launch(key = KEY_MARK_READ) {
             runSuspendCatching { markNoticeRead(key.noticeId) }

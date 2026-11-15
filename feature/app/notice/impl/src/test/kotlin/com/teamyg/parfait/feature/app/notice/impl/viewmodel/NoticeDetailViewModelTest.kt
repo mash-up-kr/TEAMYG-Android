@@ -99,7 +99,7 @@ class NoticeDetailViewModelTest {
 
     @Test
     fun init_cacheEmpty_refreshesOnceThenShowsNotice() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 프로세스 복원 직후처럼 캐시가 비어 있고, 재조회하면 7번 공지가 채워진다
+        // Given 캐시가 비어 있고, 재조회하면 7번 공지가 채워진다
         val cache = MutableStateFlow<List<NoticeItemVO>?>(null)
         coEvery { refreshNotices() } coAnswers {
             cache.value = listOf(item(7L))
