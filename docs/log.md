@@ -474,3 +474,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-11] change | C-001 정원 1명 그룹 생성 배너
 `NavKeyCanvasMain.welcomeMemberLimit` 추가(`GroupCreateRoute`만 채움) · 정원 1이면 `CanvasWelcome.CreatedSolo` — 초대코드·`공유하기` 없이 `canvas_welcome_add_topping_sub`(구 `canvas_welcome_joined_sub`) 보조 문구 · Figma `5456:20958` 메모 반영
+
+## [2026-11-15] change | 앱 설정 약관 풋터(#680) 재적용 · 알림 설정·공지사항 진입 복구
+`YGTextButton` 풋터와 `YGTextButton` 컴포넌트가 다시 들어와 약관 영역이 두 줄 텍스트 버튼(이용약관·개인정보처리방침 / 오픈소스 라이선스·아동 안전 정책)이 됨 · status.md S-001 되돌림 전 서술로 복원 · 11-10에 주석 처리한 알림 설정·공지사항 행을 다시 살려 두 화면에 다시 들어갈 수 있음. 공지 행의 `isNew` 는 아직 하드코딩 `true` 라 항상 NEW 로 보이며, 공지 읽음 상태(#705) 머지 때 `state.hasNewNotice` 로 바뀐다
