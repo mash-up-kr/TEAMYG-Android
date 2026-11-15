@@ -78,8 +78,8 @@ tags: [spec, parfait, notice, data-flow]
 ### feature/app/notice
 
 - `NavKeyNoticeDetail(noticeId: Long)`. 내용은 싣지 않고 id 만 받는다. 상세가 캐시에서 이 id 로 공지를 찾는다. 서버 본문(길이 제한 없는 텍스트)과 표시용 날짜 문자열이 내비게이션 계약과 백스택 복원 상태에 실리지 않게 하고, id 만으로 상세를 열 수 있게 하려는 것이다.
-- `NoticeListViewModel`: `GetNoticeItemsUseCase()`를 구독한다. 값이 `null`(캐시 없음)이면 `RefreshNoticesUseCase()`를 한 번 호출한다 — 프로세스 복원 직후처럼 설정 화면을 거치지 않고 목록이 열린 경우를 위한 폴백이다. 실패하면 기존대로 에러 토스트. 행을 누르면 그 공지의 id 로 `NavKeyNoticeDetail`을 만들어 이동한다(`NavigateToDetail(id)`). 탭 분석 이벤트(`notice_id`·`is_new`)는 행의 `isNew`를 그대로 쓴다.
-- `NoticeDetailViewModel`: Assisted 인자는 `NavKeyNoticeDetail`이고, 목록 ViewModel과 같은 방식으로 `GetNoticeItemsUseCase()`를 구독해 id 로 공지를 찾는다. 값이 `null`(프로세스 복원 직후·로그아웃으로 캐시가 비워진 경우)이면 `RefreshNoticesUseCase()`를 한 번 호출하고, 실패하면 안내 문구를 보인다. 목록을 받았는데 그 id 가 없으면(서버에서 내려간 공지) 같은 안내 문구를 보인다. State는 `notice`와 `isLoading`만 저장하고 `isUnavailable`(`!isLoading && notice == null`)은 거기서 파생한다 — 따로 저장하면 공지가 있는데 "볼 수 없음"인 모순된 조합이 타입상 가능해지고, `notice == null`만으로는 찾는 중과 볼 수 없음을 구분할 수 없다. 읽음 처리(`MarkNoticeReadUseCase(noticeId)`)는 공지를 찾았을 때만 한다 — 없는 id 를 읽음으로 저장하지 않는다. 중복 호출을 막는 장치(ViewModel 플래그 등)는 두지 않는다: 읽음 처리가 `isNew`를 바꿔 같은 공지가 다시 방출되면 한 번 더 불리지만, 같은 id 의 재저장은 멱등이고 `NoticeReadLocalDataSource.readNoticeIds`가 `distinctUntilChanged`라 집합이 그대로면 방출하지 않아 에코가 거기서 끝난다. 실패는 토스트 없이 화면의 안내 문구 하나로 알린다.
+- `NoticeListViewModel`: `GetNoticeItemsUseCase()`를 구독한다. 값이 `null`(캐시 없음)이면 `RefreshNoticesUseCase()`를 한 번 호출한다 — 설정 화면의 갱신이 아직 끝나지 않았거나 실패한 채 목록이 열린 경우를 위한 폴백이다. 실패하면 기존대로 에러 토스트. 행을 누르면 그 공지의 id 로 `NavKeyNoticeDetail`을 만들어 이동한다(`NavigateToDetail(id)`). 탭 분석 이벤트(`notice_id`·`is_new`)는 행의 `isNew`를 그대로 쓴다.
+- `NoticeDetailViewModel`: Assisted 인자는 `NavKeyNoticeDetail`이고, 목록 ViewModel과 같은 방식으로 `GetNoticeItemsUseCase()`를 구독해 id 로 공지를 찾는다. 값이 `null`(캐시가 비워진 경우)이면 `RefreshNoticesUseCase()`를 한 번 호출하고, 실패하면 안내 문구를 보인다. 목록을 받았는데 그 id 가 없으면(서버에서 내려간 공지) 같은 안내 문구를 보인다. State는 `notice`와 `isLoading`만 저장하고 `isUnavailable`(`!isLoading && notice == null`)은 거기서 파생한다 — 따로 저장하면 공지가 있는데 "볼 수 없음"인 모순된 조합이 타입상 가능해지고, `notice == null`만으로는 찾는 중과 볼 수 없음을 구분할 수 없다. 읽음 처리(`MarkNoticeReadUseCase(noticeId)`)는 공지를 찾았을 때만 한다 — 없는 id 를 읽음으로 저장하지 않는다. 중복 호출을 막는 장치(ViewModel 플래그 등)는 두지 않는다: 읽음 처리가 `isNew`를 바꿔 같은 공지가 다시 방출되면 한 번 더 불리지만, 같은 id 의 재저장은 멱등이고 `NoticeReadLocalDataSource.readNoticeIds`가 `distinctUntilChanged`라 집합이 그대로면 방출하지 않아 에코가 거기서 끝난다. 실패는 토스트 없이 화면의 안내 문구 하나로 알린다.
 - 상세의 날짜 표시: `NoticeVO.publishedDate`를 상세 화면이 `yyyy.MM.dd`로 포맷한다.
 - 목록 행의 날짜 표시: `NoticeVO.publishedDate`를 화면이 `yyyy.MM.dd`로 포맷한다.
 
@@ -106,7 +106,7 @@ tags: [spec, parfait, notice, data-flow]
 
 - **SSoT를 인메모리로, 읽음만 영속으로 나눴다.** 공지는 서버가 정본이라 영속할 이유가 없고(그룹과 같은 판단), 읽음은 서버가 모르는 앱 로컬 사실이라 영속이 필요하다.
 - **`isNew`를 캐시에 두지 않고 UseCase에서 파생한다.** 읽음 처리와 날짜 경과로 값이 바뀌는데 캐시에 넣으면 갱신 지점이 늘어난다.
-- **NavKey에는 id 만 싣고 상세가 캐시에서 찾는다.** 처음에는 상세에서 폴백 경로를 없애려고 공지 한 건(제목·날짜·본문)을 NavKey로 통째로 넘겼으나, 서버가 준 임의 길이 본문과 표시용 날짜 문자열이 내비게이션 계약과 백스택 복원 상태에 실리는 것이 부담이라 id 만 넘기는 것으로 바꿨다. 대가는 캐시가 비는 경우(프로세스 복원 직후, 로그아웃으로 캐시 정리)를 상세가 스스로 처리해야 한다는 것이다 — 목록과 같은 `null → 재조회` 폴백을 상세도 갖고, 로딩·열 수 없음 상태가 돌아왔다. 서버 단건 조회(`getNotice`)는 되살리지 않는다. 목록 응답이 이미 본문을 담고 있어 캐시 조회로 충분하다.
+- **NavKey에는 id 만 싣고 상세가 캐시에서 찾는다.** 처음에는 상세에서 폴백 경로를 없애려고 공지 한 건(제목·날짜·본문)을 NavKey로 통째로 넘겼으나, 서버가 준 임의 길이 본문과 표시용 날짜 문자열이 내비게이션 계약과 백스택 복원 상태에 실리는 것이 부담이라 id 만 넘기는 것으로 바꿨다. 대가는 캐시가 비는 경우(로그아웃으로 캐시 정리 등)를 상세가 스스로 처리해야 한다는 것이다 — 이 앱은 프로세스가 죽으면 백스택이 복원되지 않아 그 경로는 지금 실제로는 드물다 — 목록과 같은 `null → 재조회` 폴백을 상세도 갖고, 로딩·열 수 없음 상태가 돌아왔다. 서버 단건 조회(`getNotice`)는 되살리지 않는다. 목록 응답이 이미 본문을 담고 있어 캐시 조회로 충분하다.
 - **읽음은 기기 단위로 유지한다.** 공지는 계정과 무관한 전체 공지라 계정별 분리의 이득이 작다.
 
 ## 미결
