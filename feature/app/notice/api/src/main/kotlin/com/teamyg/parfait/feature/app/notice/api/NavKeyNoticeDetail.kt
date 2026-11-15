@@ -4,14 +4,10 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 /**
- * 공지 한 건을 통째로 받는다. 상세는 서버를 부르지 않고, 백스택이 복원돼도 내용이 그대로 남는다.
- *
- * @property date 표시 형식(`2026.11.17`)
+ * 내용은 싣지 않고 id 만 받는다. 상세가 공지 인메모리 캐시에서 이 id 로 찾으며,
+ * 캐시가 비어 있으면(프로세스 복원 직후 등) 스스로 서버에서 다시 받는다.
  */
 @Serializable
 data class NavKeyNoticeDetail(
     val noticeId: Long,
-    val title: String,
-    val date: String,
-    val content: String,
 ) : NavKey

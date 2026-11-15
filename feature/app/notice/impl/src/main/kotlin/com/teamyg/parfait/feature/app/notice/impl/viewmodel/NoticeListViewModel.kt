@@ -42,7 +42,7 @@ constructor(
                 params = mapOf(PARAM_NOTICE_ID to id.toString(), PARAM_IS_NEW to item.isNew.toString()),
             ),
         )
-        postSideEffect(NoticeListSideEffect.NavigateToDetail(item.notice))
+        postSideEffect(NoticeListSideEffect.NavigateToDetail(item.notice.id))
     }
 
     private fun observeNotices() {

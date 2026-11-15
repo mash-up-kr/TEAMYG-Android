@@ -112,7 +112,7 @@ class NoticeListViewModelTest {
     }
 
     @Test
-    fun clickNotice_navigatesWithThatNotice() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickNotice_navigatesWithThatNoticeId() = runTest(mainDispatcherRule.dispatcher) {
         // Given 목록이 떠 있다
         val target = item(7L, true)
         val viewModel = viewModel(flowOf(listOf(item(1L, false), target)))
@@ -122,8 +122,8 @@ class NoticeListViewModelTest {
             // When 7번 공지를 누른다
             viewModel.processIntent(NoticeListIntent.ClickNotice(id = 7L))
 
-            // Then 그 공지 한 건을 들고 상세로 이동한다
-            assertEquals(NoticeListSideEffect.NavigateToDetail(notice = target.notice), awaitItem())
+            // Then 그 공지의 id 만 들고 상세로 이동한다
+            assertEquals(NoticeListSideEffect.NavigateToDetail(id = target.notice.id), awaitItem())
         }
     }
 

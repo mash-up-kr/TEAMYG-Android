@@ -2,4 +2,5 @@
 <resources>
     <string name="notice_title">공지사항</string>
     <string name="notice_load_error">공지를 불러오지 못했어요, 나중에 다시 시도해 주세요</string>
+    <string name="notice_detail_unavailable">공지를 불러올 수 없어요</string>
 </resources>
