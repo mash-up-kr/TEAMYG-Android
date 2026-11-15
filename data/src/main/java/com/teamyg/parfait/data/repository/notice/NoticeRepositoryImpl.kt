@@ -25,7 +25,7 @@ class NoticeRepositoryImpl @Inject constructor(
     override suspend fun refreshNotices(): Result<Unit> = noticeRemoteDataSource
         .getNotices()
         .onSuccess(noticeLocalDataSource::saveNotices)
-        .map { }
+        .map { Unit }
         .mapErrorToAppError()
 
     override suspend fun markRead(id: Long) = noticeReadLocalDataSource.markRead(id)
