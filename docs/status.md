@@ -64,7 +64,7 @@
 - 설계: [s105-notification-setting](superpowers/specs/archive/2026-11-07-s105-notification-setting-design.md)
 
 ## 공지사항 — 목록·상세
-- 상태: 서버 `GET /api/v1/notices?platform=ANDROID`([api/notice.md](api/notice.md))를 부른다. 설정 화면 진입(`AppSettingViewModel`)이 `RefreshNoticesUseCase`로 갱신을 일으키고, 목록 `NoticeListViewModel`은 인메모리 SSoT(`NoticeLocalDataSource`)를 `GetNoticeItemsUseCase`로 구독하며 캐시가 비어 있을 때만 직접 갱신한다. 행을 누르면 `NavKeyNoticeDetail`(`noticeId`만)로 이동하고, 상세 `NoticeDetailViewModel`이 같은 캐시를 `GetNoticeItemsUseCase`로 구독해 id 로 공지를 찾는다. 캐시가 비어 있으면(프로세스 복원 직후 등) 한 번 갱신하고, 갱신에 실패하거나 목록에 그 id 가 없으면 화면이 "공지를 불러올 수 없어요" 안내를 보인다. 읽음 처리는 공지를 찾았을 때 처음 한 번만 한다.
+- 상태: 서버 `GET /api/v1/notices?platform=ANDROID`([api/notice.md](api/notice.md))를 부른다. 설정 화면 진입(`AppSettingViewModel`)이 `RefreshNoticesUseCase`로 갱신을 일으키고, 목록 `NoticeListViewModel`은 인메모리 SSoT(`NoticeLocalDataSource`)를 `GetNoticeItemsUseCase`로 구독하며 캐시가 비어 있을 때만 직접 갱신한다. 행을 누르면 `NavKeyNoticeDetail`(`noticeId`만)로 이동하고, 상세 `NoticeDetailViewModel`이 같은 캐시를 `GetNoticeItemsUseCase`로 구독해 id 로 공지를 찾는다. 캐시가 비어 있으면(프로세스 복원 직후 등) 한 번 갱신하고, 갱신에 실패하거나 목록에 그 id 가 없으면 화면이 "공지를 불러올 수 없어요" 안내를 보인다. 읽음 처리는 공지를 찾았을 때 하고, 공지가 그대로면 캐시가 다시 방출해도 다시 부르지 않는다.
 - NEW 규칙: 게시 14일 미만(KST)이고 읽은 id(`NoticeReadLocalDataSource`, DataStore, 기기 단위)에 없는 공지. 행별 칩과 설정 화면 공지사항 행의 칩(`AppSettingState.hasNewNotice`)이 같은 규칙을 쓴다. 14일은 기획 확정 전 기준이고 `GetNoticeItemsUseCase`의 상수 한 곳이다.
 - 공지 캐시는 `LogoutUseCase`와 `TokenAuthenticator` 세션 종료 분기에서 비운다. 읽은 id는 지우지 않는다.
 - ⚠️ 설정 화면의 알림 설정·공지사항 진입 행은 임시로 주석 처리돼 있어(`AppSettingScreen`) 현재는 두 화면에 들어갈 수 없다. 주석을 풀 때 공지사항 행의 `isNew`는 `state.hasNewNotice`다.
