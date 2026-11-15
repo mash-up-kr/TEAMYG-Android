@@ -164,6 +164,38 @@ class NoticeDetailViewModelTest {
     }
 
     @Test
+    fun cacheReemits_onlyIsNewChanged_doesNotMarkReadAgain() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 상세가 떠 있고
+        val cache = MutableStateFlow<List<NoticeItemVO>?>(listOf(item(7L)))
+        viewModel(cache)
+        advanceUntilIdle()
+
+        // When 읽음 처리의 결과로 같은 공지가 isNew 만 바뀌어 다시 방출된다
+        cache.value = listOf(item(7L).copy(isNew = false))
+        advanceUntilIdle()
+
+        // Then 에코는 걸러져 읽음 처리를 다시 부르지 않는다
+        coVerify(exactly = 1) { markNoticeRead(7L) }
+    }
+
+    @Test
+    fun cacheReemits_contentChanged_showsUpdatedAndMarksReadAgain() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 상세가 떠 있고
+        val cache = MutableStateFlow<List<NoticeItemVO>?>(listOf(item(7L)))
+        val viewModel = viewModel(cache)
+        advanceUntilIdle()
+
+        // When 서버가 같은 공지의 본문을 고쳐 목록이 다시 온다
+        val edited = notice(7L).copy(content = "수정된 본문")
+        cache.value = listOf(NoticeItemVO(notice = edited, isNew = true))
+        advanceUntilIdle()
+
+        // Then 고쳐진 공지를 보여 주고, 같은 id 를 다시 읽음 처리한다(멱등)
+        assertEquals(edited, viewModel.state.value.notice)
+        coVerify(exactly = 2) { markNoticeRead(7L) }
+    }
+
+    @Test
     fun init_markReadThrows_screenStaysUsable() = runTest(mainDispatcherRule.dispatcher) {
         // Given 읽음 저장이 IO 실패로 던진다
         every { getNoticeItems() } returns flowOf(listOf(item(7L)))
