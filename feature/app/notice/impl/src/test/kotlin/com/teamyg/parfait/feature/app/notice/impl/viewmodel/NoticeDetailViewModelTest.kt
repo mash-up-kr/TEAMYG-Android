@@ -13,7 +13,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -61,6 +63,18 @@ class NoticeDetailViewModelTest {
     }
 
     @Test
+    fun init_beforeCacheEmits_isLoadingWithoutUnavailableMessage() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시가 아직 아무것도 방출하지 않는다
+        val viewModel = viewModel(flow { awaitCancellation() })
+        advanceUntilIdle()
+
+        // Then 찾는 중이라 안내 문구가 뜨지 않고 읽음 처리도 하지 않는다
+        assertTrue(viewModel.state.value.isLoading)
+        assertFalse(viewModel.state.value.isUnavailable)
+        coVerify(exactly = 0) { markNoticeRead(any()) }
+    }
+
+    @Test
     fun init_cacheHit_showsNoticeWithoutRefresh() = runTest(mainDispatcherRule.dispatcher) {
         // Given, When 캐시에 7번 공지가 있는 채로 진입한다
         val viewModel = viewModel(flowOf(listOf(item(1L), item(7L))))
@@ -68,6 +82,7 @@ class NoticeDetailViewModelTest {
 
         // Then 그 공지가 상태에 담기고 서버는 부르지 않는다
         assertEquals(notice(7L), viewModel.state.value.notice)
+        assertFalse(viewModel.state.value.isLoading)
         assertFalse(viewModel.state.value.isUnavailable)
         coVerify(exactly = 0) { refreshNotices() }
     }

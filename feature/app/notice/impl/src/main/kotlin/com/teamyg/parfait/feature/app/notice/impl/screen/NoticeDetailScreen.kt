@@ -122,8 +122,9 @@ private class NoticeDetailPreviewParameterProvider : NamedPreviewParameterProvid
                 publishedDate = LocalDate(2026, 11, 12),
                 content = "- 알림 설정이 생겼어요\n- 오늘의 캔버스 알림을 켜고 끌 수 있어요",
             ),
+            isLoading = false,
         ),
-        "unavailable" to NoticeDetailState(isUnavailable = true),
+        "unavailable" to NoticeDetailState(isLoading = false),
         "loading" to NoticeDetailState(),
     )
 }

@@ -56,19 +56,17 @@ constructor(
     private suspend fun refresh() {
         refreshNotices().onFailure {
             viewModelLogger.e(it) { "공지 상세를 위한 목록 조회에 실패했다: ${key.noticeId}" }
-            updateState { copy(isUnavailable = true) }
+            updateState { copy(isLoading = false) }
         }
     }
 
     // 목록을 받았는데 없으면 서버에서 내려간 공지다. 없는 id 는 읽음으로 저장하지 않는다
     private fun showNotice(notice: NoticeVO?) {
-        if (notice == null) {
-            updateState { copy(notice = null, isUnavailable = true) }
-            return
-        }
+        updateState { copy(notice = notice, isLoading = false) }
 
-        updateState { copy(notice = notice, isUnavailable = false) }
-        markRead()
+        if (notice != null) {
+            markRead()
+        }
     }
 
     // 읽음 저장이 실패해도 화면은 열려 있어야 한다. 다음에 NEW 칩이 한 번 더 보일 뿐이다
