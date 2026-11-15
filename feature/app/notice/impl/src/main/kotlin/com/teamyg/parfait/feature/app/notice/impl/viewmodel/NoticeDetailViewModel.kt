@@ -24,9 +24,6 @@ constructor(
 ) : BaseViewModel<NoticeDetailState, NoticeDetailIntent, NoticeDetailSideEffect>(
     initialState = NoticeDetailState(),
 ) {
-    // 캐시가 다시 방출해도 읽음 저장은 이 화면에서 처음 찾았을 때 한 번이면 된다
-    private var hasMarkedRead = false
-
     init {
         viewModelLogger.i { "NoticeDetailViewModel::init" }
 
@@ -69,11 +66,10 @@ constructor(
         }
     }
 
-    // 읽음 저장이 실패해도 화면은 열려 있어야 한다. 다음에 NEW 칩이 한 번 더 보일 뿐이다
+    // 읽음 저장이 실패해도 화면은 열려 있어야 한다. 다음에 NEW 칩이 한 번 더 보일 뿐이다.
+    // 읽음 저장이 만드는 재방출로 한 번 더 불려도 같은 id 의 재저장이고, readNoticeIds 가
+    // 값이 같으면 방출하지 않아 거기서 끝난다 — 중복 호출을 막는 장치는 두지 않는다
     private fun markRead() {
-        if (hasMarkedRead) return
-
-        hasMarkedRead = true
         launch(key = KEY_MARK_READ) {
             runSuspendCatching { markNoticeRead(key.noticeId) }
                 .onFailure { viewModelLogger.e(it) { "공지 읽음 처리에 실패했다: ${key.noticeId}" } }

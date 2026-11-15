@@ -148,7 +148,7 @@ class NoticeDetailViewModelTest {
     }
 
     @Test
-    fun cacheReemits_marksReadOnlyOnce() = runTest(mainDispatcherRule.dispatcher) {
+    fun cacheReemits_keepsShowingNoticeAndOnlyMarksThatNoticeRead() = runTest(mainDispatcherRule.dispatcher) {
         // Given 상세가 떠 있고
         val cache = MutableStateFlow<List<NoticeItemVO>?>(listOf(item(7L)))
         val viewModel = viewModel(cache)
@@ -158,9 +158,11 @@ class NoticeDetailViewModelTest {
         cache.value = listOf(item(7L), item(8L))
         advanceUntilIdle()
 
-        // Then 읽음 처리는 처음 한 번뿐이고 화면 공지는 그대로다
-        coVerify(exactly = 1) { markNoticeRead(7L) }
+        // Then 화면 공지는 그대로이고, 읽음 처리는 이 화면의 공지에만 걸린다
+        // (재방출로 다시 불려도 같은 id 의 재저장이라 결과가 같다)
         assertEquals(notice(7L), viewModel.state.value.notice)
+        coVerify(atLeast = 1) { markNoticeRead(7L) }
+        coVerify(exactly = 0) { markNoticeRead(8L) }
     }
 
     @Test
