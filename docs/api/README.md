@@ -35,7 +35,7 @@
 | [stats.md](stats.md) | `http/api/stats` | 1 (운영용 가입자 통계 — `/admin/stats`, `X-Stats-Token` 정적 토큰) | 해당 없음(운영 전용) |
 | [deeplink.md](deeplink.md) | `http/api/deeplink` · `http/api/page/root` | 웹 표면 5 (`/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` · `/link` 폴백 · `/` 랜딩 · **`/oss` 오픈소스 라이선스**) — `/api` 밖, envelope 없음 | assetlinks·`/link`·`/oss`(설정 웹뷰) 구현됨, 나머지 해당 없음 |
 
-**총 API 36 엔드포인트 + 웹 표면 5 + 테스트 전용 1**(2026-11-08, 서버 `1a36480`). API 36 중 `/admin/stats` 1건은 운영 전용이라 앱이 부르지 않는다. 웹 표면은 `/api` 밖 HTML·정적 JSON이라
+**총 API 40 엔드포인트 + 웹 표면 5 + 테스트 전용 1**(2026-11-15, 서버 `78be95a`). API 40 중 `/admin/stats` 1건은 운영 전용이라 앱이 부르지 않는다. 웹 표면은 `/api` 밖 HTML·정적 JSON이라
 API 총계와 따로 센다.
 
 ⚠️ **2026-10-25 현재 앱이 못 따라간 서버 계약** — ① **텍스트 토핑**: 새 도메인 3 엔드포인트·캔버스 응답 `texts`·일괄 수정 `textItems`는
