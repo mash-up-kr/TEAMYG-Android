@@ -5,6 +5,7 @@ import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
 import com.teamyg.parfait.data.event.SessionEventBusImpl
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
+import com.teamyg.parfait.data.source.notice.local.NoticeLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
 import com.teamyg.parfait.data.poller.CanvasPoller
@@ -73,6 +74,7 @@ class TokenAuthenticatorTest {
     private lateinit var sessionEventBus: SessionEventBusImpl
     private lateinit var userInfoLocalDataSource: UserInfoLocalDataSource
     private lateinit var groupLocalDataSource: GroupLocalDataSource
+    private lateinit var noticeLocalDataSource: NoticeLocalDataSource
     private lateinit var canvasLocalDataSource: CanvasLocalDataSource
     private lateinit var canvasPoller: CanvasPoller
     private lateinit var authenticator: TokenAuthenticator
@@ -88,6 +90,7 @@ class TokenAuthenticatorTest {
         sessionEventBus = SessionEventBusImpl()
         userInfoLocalDataSource = mockk(relaxed = true)
         groupLocalDataSource = mockk(relaxed = true)
+        noticeLocalDataSource = mockk(relaxed = true)
         canvasLocalDataSource = mockk(relaxed = true)
         canvasPoller = mockk(relaxed = true)
 
@@ -106,6 +109,7 @@ class TokenAuthenticatorTest {
             sessionEventBus = sessionEventBus,
             userInfoLocalDataSource = userInfoLocalDataSource,
             groupLocalDataSource = groupLocalDataSource,
+            noticeLocalDataSource = noticeLocalDataSource,
             canvasLocalDataSource = canvasLocalDataSource,
             canvasPoller = { canvasPoller },
         )
@@ -205,6 +209,8 @@ class TokenAuthenticatorTest {
         coVerify(exactly = 1) { userInfoLocalDataSource.clear() }
         // Then 토큰·계정 정보와 함께 그룹 캐시도 지운다
         verify(exactly = 1) { groupLocalDataSource.clear() }
+        // Then 공지 캐시도 지운다 — 로그아웃 경로와 같은 캐시를 비워야 결과가 같다
+        verify(exactly = 1) { noticeLocalDataSource.clear() }
         // Then 오늘 캔버스 캐시도 함께 지운다 — 안 지우면 다음 계정에 이전 계정의
         // 캔버스가 보인다
         verify(exactly = 1) { canvasLocalDataSource.clear() }
@@ -229,6 +235,7 @@ class TokenAuthenticatorTest {
         // 못하게 트리거부터 끊는다
         coVerifyOrder {
             groupLocalDataSource.clear()
+            noticeLocalDataSource.clear()
             canvasPoller.stopAll()
             canvasLocalDataSource.clear()
             userInfoLocalDataSource.clear()

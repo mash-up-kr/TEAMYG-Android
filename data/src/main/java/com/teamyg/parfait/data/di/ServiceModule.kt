@@ -10,6 +10,7 @@ import com.teamyg.parfait.data.service.ParfaitGroupService
 import com.teamyg.parfait.data.service.ParfaitImageService
 import com.teamyg.parfait.data.service.ParfaitService
 import com.teamyg.parfait.data.service.ParfaitTextService
+import com.teamyg.parfait.data.service.NoticeService
 import com.teamyg.parfait.data.service.PolicyService
 import dagger.Module
 import dagger.Provides
@@ -35,6 +36,10 @@ object ServiceModule {
     @UnauthenticatedClient
     fun provideUnauthenticatedAuthService(@UnauthenticatedClient retrofit: Retrofit): AuthService =
         retrofit.create(AuthService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideNoticeService(retrofit: Retrofit): NoticeService = retrofit.create(NoticeService::class.java)
 
     @Provides
     @Singleton

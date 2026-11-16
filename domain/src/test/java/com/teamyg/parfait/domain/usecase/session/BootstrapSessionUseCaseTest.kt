@@ -11,6 +11,7 @@ import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.repository.notification.NotificationRepository
+import com.teamyg.parfait.domain.repository.notice.NoticeRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import io.mockk.coEvery
@@ -26,6 +27,7 @@ class BootstrapSessionUseCaseTest {
     private val memberRepository: MemberRepository = mockk(relaxed = true)
     private val parfaitGroupRepository: ParfaitGroupRepository = mockk(relaxed = true)
     private val parfaitRepository: ParfaitRepository = mockk(relaxed = true)
+    private val noticeRepository: NoticeRepository = mockk(relaxed = true)
     private val notificationRepository: NotificationRepository = mockk(relaxed = true)
 
     // 정리 경로는 실물 LogoutUseCase 를 통과시킨다 — mock 으로 바꾸면 "정리를 위임했다"만
@@ -33,7 +35,13 @@ class BootstrapSessionUseCaseTest {
     private val bootstrap = BootstrapSessionUseCase(
         authRepository = authRepository,
         memberRepository = memberRepository,
-        logout = LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository, parfaitRepository),
+        logout = LogoutUseCase(
+            authRepository,
+            memberRepository,
+            parfaitGroupRepository,
+            parfaitRepository,
+            noticeRepository,
+        ),
         notificationRepository = notificationRepository,
     )
 

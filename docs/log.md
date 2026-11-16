@@ -478,5 +478,11 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 ## [2026-11-15] change | 앱 설정 약관 풋터(#680) 재적용 · 알림 설정·공지사항 진입 복구
 `YGTextButton` 풋터와 `YGTextButton` 컴포넌트가 다시 들어와 약관 영역이 두 줄 텍스트 버튼(이용약관·개인정보처리방침 / 오픈소스 라이선스·아동 안전 정책)이 됨 · status.md S-001 되돌림 전 서술로 복원 · 11-10에 주석 처리한 알림 설정·공지사항 행을 다시 살려 두 화면에 다시 들어갈 수 있음. 공지 행의 `isNew` 는 아직 하드코딩 `true` 라 항상 NEW 로 보이며, 공지 읽음 상태(#705) 머지 때 `state.hasNewNotice` 로 바뀐다
 
+## [2026-11-11] change | 공지사항 서버 연동·읽음 상태
+`NoticeRepositoryImpl` Mock 을 `GET /api/v1/notices` 호출로 교체 · 목록은 인메모리 SSoT 구독·상세는 `NavKeyNoticeDetail` 입력(서버 미호출) · NEW = 게시 14일 미만 & 미열람(읽은 id 는 DataStore, 기기 단위) · 설정 화면 칩 `hasNewNotice` · 로그아웃·세션 만료 시 공지 캐시 정리 · `api/notice.md` 신설
+
+## [2026-11-15] change | 공지 상세 NavKey를 id 만 받도록 변경
+`NavKeyNoticeDetail(noticeId, title, date, content)` → `NavKeyNoticeDetail(noticeId)` · 상세 `NoticeDetailViewModel`이 `GetNoticeItemsUseCase`로 공지 캐시를 구독해 id 로 찾고, 캐시가 비면 한 번 갱신 · 갱신 실패나 없는 id 는 `NoticeDetailState.isUnavailable` 안내 문구(`notice_detail_unavailable`) · 읽음 처리는 공지를 찾은 뒤에만(중복 호출 방지 장치는 없고, 같은 id 재저장은 멱등) · 날짜 포맷이 목록 Route 에서 상세 화면으로 이동 · 서버 단건 조회는 되살리지 않음
+
 ## [2026-11-11] change | 알림 설정(S-105) 서버 API 결선
 `NotificationSettingRepositoryImpl`을 메모리 mock에서 `GET`/`PATCH /api/v1/notifications/settings`(서버 PR #218)로 교체 · `NotificationSettingService`·`NotificationSettingRemoteDataSource(Impl)`·요청·응답 DTO 신설, `PolicyRepositoryImpl`과 같은 로컬 캐시 없는 순수 원격 패스스루 · domain `NotificationSettingVO`·`NotificationSettingRepository`는 서버 필드명과 의미가 맞아 변경 없음 · api/notification.md·status.md·open-questions(OQ-P-343)·S-105 스펙 반영(캔버스 토글은 진짜 리마인드 차단, 활동 토글은 묶음 전환일 뿐 차단 아님)
