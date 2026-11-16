@@ -1,7 +1,7 @@
 ---
 id: notice-read-per-account
 title: 공지 읽음 기록의 계정별 저장 (Notice Read State per Account)
-status: draft
+status: in-progress
 category: data-flow
 platforms: android
 verified: 2026-11-16
@@ -21,7 +21,7 @@ tags: [spec, parfait]
 
 # Spec: 공지 읽음 기록의 계정별 저장
 
-> 이슈 #714. 상태·날짜는 위 frontmatter가 단일 출처. [공지사항 서버 연동 스펙](2026-11-11-notice-server-integration-design.md)의 "읽음은 기기 단위로 유지한다"와 제외 항목 "계정별 읽음 분리"를 뒤집는다 — 그 문서의 해당 문장은 구현 때 함께 고친다.
+> 이슈 #714. 상태·날짜는 위 frontmatter가 단일 출처. [공지사항 서버 연동 스펙](archive/2026-11-11-notice-server-integration-design.md)의 "읽음은 기기 단위로 유지한다"와 제외 항목 "계정별 읽음 분리"를 뒤집는다 — 그 문서의 해당 문장은 구현 때 함께 고친다.
 
 ## 목표
 
@@ -68,10 +68,10 @@ interface NoticeRepository {
 ## 동작 / 상태
 
 - **읽기**: `NoticeRepositoryImpl.readNoticeIds`는 `UserInfoLocalDataSource.myAccount`(이미 data에 있는 소스. Repository 사이 의존을 피한다)를 `map { it?.memberId }.distinctUntilChanged().flatMapLatest`로 받아, 계정이 있으면 그 계정의 키를, 없으면 빈 집합을 낸다.
-- **쓰기**: `markRead(id)`는 현재 `memberId`를 읽어 소스에 넘긴다. 계정이 `null`이면 쓰지 않고 로그만 남긴다 — 잘못된 계정에 귀속시키는 것보다 NEW가 한 번 더 보이는 쪽이 낫다.
+- **쓰기**: `markRead(id)`는 현재 `memberId`를 읽어 소스에 넘긴다. 계정이 `null`이면 쓰지 않고 조용히 건너뛴다 — 잘못된 계정에 귀속시키는 것보다 NEW가 한 번 더 보이는 쪽이 낫다.
 - **계정 전환·재로그인**: `myAccount`가 바뀌면 같은 흐름이 다른 키를 읽는다. 로그인·로그아웃·세션 만료·웹 로그인에 따로 지우는 분기는 없다.
 - **탈퇴**: `WithdrawUseCase`가 서버 탈퇴가 성공한 뒤 `logout()` **앞에서** `clearReadNotices()`를 부른다. `logout()`이 `myAccount`를 비우므로 순서가 바뀌면 지울 키를 알 수 없다. 이 삭제가 실패해도 로그아웃은 진행한다. 서버 탈퇴가 실패하면 아무것도 지우지 않는다(기존 계약).
-- **오류**: 별칭 생성(Keystore) 실패 시 읽기는 빈 집합, 쓰기는 무시하고 로그를 남긴다. 읽음 기록은 편의 기능이라 화면 진행을 막지 않는다.
+- **오류**: 별칭 생성(Keystore) 실패 시 읽기는 빈 집합, 쓰기는 조용히 무시한다(`data`에는 로깅 도구가 없다). 읽음 기록은 편의 기능이라 화면 진행을 막지 않는다.
 - **`myAccount`가 로그인 중에 `null`인 경우**(계정 갱신 실패): NEW 칩이 일시적으로 많이 보일 수 있다. 감수한다.
 
 ## 표시·제어 규칙
@@ -96,7 +96,7 @@ interface NoticeRepository {
 
 ## 문서 갱신
 
-- [공지사항 서버 연동 스펙](2026-11-11-notice-server-integration-design.md): 읽음 저장소 설명("기기 단위")·제외 항목("계정별 읽음 분리")·결정 문장("읽음은 기기 단위로 유지한다")을 계정 단위로 고친다.
+- [공지사항 서버 연동 스펙](archive/2026-11-11-notice-server-integration-design.md): 읽음 저장소 설명("기기 단위")·제외 항목("계정별 읽음 분리")·결정 문장("읽음은 기기 단위로 유지한다")을 계정 단위로 고친다.
 - `docs/status.md` 공지 절의 "읽은 id는 지우지 않는다"를 새 동작으로 바꾼다.
 - `docs/log.md`에 한 줄 추가한다.
 - `docs/synthesis/open-questions.md` OQ-P-397에 "`AccountKeyAlias`로 해소할 수 있다"는 포인터를 단다.

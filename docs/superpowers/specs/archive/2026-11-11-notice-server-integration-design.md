@@ -4,7 +4,7 @@ title: 공지사항 서버 연동 · 읽음 상태 (Notice Server Integration)
 status: implemented
 category: data-flow
 platforms: android
-verified: 2026-11-11
+verified: 2026-11-16
 related_code:
   - NoticeRepositoryImpl.kt#NoticeRepositoryImpl
   - GroupLocalDataSourceImpl.kt#GroupLocalDataSourceImpl
@@ -34,7 +34,7 @@ tags: [spec, parfait, notice, data-flow]
 ## 범위
 
 - 포함: 공지 인메모리 SSoT, 읽음 id 영속, NEW 판정, 설정 화면 칩, 목록 화면의 SSoT 구독, 상세 화면이 id 만 받아 캐시에서 찾기, 로그아웃 시 캐시 정리, Mock 제거.
-- 제외: 푸시·딥링크로 공지 상세에 직접 진입(id만으로 여는 경로), 페이지네이션, 계정별 읽음 분리, 공지 본문 갱신 반영(열려 있는 상세), 분석 이벤트 변경(이미 [log 스펙](../2026-10-06-user-events-design.md)에 있는 이벤트는 그대로).
+- 제외: 푸시·딥링크로 공지 상세에 직접 진입(id만으로 여는 경로), 페이지네이션, 공지 본문 갱신 반영(열려 있는 상세), 분석 이벤트 변경(이미 [log 스펙](../2026-10-06-user-events-design.md)에 있는 이벤트는 그대로).
 
 ## 서버 계약 요약
 
@@ -57,7 +57,7 @@ tags: [spec, parfait, notice, data-flow]
 ### data
 
 - `NoticeLocalDataSource`(인메모리, `@Singleton`): `notices: StateFlow<List<NoticeVO>?>`, `saveNotices(list)`, `clear()`. `null`은 아직 못 받음, 빈 목록은 공지 0건으로 구분한다. 디스크에 남기지 않는다.
-- `NoticeReadLocalDataSource`(DataStore): 읽은 공지 id 집합. `readNoticeIds: Flow<Set<Long>>`, `suspend markRead(id: Long)`. **기기 단위**라 로그아웃해도 지우지 않는다.
+- `NoticeReadLocalDataSource`(DataStore): 읽은 공지 id 집합. `readNoticeIds: Flow<Set<Long>>`, `suspend markRead(id: Long)`. 읽은 id 는 계정별 별칭 키(`notice_read_<alias>`)로 나뉘어 저장되고 로그아웃해도 지우지 않는다. 설계는 [계정별 읽음 스펙](../2026-11-16-notice-read-per-account-design.md).
 - `NoticeRemoteDataSource`·`NoticeService`·`NoticeResponse`: [api/notice.md](../../../api/notice.md)의 계약 그대로. 요청 `platform`은 `ANDROID`.
 - `NoticeRepositoryImpl`: Mock을 걷어낸다. `notices: Flow<List<NoticeVO>?>`(캐시), `suspend refreshNotices(): Result<Unit>`(서버 호출 후 `saveNotices`), `readNoticeIds: Flow<Set<Long>>`, `suspend markRead(id)`, `clearNotices()`. `getNotices()`·`getNotice(id)`는 없앤다.
 
@@ -92,7 +92,7 @@ tags: [spec, parfait, notice, data-flow]
 ## 테스트
 
 - `NoticeLocalDataSourceImpl`: 저장·`null` 구분·`clear`.
-- `NoticeReadLocalDataSourceImpl`: `FakePreferencesDataStore`로 읽음 추가·중복·재조회.
+- `NoticeReadLocalDataSourceImpl`: `FakePreferencesDataStore`로 읽음 추가·중복·재조회와 계정별 격리.
 - `NoticeRemoteDataSourceImpl`·`NoticeRepositoryImpl`: 정상·비즈니스 실패·네트워크 실패, 캐시 저장 여부, 요청 `platform`.
 - `GetNoticeItemsUseCase`: 14일 경계(13일·14일), 읽은 공지 제외, `null` 전파. `Clock` 고정.
 - `HasNewNoticeUseCase`: 새 공지 없음/있음/읽은 뒤 사라짐.
@@ -107,7 +107,7 @@ tags: [spec, parfait, notice, data-flow]
 - **SSoT를 인메모리로, 읽음만 영속으로 나눴다.** 공지는 서버가 정본이라 영속할 이유가 없고(그룹과 같은 판단), 읽음은 서버가 모르는 앱 로컬 사실이라 영속이 필요하다.
 - **`isNew`를 캐시에 두지 않고 UseCase에서 파생한다.** 읽음 처리와 날짜 경과로 값이 바뀌는데 캐시에 넣으면 갱신 지점이 늘어난다.
 - **NavKey에는 id 만 싣고 상세가 캐시에서 찾는다.** 처음에는 상세에서 폴백 경로를 없애려고 공지 한 건(제목·날짜·본문)을 NavKey로 통째로 넘겼으나, 서버가 준 임의 길이 본문과 표시용 날짜 문자열이 내비게이션 계약과 백스택 복원 상태에 실리는 것이 부담이라 id 만 넘기는 것으로 바꿨다. 대가는 캐시가 비는 경우(로그아웃으로 캐시 정리 등)를 상세가 스스로 처리해야 한다는 것이다 — 이 앱은 프로세스가 죽으면 백스택이 복원되지 않아 그 경로는 지금 실제로는 드물다 — 목록과 같은 `null → 재조회` 폴백을 상세도 갖고, 로딩·열 수 없음 상태가 돌아왔다. 서버 단건 조회(`getNotice`)는 되살리지 않는다. 목록 응답이 이미 본문을 담고 있어 캐시 조회로 충분하다.
-- **읽음은 기기 단위로 유지한다.** 공지는 계정과 무관한 전체 공지라 계정별 분리의 이득이 작다.
+- **읽음은 계정별로 나눠 유지한다.** 기기 단위로 두면 다른 계정이 이전 계정의 읽음 상태를 물려받고, 로그아웃 때 지우면 같은 계정의 재로그인에서 NEW 가 다시 뜬다(#714). 키를 계정 별칭으로 나누고 탈퇴만 그 계정의 기록을 지운다.
 
 ## 미결
 

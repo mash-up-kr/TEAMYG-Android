@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, DataStore Preferences, AndroidKeyStore(HMAC-SHA256), Hilt, mockk, kotlin.test, JUnit4 계측 테스트(API 28 에뮬레이터).
 
-**Spec:** [`docs/superpowers/specs/2026-11-16-notice-read-per-account-design.md`](../specs/2026-11-16-notice-read-per-account-design.md) (공지 서버 연동 스펙 [`2026-11-11-notice-server-integration-design.md`](../specs/2026-11-11-notice-server-integration-design.md)의 읽음 저장 결정을 뒤집는다)
+**Spec:** [`docs/superpowers/specs/2026-11-16-notice-read-per-account-design.md`](../specs/2026-11-16-notice-read-per-account-design.md) (공지 서버 연동 스펙 [`2026-11-11-notice-server-integration-design.md`](../specs/archive/2026-11-11-notice-server-integration-design.md)의 읽음 저장 결정을 뒤집는다)
 
 ## Global Constraints
 
