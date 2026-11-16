@@ -2,8 +2,8 @@
 id: conventions
 title: 서버 API 전역 계약
 server_module: common/response, common/error, http/global
-server_commit: 1a36480
-verified: 2026-11-08
+server_commit: 78be95a
+verified: 2026-11-15
 tags: [api, parfait, server-contract, conventions]
 ---
 
