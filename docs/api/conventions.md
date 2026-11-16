@@ -204,7 +204,7 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 | `/api/v1/test/<도메인>/<동작>` | `/api/v1/test/parfait-canvas/rotate` (테스트 전용) |
 | `/api/v2/<…>` (같은 자원의 v1과 나란히 있다) | `/api/v2/groups/{groupId}/parfaits/today` · `/api/v2/parfait-groups` |
 | `/api/<도메인>` (버전 없음) | `/api/parfait-groups` — v2는 `/api/v2/parfait-groups`라 v1에만 버전이 없다 |
-| `/admin/<도메인>` (`/api` 밖, envelope 있음) | `/admin/stats` (운영 전용) → [stats.md](stats.md) · `/admin/notices` · `/admin/notices/{id}` — 공지사항 운영자 등록·수정(`POST`·`PATCH`), 화이트리스트 + `X-Notice-Token` |
+| `/admin/<도메인>` (`/api` 밖, envelope 있음) | `/admin/stats` (운영 전용) → [stats.md](stats.md) · `/admin/notices` · `/admin/notices/{id}` — 공지사항 운영자 등록·수정(`POST`·`PATCH`) |
 | `/api` 밖(루트 도메인 웹 표면) | `/` · `/oss` · `/link` · `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` → [deeplink.md](deeplink.md) |
 
 버전 프리픽스 유무가 갈리고, **그룹을 가리키는 경로가 `groups`와 `parfait-groups` 둘**이다.
