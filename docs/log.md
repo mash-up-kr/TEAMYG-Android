@@ -486,3 +486,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-11] change | 알림 설정(S-105) 서버 API 결선
 `NotificationSettingRepositoryImpl`을 메모리 mock에서 `GET`/`PATCH /api/v1/notifications/settings`(서버 PR #218)로 교체 · `NotificationSettingService`·`NotificationSettingRemoteDataSource(Impl)`·요청·응답 DTO 신설, `PolicyRepositoryImpl`과 같은 로컬 캐시 없는 순수 원격 패스스루 · domain `NotificationSettingVO`·`NotificationSettingRepository`는 서버 필드명과 의미가 맞아 변경 없음 · api/notification.md·status.md·open-questions(OQ-P-343)·S-105 스펙 반영(캔버스 토글은 진짜 리마인드 차단, 활동 토글은 묶음 전환일 뿐 차단 아님)
+
+## [2026-11-16] audit | 281a9e1d9 — #691·#705 공지사항 · #704 알림 설정 API · #694 토핑 가이드선 · #700 인스타그램 공유 · #702 카메라 핀치 줌 · #706 · #697 · #712 약관 풋터 복구
+372파일 +36761/-3844 · 유닛 1812 · 계측 111 · OQ 신설 OQ-P-463 · 해소 없음
