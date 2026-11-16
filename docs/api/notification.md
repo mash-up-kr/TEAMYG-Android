@@ -238,7 +238,7 @@ outbox에 담는다. 발송 전에 텍스트가 수정·삭제돼도 디스패�
 | 수신자에게 등록된 기기 토큰이 없다 | `findByMemberId`가 빈 목록 | `NO_DEVICE_TOKEN` |
 | (`TEXT`만) 미리보기가 빈 문자열 | `generateTextPreview`가 널 | `CANCELLED_EMPTY_PREVIEW` |
 | (`ACTIVITY_DIGEST`만) 발송 시점에 모아 받기가 꺼져 있다 | `NotificationSettingsQueryPort.findByMemberId(...).activityDigestEnabled`가 `false` | `CANCELLED_DIGEST_DISABLED` |
-| (`ACTIVITY_DIGEST`만) 묶인 활동이 전부 지워졌다 | `coordinator.countAlive(dedupKey)`가 0(토핑·텍스트 삭제, 배경은 삭제 불가라 셈에서 안 빠짐) | `CANCELLED_EMPTY_DIGEST` |
+| (`ACTIVITY_DIGEST`만) 윈도우 안에 쌓인(DEFERRED) 활동이 0건이다 | `coordinator.countAlive(dedupKey)`가 0 — DEFERRED 행만 세며 토핑·텍스트가 지워졌으면 빠지고(배경은 삭제 불가라 안 빠짐), **윈도우를 연 첫 활동은 SEND_NOW로 따로 나가 셈에 없다**(활동이 그 하나뿐이면 요약 푸시는 취소된다) | `CANCELLED_EMPTY_DIGEST` |
 
 `ACTIVITY_DIGEST`는 **윈도우를 연 시점**이 아니라 **발송 시점의 설정값**을 다시 읽는다 — 윈도우가 열린
 뒤 모아 받기를 꺼도 그 윈도우의 예약 발송은 취소된다.
