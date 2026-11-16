@@ -486,3 +486,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-11] change | 알림 설정(S-105) 서버 API 결선
 `NotificationSettingRepositoryImpl`을 메모리 mock에서 `GET`/`PATCH /api/v1/notifications/settings`(서버 PR #218)로 교체 · `NotificationSettingService`·`NotificationSettingRemoteDataSource(Impl)`·요청·응답 DTO 신설, `PolicyRepositoryImpl`과 같은 로컬 캐시 없는 순수 원격 패스스루 · domain `NotificationSettingVO`·`NotificationSettingRepository`는 서버 필드명과 의미가 맞아 변경 없음 · api/notification.md·status.md·open-questions(OQ-P-343)·S-105 스펙 반영(캔버스 토글은 진짜 리마인드 차단, 활동 토글은 묶음 전환일 뿐 차단 아님)
+
+## [2026-11-16] change | 공지 읽음 기록을 계정별 별칭 키로 저장
+`notice_read_ids` 단일 키 → `notice_read_<alias>`(Keystore HMAC `AccountKeyAlias`로 `memberId` 비노출) · `NoticeRepositoryImpl.readNoticeIds`가 `myAccount`에 묶임 · 탈퇴만 `clearReadNotices()`로 그 계정 기록 삭제 · `PastCanvasAlert`(OQ-P-397)는 별도
