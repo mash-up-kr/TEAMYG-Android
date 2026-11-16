@@ -188,4 +188,4 @@ git commit -m "docs: record per-account notice read state"
 - [ ] `./gradlew :data:testDebugUnitTest :domain:test :data:ktlintCheck :domain:ktlintCheck` 통과.
 - [ ] `./gradlew :data:connectedDebugAndroidTest --tests "*AccountKeyAliasTest"`(API 28 에뮬레이터) 통과.
 - [ ] 앱 모듈이 Hilt 그래프까지 컴파일되는지 `./gradlew :app:compileDebugKotlin` 확인.
-- [ ] 푸시한 뒤 PR을 JeonK1 계정으로 연다(`gh auth status`로 계정을 게시 직전에 다시 확인). 본문에 이슈 #714를 연결하고 `PastCanvasAlert`(OQ-P-397)는 별도 이슈로 남긴다는 점을 적는다.
+- [ ] 푸시한 뒤 PR을 JeonK1 계정으로 연다(`gh auth status`로 계정을 게시 직전에 다시 확인). 본문에 이슈 #714를 연결하고 `PastCanvasAlert`(OQ-P-397)를 같은 PR에서 함께 해소한다는 점을 적는다.
