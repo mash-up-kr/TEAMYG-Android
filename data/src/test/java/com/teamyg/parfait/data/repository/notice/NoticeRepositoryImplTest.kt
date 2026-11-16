@@ -130,6 +130,26 @@ class NoticeRepositoryImplTest {
     }
 
     @Test
+    fun readNoticeIds_accountSwitch_dropsThePreviousAccountsStream() = runTest {
+        // Given 끝나지 않는 두 계정의 읽음 흐름을 한 구독으로 보고 있다 — 실제 DataStore 흐름처럼
+        val previous = MutableStateFlow(setOf(1L))
+        every { readLocal.readNoticeIds(MemberId(1L)) } returns previous
+        every { readLocal.readNoticeIds(MemberId(2L)) } returns MutableStateFlow(setOf(9L))
+        val repository = repository
+        val emissions = mutableListOf<Set<Long>>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.readNoticeIds.toList(emissions)
+        }
+
+        // When 다른 계정으로 바뀐 뒤 이전 계정의 흐름이 값을 더 낸다
+        account.value = OTHER_ACCOUNT
+        previous.value = setOf(1L, 2L)
+
+        // Then 이전 계정의 방출은 새 계정 화면에 섞이지 않는다
+        assertEquals(listOf(setOf(1L), setOf(9L)), emissions)
+    }
+
+    @Test
     fun readNoticeIds_signOutThenSameAccount_restoresRecords() = runTest {
         // Given 계정 1 의 기록이 저장돼 있고 구독 중이다
         every { readLocal.readNoticeIds(MemberId(1L)) } returns flowOf(setOf(1L))
