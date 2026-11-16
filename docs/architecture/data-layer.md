@@ -44,11 +44,17 @@ tags: [architecture, parfait]
   서버가 받지 않는 형식이면 바이트 앞머리로 다시 본다** — 확장자와 실제 내용이 어긋난 파일이 드물지
   않고 업로드가 확장자로 contentType을 정하기 때문이다. 어느 쪽으로도 PNG·JPEG이 아니면 던진다).
 - **DataStore 기반** — `RecentImageLocalDataSource`(메타데이터), **`UserInfoLocalDataSource`**(계정 정보 SSoT, 암호화 + `Flow`, PR #263), **`ToppingDraftLocalDataSource`**(토핑 만들기 흐름의 초안 SSoT, 평문 JSON 한 키 + `Flow`, [ADR-0026](../adr/0026-topping-draft-datastore-ssot.md), C-106 결선 PR3 — PR #334로 develop 머지). 초안이 담는 것은 캐시 파일 경로와 id·색·수치뿐이라 암호화 대상이 아니다.
-  **`PastCanvasAlertLocalDataSource`**(#477)도 같은 평문 저장소를 쓰되 **키를 그룹마다 나눈다**
-  (`past_canvas_alert_seen_group_` + 그룹 id) — 값은 그룹별 "마지막으로 확인한 마감일" 하나이고,
-  한 키에 모으면 그룹을 오갈 때 서로의 확인 여부를 덮는다. 못 읽는 값은 `null` 로 접어 "확인한 적
-  없음"과 같게 다룬다 → [past-canvas-alert 스펙](../superpowers/specs/archive/2026-09-09-past-canvas-alert.md).
-  ⚠️ 이 기록은 로그아웃이 지우지 않는다([open-questions](../synthesis/open-questions.md) OQ-P-397).
+  **`PastCanvasAlertLocalDataSource`**(#477)도 같은 평문 저장소를 쓰되 **키를 계정·그룹마다 나눈다**
+  (`past_canvas_alert_seen_` + `AccountKeyAlias.alias("past-canvas-alert:<그룹 id>", memberId)`) —
+  값은 "마지막으로 확인한 마감일" 하나이고, 한 키에 모으면 그룹이나 계정을 오갈 때 서로의 확인 여부를
+  덮는다. 별칭이라 파일만 열어서는 계정 id·그룹 id가 보이지 않는다(공지 읽음 기록도 같은 방식 →
+  [notice-read-per-account 스펙](../superpowers/specs/2026-11-16-notice-read-per-account-design.md)).
+  `PastCanvasAlertRepositoryImpl`이 `myAccount`에서 계정을 읽어 넘기며, 계정을 모르면 읽기는 `null`
+  (기준선만 세우고 알리지 않음)이고 쓰기는 건너뛴다. 못 읽는 값도 `null` 로 접어 "확인한 적 없음"과
+  같게 다룬다 → [past-canvas-alert 스펙](../superpowers/specs/archive/2026-09-09-past-canvas-alert.md).
+  로그아웃·탈퇴는 이 기록을 지우지 않는다 — 그룹마다 키가 있어 지우려면 그룹 목록이 필요한데 탈퇴 때는
+  이미 알 수 없고, 값이 날짜 하나라 고아 키는 두기로 했다. 옛 키 `past_canvas_alert_seen_group_<그룹 id>`는
+  읽지도 지우지도 않는다(업데이트 직후 첫 진입은 "처음 확인"이라 기준선만 세운다).
 - **인메모리** — **`GroupLocalDataSource`**(그룹 목록·상세 SSoT, `@Singleton` + `MutableStateFlow`,
   [ADR-0023](../adr/0023-group-in-memory-ssot.md)). 디스크를 쓰지 않아 **모든 함수가 non-suspend**이고
   실패 채널이 없다 — 계정 정보 SSoT와 형태는 같되 영속·암호화만 뺀 갈래다. 목록은
@@ -449,8 +455,8 @@ UseCase는 대개 Repository 위임 한 줄이고, 규칙을 더 얹는 것은 �
 로컬만 지우면 계정이 살아 있는 채로 사용자만 탈퇴했다고 믿게 되기 때문이다. 정리를 직접 하지 않고
 `LogoutUseCase`에 맡긴 것은 **"무엇을 지우는가"를 한 자리에 두려는 판단의 연장**이고, 그 UseCase의
 호출자는 이로써 셋이 됐다(S-001 로그아웃 · `BootstrapSessionUseCase` · `WithdrawUseCase`).
-⚠️ **그 "한 자리"가 새로 생긴 저장분 하나를 아직 모른다** — `PastCanvasAlertLocalDataSource`(#477)의
-그룹별 확인 기록은 정리 대상에 없다([open-questions](../synthesis/open-questions.md) OQ-P-397).
+`PastCanvasAlertLocalDataSource`(#477)의 확인 기록은 계정별 별칭 키라 로그아웃·탈퇴가 지우지 않아도
+다른 계정에 새지 않는다(위 DataStore 항목).
 
 📌 **위임 UseCase가 다섯 늘었다**(2026-09-09, PR #479) — `feature/*/impl` ViewModel 넷이
 `ToppingDraftRepository`를 직접 주입받던 자리를 없애고 그 사이에 `GetToppingDraftFlowUseCase`·
