@@ -263,10 +263,11 @@ outbox에 담는다. 발송 전에 텍스트가 수정·삭제돼도 디스패�
 | `TOPPING` | `TOPPING` / `TOPPING_PLACED` | `topping-placed:{toppingId}:{수신자}` |
 | `BACKGROUND` | `PARFAIT` / `BACKGROUND_CHANGED` | `background-changed:{parfaitId}:{변경시각 yyyyMMddHHmmssSSS}:{수신자}` |
 | `TEXT` | `TEXT` / `TEXT_PLACED` | `text-placed:{textId}:{수신자}` |
-| `ACTIVITY_DIGEST` | `GROUP` / `ACTIVITY_DIGEST` | `activity-digest:{수신자}:{groupId}:{parfaitDate}:{윈도우시작 yyyyMMddHHmmssSSS}` |
+| `ACTIVITY_DIGEST` | `GROUP` / `ACTIVITY_DIGEST` | `activity-digest:{수신자}:{groupId}:{parfaitDate}:{윈도우시작 yyyyMMddHHmmss}` |
 
   `BACKGROUND`의 키에 변경 시각(`saved.updatedAt`, 밀리초)이 들어가므로 **변경 한 번마다 별개의 알림**이다.
   같은 밀리초 안의 두 변경만 하나로 접힌다.
+  `ACTIVITY_DIGEST`의 윈도우 시작은 `DEDUP_TIME_FORMAT`을 14자(초)까지만 잘라(`DIGEST_KEY_TIME_LENGTH`) 쓴다 — 밀리초는 키에 들어가지 않는다.
   `ACTIVITY_DIGEST`의 `scheduled_at`(발송 시각)은 윈도우 시작 + 10분이지만, **그 캔버스의 마감(다음 날
   03:00 KST)을 넘기지 않는다**(`NotificationOutbox.digestWindowEnd`) — 03:00 가까이 열린 윈도우는 10분보다
   짧게 끝난다.
