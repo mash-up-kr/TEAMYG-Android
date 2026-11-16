@@ -9,6 +9,7 @@ import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -23,6 +24,7 @@ class WithdrawUseCaseTest {
     private val noticeRepository: NoticeRepository = mockk(relaxed = true)
     private val withdraw = WithdrawUseCase(
         memberRepository = memberRepository,
+        noticeRepository = noticeRepository,
         logout = LogoutUseCase(
             authRepository,
             memberRepository,
@@ -60,5 +62,38 @@ class WithdrawUseCaseTest {
         assertIs<AppError.Network>(result.exceptionOrNull())
         coVerify(exactly = 0) { authRepository.logout() }
         coVerify(exactly = 0) { memberRepository.clearMyAccount() }
+        coVerify(exactly = 0) { noticeRepository.clearReadNotices() }
+    }
+
+    @Test
+    fun invoke_serverAccepts_clearsReadNoticesBeforeLogout() = runTest {
+        // Given 서버가 탈퇴를 받아 준다
+        coEvery { memberRepository.withdraw() } returns Result.success(Unit)
+
+        // When 탈퇴한다
+        withdraw()
+
+        // Then 로그아웃이 계정 정보를 비우기 전에 그 계정의 읽음 기록을 지운다 — 순서가
+        // 바뀌면 지울 키를 알 수 없다
+        coVerifyOrder {
+            noticeRepository.clearReadNotices()
+            authRepository.logout()
+            memberRepository.clearMyAccount()
+        }
+    }
+
+    @Test
+    fun invoke_clearReadNoticesFails_stillLogsOut() = runTest {
+        // Given 서버는 탈퇴를 받았지만 읽음 기록 삭제가 실패한다
+        coEvery { memberRepository.withdraw() } returns Result.success(Unit)
+        coEvery { noticeRepository.clearReadNotices() } throws IllegalStateException("datastore")
+
+        // When 탈퇴한다
+        val result = withdraw()
+
+        // Then 탈퇴는 성공이고 기기는 로그아웃된다 — 삭제 실패가 탈퇴한 계정을 로그인 상태로 두면 안 된다
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { authRepository.logout() }
+        coVerify(exactly = 1) { memberRepository.clearMyAccount() }
     }
 }
