@@ -54,8 +54,10 @@ tags: [architecture, parfait]
   계정을 모르면 읽기는 `null`(기준선만 세우고 알리지 않음)이고 쓰기는 건너뛴다. 못 읽는 값도 `null`
   로 접어 "확인한 적 없음"과 같게 다룬다 → [past-canvas-alert 스펙](../superpowers/specs/archive/2026-09-09-past-canvas-alert.md).
   로그아웃·탈퇴는 이 기록을 지우지 않는다 — 그룹마다 키가 있어 지우려면 그룹 목록이 필요한데 탈퇴 때는
-  이미 알 수 없고, 값이 날짜 하나라 고아 키는 두기로 했다. 옛 키 `past_canvas_alert_seen_group_<그룹 id>`는
-  읽지도 지우지도 않는다(업데이트 직후 첫 진입은 "처음 확인"이라 기준선만 세운다).
+  이미 알 수 없고, 값이 날짜 하나라 고아 키는 두기로 했다. 옛 키 `past_canvas_alert_seen_group_<그룹 id>`(1.1.2+ 배포분)는
+  읽는 순간 그 그룹만 옮긴다 — 옛 값은 주인을 몰라 **그 그룹을 처음 읽는 계정**의 별칭 키로 복사하고 옛 키는
+  항상 지운다(새 키가 이미 있으면 새 값이 이기고, 날짜로 못 읽는 값은 버린다). 별칭을 못 만들면 옮기지 않고
+  옛 키를 남긴다. 한 번도 읽히지 않는 그룹의 옛 키는 남는다.
 - **인메모리** — **`GroupLocalDataSource`**(그룹 목록·상세 SSoT, `@Singleton` + `MutableStateFlow`,
   [ADR-0023](../adr/0023-group-in-memory-ssot.md)). 디스크를 쓰지 않아 **모든 함수가 non-suspend**이고
   실패 채널이 없다 — 계정 정보 SSoT와 형태는 같되 영속·암호화만 뺀 갈래다. 목록은
