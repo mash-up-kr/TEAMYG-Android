@@ -28,15 +28,16 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
-import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetLastSeenClosedDateUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.MarkPastCanvasAlertSeenUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -336,7 +337,8 @@ constructor(
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
     private val saveCanvasVideoToGalleryUseCase: SaveCanvasVideoToGalleryUseCase,
     private val startToppingDraft: StartToppingDraftUseCase,
-    private val pastCanvasAlertRepository: PastCanvasAlertRepository,
+    private val getLastSeenClosedDate: GetLastSeenClosedDateUseCase,
+    private val markPastCanvasAlertSeen: MarkPastCanvasAlertSeenUseCase,
     private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
@@ -422,7 +424,7 @@ constructor(
      * 그룹 조합을 처음 확인하는 경우([lastSeenClosedDate] 가 `null`)는 기준선만 조용히 세운다
      * — 배포 직후 이미 알던 마감일까지 알럿으로 뜨는 것을 막는다.
      *
-     * [markSeen] 은 알럿을 띄우기로 확정된 뒤(또는 기준선만 세우는 경우)에만 부른다. 인원 수
+     * [markPastCanvasAlertSeen] 은 알럿을 띄우기로 확정된 뒤(또는 기준선만 세우는 경우)에만 부른다. 인원 수
      * 조회가 실패해 알럿을 못 띄운 경우까지 "봤다"로 남기면, 다음 확인에서
      * [lastSeenClosedDate] 가 이미 같은 값이라 재시도할 계기가 없어져 그 마감을 영영 못 본다.
      */
@@ -430,16 +432,16 @@ constructor(
         val lastClosedDate = canvas.lastClosedDate ?: return
 
         launch(key = PAST_CANVAS_ALERT_KEY) {
-            val lastSeenClosedDate = pastCanvasAlertRepository.lastSeenClosedDate(groupId)
+            val lastSeenClosedDate = getLastSeenClosedDate(groupId)
             if (lastSeenClosedDate == lastClosedDate) return@launch
 
             if (lastSeenClosedDate == null) {
-                pastCanvasAlertRepository.markSeen(groupId, lastClosedDate)
+                markPastCanvasAlertSeen(groupId, lastClosedDate)
                 return@launch
             }
 
             val contributorCount = closedCanvasContributorCount(lastClosedDate) ?: return@launch
-            pastCanvasAlertRepository.markSeen(groupId, lastClosedDate)
+            markPastCanvasAlertSeen(groupId, lastClosedDate)
 
             postSideEffect(
                 CanvasMainEffect.ShowPastCanvasAlert(
