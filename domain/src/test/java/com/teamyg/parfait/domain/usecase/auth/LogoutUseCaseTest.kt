@@ -75,7 +75,7 @@ class LogoutUseCaseTest {
         logout()
 
         // 같은 계정으로 다시 들어오면 읽음 기록을 이어 쓰므로 로그아웃은 지우지 않는다
-        coVerify(exactly = 0) { noticeRepository.clearReadNotices() }
+        coVerify(exactly = 0) { noticeRepository.clearReadNotices(any()) }
     }
 
     @Test

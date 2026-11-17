@@ -40,8 +40,9 @@ class GetNoticeItemsUseCaseTest {
     ): GetNoticeItemsUseCase {
         val repository: NoticeRepository = mockk()
         every { repository.notices } returns notices
-        every { repository.readNoticeIds } returns readIds
-        return GetNoticeItemsUseCase(repository, clock)
+        val getReadNoticeIds: GetReadNoticeIdsUseCase = mockk()
+        every { getReadNoticeIds() } returns readIds
+        return GetNoticeItemsUseCase(repository, getReadNoticeIds, clock)
     }
 
     @Test

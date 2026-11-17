@@ -4,6 +4,7 @@ import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.repository.notice.NoticeRepository
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /**
@@ -30,7 +31,11 @@ class WithdrawUseCase @Inject constructor(
     suspend operator fun invoke(): Result<Unit> {
         val withdrawn = memberRepository.withdraw()
         if (withdrawn.isFailure.not()) {
-            runSuspendCatching { noticeRepository.clearReadNotices() }
+            runSuspendCatching {
+                memberRepository.myAccount.first()?.memberId?.let { memberId ->
+                    noticeRepository.clearReadNotices(memberId)
+                }
+            }
             logout()
         }
 
