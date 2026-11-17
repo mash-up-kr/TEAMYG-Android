@@ -33,7 +33,7 @@ tags: [spec, parfait]
 ## 범위
 
 - 포함: 읽음 id 저장 키를 계정 별칭으로 나누기, 별칭 생성기(Keystore HMAC), UseCase 가 현재 계정을 읽어 Repository 에 넘기는 구조(`GetReadNoticeIdsUseCase`·`MarkNoticeReadUseCase`), 탈퇴 시 해당 계정 기록 삭제, 문서 갱신.
-- 제외: `PastCanvasAlert`(OQ-P-397) — 별도 이슈 #718. 별칭 생성기를 재사용할 수 있게만 만든다. 옛 키 `notice_read_ids`의 마이그레이션·삭제 — 이 키가 들어간 커밋이 아직 어떤 릴리스 태그에도 없어(최신 `1.3.0` 기준) 실사용자 기기에 없다. 읽음 상태를 서버에 두는 방안. 루팅 기기·런타임 후킹에 대한 방어(보호 범위는 **저장된 파일**이다).
+- 제외: `PastCanvasAlert`(OQ-P-397) — 별도 이슈 #718(별도 PR로 해소). 별칭 생성기를 재사용할 수 있게만 만든다. 옛 키 `notice_read_ids`의 마이그레이션·삭제 — 이 키가 들어간 커밋이 아직 어떤 릴리스 태그에도 없어(최신 `1.3.0` 기준) 실사용자 기기에 없다. 읽음 상태를 서버에 두는 방안. 루팅 기기·런타임 후킹에 대한 방어(보호 범위는 **저장된 파일**이다).
 
 ## 배경
 
@@ -117,4 +117,4 @@ class GetReadNoticeIdsUseCase { operator fun invoke(): Flow<Set<Long>> }
 
 - 보호 범위는 **저장된 파일만 열었을 때**다. 키 개수로 이 기기에서 쓴 계정 수는 대략 드러난다.
 - 백업·복원: `allowBackup=true`라 평문 값이 복원될 수 있지만, Keystore 키는 복원되지 않아 새 기기에서는 별칭이 달라진다 — 복원된 기록은 어느 계정과도 맞지 않고 사실상 초기화된다. 의도한 동작이다.
-- 같은 문제를 가진 `PastCanvasAlert`(OQ-P-397)는 별도 이슈 #718로 이어서 `AccountKeyAlias(scope = ...)`로 푼다.
+- 같은 문제를 가진 `PastCanvasAlert`(OQ-P-397)는 별도 이슈 #718에서 `AccountKeyAlias`(scope에 그룹 id를 섞음)로 풀었다. 탈퇴 때 지우지 않는다 — 그룹마다 키가 있어 그룹 목록이 필요하고, 값이 날짜 하나라 고아 키는 둔다.
