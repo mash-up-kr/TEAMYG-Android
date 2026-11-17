@@ -4,10 +4,13 @@ title: 공지 읽음 기록의 계정별 저장 (Notice Read State per Account)
 status: in-progress
 category: data-flow
 platforms: android
-verified: 2026-11-16
+verified: 2026-11-17
 related_code:
+  - AccountKeyAlias.kt#AccountKeyAlias
   - NoticeReadLocalDataSourceImpl.kt#NoticeReadLocalDataSourceImpl
   - NoticeRepositoryImpl.kt#NoticeRepositoryImpl
+  - GetReadNoticeIdsUseCase.kt#GetReadNoticeIdsUseCase
+  - MarkNoticeReadUseCase.kt#MarkNoticeReadUseCase
   - WithdrawUseCase.kt#WithdrawUseCase
   - LogoutUseCase.kt#LogoutUseCase
   - CryptoManager.kt#CryptoManager
