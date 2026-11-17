@@ -53,6 +53,7 @@
 - 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 영역은 서버 정책 목록을 그대로 순회하는 목록 대신 `YGTextButton` 두 줄(이용약관·개인정보처리방침 / 오픈소스 라이선스·아동 안전 정책)로 고정됐다. 이용약관·개인정보처리방침은 `state.policies`에서 `PolicyType.TERMS_OF_SERVICE`·`PRIVACY_POLICY`를 `firstOrNull`로 찾아 있으면 그 `termsId`로 공용 웹뷰를 연다 — **그 타입을 못 찾아도(조회 실패 포함) 줄은 항상 보이고, 누르면 그냥 아무 일도 안 일어난다**(표시 여부와 클릭 가능 여부가 더 이상 같지 않다, 목록 방식 때와 반대 — OQ-P-231). 오픈소스 라이선스·아동 안전 정책은 서버 목록과 무관하게 항상 있고 앱 상수 주소(`OSS_LICENSE_URL`·`CSAE_POLICY_URL`)를 같은 웹뷰로 연다. 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
 - 앵커: `AppSettingViewModel`, `YGTextButton`, `PolicyLinkRow`, `OSS_LICENSE_URL`, `CSAE_POLICY_URL`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
 - ⚠️ 탈퇴 뒤 정리를 맡은 `LogoutUseCase`가 지워진 계정으로 서버 로그아웃을 부르고, 그 401이 재발급·`ForcedLogout`까지 깨워 로그인 이동을 두 곳이 일으킨다(실기기·실서버 확인 없음) (OQ-P-242)
+- ⚠️ 로그아웃·탈퇴가 그룹별 지난 캔버스 알럿 확인 기록을 지우지 않아, 계정을 바꿔 같은 그룹에 들어가면 알럿을 놓친다 (OQ-P-397)
 - ⚠️ 로그아웃 요청 중 항목은 `enabled`만 꺼지고 색이 그대로라 사용자는 눌러도 반응이 없는 이유를 모른다 — 디자인시스템에 비활성 색이 없다 (OQ-P-186)
 - 설계: [app-setting-s001](superpowers/specs/archive/2026-07-19-app-setting-s001.md), [s002-account-info](superpowers/specs/archive/2026-07-22-s002-account-info.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [session-token-refresh-infra](superpowers/specs/archive/2026-08-15-session-token-refresh-infra.md), [ADR-0021](adr/0021-token-refresh-forced-logout.md), [ADR-0022](adr/0022-user-info-local-ssot.md)
 
@@ -145,7 +146,7 @@
 - ⚠️ 연도별 기록 캐시에는 무효화 경로가 없고, 파생 `parfaitHistories`가 "안 받은 해"와 "빈 해"를 같은 빈 목록으로 뭉갠다 (OQ-P-214)
 - ⚠️ 기록 없는 지난 날과 토핑 0건인 날을 잠그는 규칙이 위키 Disabled 정의를 넘어서고, 점을 찍는 기준이 열람 가능 기준까지 겸한다 (OQ-P-213)
 - ⚠️ 지난 캔버스 알럿의 노출 조건·첫 진입 기준선·인원 수 기준·문구는 정책 소스 없이 코드가 정했다 (OQ-P-392)
-- ⚠️ 알럿 인원 수 조회가 실패하면 확인 기록을 남기지 않아 폴링 회차마다 상세 조회가 다시 나간다 (OQ-P-393)
+- ⚠️ 알럿 인원 수 조회가 실패하면 확인 기록을 남기지 않아 폴링 회차마다 상세 조회가 다시 나가고, 그룹별 확인 기록은 로그아웃·탈퇴에도 지워지지 않아 계정을 바꾸면 알럿을 놓친다 (OQ-P-393, OQ-P-397)
 - 설계: [c201-canvas-calendar](superpowers/specs/archive/2026-08-16-c201-canvas-calendar.md), [c201-canvas-calendar-server](superpowers/specs/archive/2026-08-17-c201-canvas-calendar-server.md), [topping-batch-update-and-past-canvas-status](superpowers/specs/archive/2026-08-31-topping-batch-update-and-past-canvas-status.md), [past-canvas-alert](superpowers/specs/archive/2026-09-09-past-canvas-alert.md), [ADR-0029](adr/0029-canvas-today-ssot-polling.md)
 
 ## 캔버스 이미지 저장
