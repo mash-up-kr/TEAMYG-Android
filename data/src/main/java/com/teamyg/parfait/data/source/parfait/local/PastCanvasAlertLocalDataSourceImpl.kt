@@ -7,7 +7,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.teamyg.parfait.data.security.AccountKeyAlias
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
-import kotlinx.coroutines.flow.first
 import kotlinx.datetime.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,8 +23,16 @@ constructor(
         groupId: GroupId,
     ): LocalDate? {
         val key = keyOrNull(memberId, groupId) ?: return null
-        val raw = dataStore.data.first()[key] ?: return null
-        return runCatching { LocalDate.parse(raw) }.getOrNull()
+        val legacyKey = legacyKey(groupId)
+
+        // 옛 키는 주인을 몰라 이 기록을 처음 읽는 계정이 이어받고, 그룹 id 가 드러나니 바로 지운다
+        val stored = dataStore.edit { prefs ->
+            val legacyRaw = prefs[legacyKey] ?: return@edit
+            prefs.remove(legacyKey)
+            if (prefs[key] == null && parse(legacyRaw) != null) prefs[key] = legacyRaw
+        }[key]
+
+        return stored?.let(::parse)
     }
 
     override suspend fun markSeenClosedDate(
@@ -46,7 +53,12 @@ constructor(
         .getOrNull()
         ?.let { alias -> stringPreferencesKey("$KEY_PREFIX$alias") }
 
+    private fun legacyKey(groupId: GroupId) = stringPreferencesKey("$LEGACY_KEY_PREFIX${groupId.value}")
+
+    private fun parse(raw: String): LocalDate? = runCatching { LocalDate.parse(raw) }.getOrNull()
+
     private companion object {
+        const val LEGACY_KEY_PREFIX = "past_canvas_alert_seen_group_"
         const val SCOPE_PREFIX = "past-canvas-alert:"
         const val KEY_PREFIX = "past_canvas_alert_seen_"
     }

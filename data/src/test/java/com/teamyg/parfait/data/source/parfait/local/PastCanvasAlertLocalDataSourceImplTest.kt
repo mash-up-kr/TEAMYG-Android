@@ -1,5 +1,7 @@
 package com.teamyg.parfait.data.source.parfait.local
 
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.teamyg.parfait.data.datastore.FakePreferencesDataStore
 import com.teamyg.parfait.data.security.AccountKeyAlias
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -106,6 +108,68 @@ class PastCanvasAlertLocalDataSourceImplTest {
         dataSource.markSeenClosedDate(ACCOUNT, GroupId(1L), LocalDate(2026, 8, 20))
 
         assertTrue(storedKeyNames().isEmpty())
+    }
+
+    @Test
+    fun lastSeenClosedDate_legacyValue_movesToAliasKeyAndRemovesLegacy() = runTest {
+        // Given 이전 버전이 그룹 id 를 그대로 키에 쓴 값이 남아 있다
+        putLegacy(groupId = 1L, raw = "2026-08-20")
+
+        // When 계정 1 이 그 그룹을 읽는다
+        val seen = dataSource.lastSeenClosedDate(ACCOUNT, GroupId(1L))
+
+        // Then 값을 이어받고, 값은 별칭 키로 옮겨지며 그룹 id 가 보이는 옛 키는 사라진다
+        assertEquals(LocalDate(2026, 8, 20), seen)
+        assertEquals(listOf("past_canvas_alert_seen_a1"), storedKeyNames())
+    }
+
+    @Test
+    fun lastSeenClosedDate_legacyValueAlreadyMoved_otherAccountDoesNotInherit() = runTest {
+        // Given 계정 1 이 먼저 읽어 옛 값을 가져갔다
+        putLegacy(groupId = 1L, raw = "2026-08-20")
+        dataSource.lastSeenClosedDate(ACCOUNT, GroupId(1L))
+
+        // Then 같은 그룹이라도 계정 2 는 물려받지 않는다
+        assertNull(dataSource.lastSeenClosedDate(OTHER_ACCOUNT, GroupId(1L)))
+    }
+
+    @Test
+    fun lastSeenClosedDate_aliasKeyExists_winsAndDropsLegacy() = runTest {
+        // Given 새 키에 이미 기록이 있고 옛 키도 남아 있다
+        dataSource.markSeenClosedDate(ACCOUNT, GroupId(1L), LocalDate(2026, 8, 25))
+        putLegacy(groupId = 1L, raw = "2026-08-20")
+
+        // Then 새 키의 값이 이기고 옛 값으로 덮지 않으며, 그룹 id 가 드러나는 옛 키는 정리한다
+        assertEquals(LocalDate(2026, 8, 25), dataSource.lastSeenClosedDate(ACCOUNT, GroupId(1L)))
+        assertEquals(listOf("past_canvas_alert_seen_a1"), storedKeyNames())
+    }
+
+    @Test
+    fun lastSeenClosedDate_brokenLegacyValue_dropsItAndIsNull() = runTest {
+        // Given 날짜로 읽을 수 없는 옛 값이 남아 있다
+        putLegacy(groupId = 1L, raw = "not-a-date")
+
+        // Then 값을 이어받지 않고 옛 키만 정리한다
+        assertNull(dataSource.lastSeenClosedDate(ACCOUNT, GroupId(1L)))
+        assertTrue(storedKeyNames().isEmpty())
+    }
+
+    @Test
+    fun lastSeenClosedDate_aliasFails_keepsLegacyValueForLater() = runTest {
+        // Given 옛 값이 있고 Keystore 가 별칭을 만들지 못한다
+        putLegacy(groupId = 1L, raw = "2026-08-20")
+        every { accountKeyAlias.alias(any(), any()) } throws IllegalStateException("keystore")
+
+        // Then 옮기지 못하니 null 이고 옛 값은 다음 기회를 위해 남긴다
+        assertNull(dataSource.lastSeenClosedDate(ACCOUNT, GroupId(1L)))
+        assertEquals(listOf("past_canvas_alert_seen_group_1"), storedKeyNames())
+    }
+
+    private suspend fun putLegacy(
+        groupId: Long,
+        raw: String,
+    ) {
+        dataStore.edit { it[stringPreferencesKey("past_canvas_alert_seen_group_$groupId")] = raw }
     }
 
     private suspend fun storedKeyNames(): List<String> {
