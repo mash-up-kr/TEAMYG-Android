@@ -13,17 +13,14 @@ import kotlinx.datetime.LocalDate
  */
 interface PastCanvasAlertRepository {
     /**
-     * [memberId] 계정이 이 그룹에서 마지막으로 확인한 마감일. 한 번도 확인한 적 없으면(이 기기·이
-     * 계정·이 그룹 조합이 처음이면) `null` — 이 값과 지금 마감일이 다른지는 호출부가 판단한다. 여기서 같음
-     * 비교까지 대신하지 않는 이유는, "처음 확인"과 "마감일이 바뀜"을 호출부가 서로 다르게
-     * 다뤄야 해서다(처음 확인이면 기준선만 세우고 알리지 않는다).
+     * 한 번도 확인한 적 없으면 `null`. 같음 비교까지 대신하지 않는 이유는 "처음 확인"과
+     * "마감일이 바뀜"을 호출부가 다르게 다뤄야 해서다(처음이면 기준선만 세우고 알리지 않는다).
      */
     suspend fun lastSeenClosedDate(
         memberId: MemberId,
         groupId: GroupId,
     ): LocalDate?
 
-    /** [lastClosedDate] 를 봤다고(또는 기준선으로) 기록한다 */
     suspend fun markSeen(
         memberId: MemberId,
         groupId: GroupId,
