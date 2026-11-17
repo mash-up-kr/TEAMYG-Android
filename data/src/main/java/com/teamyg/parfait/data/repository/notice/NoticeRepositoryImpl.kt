@@ -17,10 +17,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-/**
- * 목록은 [NoticeLocalDataSource] 인메모리 캐시가 SSoT 다(그룹 목록과 같은 형태).
- * 읽음 기록은 [UserInfoLocalDataSource.myAccount] 의 계정에 묶는다.
- */
+/** 목록은 [NoticeLocalDataSource] 인메모리 캐시가 SSoT 다(그룹 목록과 같은 형태). */
 class NoticeRepositoryImpl @Inject constructor(
     private val noticeRemoteDataSource: NoticeRemoteDataSource,
     private val noticeLocalDataSource: NoticeLocalDataSource,
@@ -29,7 +26,6 @@ class NoticeRepositoryImpl @Inject constructor(
 ) : NoticeRepository {
     override val notices: Flow<List<NoticeVO>?> = noticeLocalDataSource.notices
 
-    // 계정이 바뀌면 이전 계정의 구독을 버리고 새 계정의 키를 읽는다
     @OptIn(ExperimentalCoroutinesApi::class)
     override val readNoticeIds: Flow<Set<Long>> = userInfoLocalDataSource.myAccount
         .map { it?.memberId }
