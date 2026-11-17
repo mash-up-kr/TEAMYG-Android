@@ -18,10 +18,9 @@ import javax.inject.Inject
  * 때문이다. 탈퇴한 계정으로 서버 로그아웃이 한 번 더 나가 실패하지만, 그 실패는 로컬 정리를
  * 막지 않는 것이 [LogoutUseCase] 의 계약이라 결과는 같다.
  *
- * 공지 읽음 기록만 예외로 여기서 먼저 지운다. 로그아웃은 같은 계정의 재로그인에 기록을
- * 이어 주려고 일부러 남기지만, 탈퇴한 계정은 돌아오지 않는다. [LogoutUseCase] 가 계정 정보를
- * 비우면 어느 계정의 기록인지 알 수 없으므로 그 앞에서 지운다. 지우기가 실패해도 탈퇴한
- * 계정이 로그인 상태로 남으면 안 되어 로그아웃은 이어 간다.
+ * 공지 읽음 기록만 예외로 [LogoutUseCase] 앞에서 지운다. 로그아웃은 재로그인에 기록을 이어
+ * 주려고 남기지만 탈퇴한 계정은 돌아오지 않고, 계정 정보가 비워지면 어느 기록인지 알 수 없다.
+ * 지우기가 실패해도 로그아웃은 이어 간다.
  */
 class WithdrawUseCase @Inject constructor(
     private val memberRepository: MemberRepository,

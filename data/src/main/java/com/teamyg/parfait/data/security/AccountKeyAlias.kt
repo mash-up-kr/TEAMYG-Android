@@ -22,7 +22,6 @@ import javax.inject.Singleton
 class AccountKeyAlias
 @Inject
 constructor() {
-    /** 같은 ([scope], [memberId]) 이면 이 기기에서 항상 같은 값, 다르면 다른 값 */
     fun alias(
         scope: String,
         memberId: MemberId,
