@@ -16,7 +16,7 @@ interface NoticeRepository {
     suspend fun refreshNotices(): Result<Unit>
 
     /** 현재 계정에 기록한다. 계정이 없으면 귀속할 곳이 없어 기록하지 않는다 */
-    suspend fun markRead(id: Long)
+    suspend fun markRead(noticeId: Long)
 
     /** 세션이 끝났을 때. 읽음 기록은 건드리지 않는다 */
     fun clearNotices()

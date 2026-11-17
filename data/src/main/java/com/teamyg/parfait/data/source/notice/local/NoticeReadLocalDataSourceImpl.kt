@@ -31,10 +31,10 @@ constructor(
 
     override suspend fun markRead(
         memberId: MemberId,
-        id: Long,
+        noticeId: Long,
     ) {
         val key = keyOrNull(memberId) ?: return
-        dataStore.edit { prefs -> prefs[key] = prefs[key].orEmpty() + id.toString() }
+        dataStore.edit { prefs -> prefs[key] = prefs[key].orEmpty() + noticeId.toString() }
     }
 
     override suspend fun clear(memberId: MemberId) {

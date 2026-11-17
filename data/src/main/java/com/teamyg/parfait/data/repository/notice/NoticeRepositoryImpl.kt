@@ -45,8 +45,8 @@ class NoticeRepositoryImpl @Inject constructor(
         .map { Unit }
         .mapErrorToAppError()
 
-    override suspend fun markRead(id: Long) {
-        currentMemberId()?.let { memberId -> noticeReadLocalDataSource.markRead(memberId, id) }
+    override suspend fun markRead(noticeId: Long) {
+        currentMemberId()?.let { memberId -> noticeReadLocalDataSource.markRead(memberId, noticeId) }
     }
 
     override fun clearNotices() = noticeLocalDataSource.clear()

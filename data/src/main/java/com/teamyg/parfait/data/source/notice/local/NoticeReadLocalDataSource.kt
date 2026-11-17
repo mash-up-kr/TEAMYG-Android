@@ -12,7 +12,7 @@ interface NoticeReadLocalDataSource {
 
     suspend fun markRead(
         memberId: MemberId,
-        id: Long,
+        noticeId: Long,
     )
 
     suspend fun clear(memberId: MemberId)

@@ -6,5 +6,5 @@ import javax.inject.Inject
 class MarkNoticeReadUseCase @Inject constructor(
     private val noticeRepository: NoticeRepository,
 ) {
-    suspend operator fun invoke(id: Long) = noticeRepository.markRead(id)
+    suspend operator fun invoke(noticeId: Long) = noticeRepository.markRead(noticeId)
 }
