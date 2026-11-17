@@ -1,7 +1,7 @@
 ---
 id: notice-server-integration
 title: 공지사항 서버 연동 · 읽음 상태 (Notice Server Integration)
-status: in-progress
+status: implemented
 category: data-flow
 platforms: android
 verified: 2026-11-11
@@ -26,7 +26,7 @@ tags: [spec, parfait, notice, data-flow]
 
 ## 목표
 
-서버 공지 API(`GET /api/v1/notices`, [api/notice.md](../../api/notice.md))를 앱에 연결하고, 설정 화면의 공지사항 행이 "아직 안 본 새 공지가 있는가"를 보여주게 한다.
+서버 공지 API(`GET /api/v1/notices`, [api/notice.md](../../../api/notice.md))를 앱에 연결하고, 설정 화면의 공지사항 행이 "아직 안 본 새 공지가 있는가"를 보여주게 한다.
 
 - **설정 화면 NEW**: 게시 14일 미만이면서 이 앱에서 상세를 연 적 없는 공지가 하나라도 있으면 설정 화면 공지사항 행에 `YGChipNew`를 띄운다. 지금의 `isNew = true // TODO`를 대체한다.
 - **API 호출 지점**: 서버 호출은 설정 화면 진입이 일으키고, 목록·상세는 그 결과를 이어 쓴다. 상세는 서버를 부르지 않는다.
@@ -34,7 +34,7 @@ tags: [spec, parfait, notice, data-flow]
 ## 범위
 
 - 포함: 공지 인메모리 SSoT, 읽음 id 영속, NEW 판정, 설정 화면 칩, 목록 화면의 SSoT 구독, 상세 화면이 id 만 받아 캐시에서 찾기, 로그아웃 시 캐시 정리, Mock 제거.
-- 제외: 푸시·딥링크로 공지 상세에 직접 진입(id만으로 여는 경로), 페이지네이션, 계정별 읽음 분리, 공지 본문 갱신 반영(열려 있는 상세), 분석 이벤트 변경(이미 [log 스펙](2026-10-06-user-events-design.md)에 있는 이벤트는 그대로).
+- 제외: 푸시·딥링크로 공지 상세에 직접 진입(id만으로 여는 경로), 페이지네이션, 계정별 읽음 분리, 공지 본문 갱신 반영(열려 있는 상세), 분석 이벤트 변경(이미 [log 스펙](../2026-10-06-user-events-design.md)에 있는 이벤트는 그대로).
 
 ## 서버 계약 요약
 
@@ -52,13 +52,13 @@ tags: [spec, parfait, notice, data-flow]
 상세 화면 진입 ── markRead(id) ──▶ NoticeReadLocalDataSource
 ```
 
-그룹 목록과 같은 패턴이다([ADR-0023](../../adr/0023-group-in-memory-ssot.md)) — 캐시를 읽는 Flow 하나와 서버 재조회 `refresh…()` 하나로 나눈다.
+그룹 목록과 같은 패턴이다([ADR-0023](../../../adr/0023-group-in-memory-ssot.md)) — 캐시를 읽는 Flow 하나와 서버 재조회 `refresh…()` 하나로 나눈다.
 
 ### data
 
 - `NoticeLocalDataSource`(인메모리, `@Singleton`): `notices: StateFlow<List<NoticeVO>?>`, `saveNotices(list)`, `clear()`. `null`은 아직 못 받음, 빈 목록은 공지 0건으로 구분한다. 디스크에 남기지 않는다.
 - `NoticeReadLocalDataSource`(DataStore): 읽은 공지 id 집합. `readNoticeIds: Flow<Set<Long>>`, `suspend markRead(id: Long)`. **기기 단위**라 로그아웃해도 지우지 않는다.
-- `NoticeRemoteDataSource`·`NoticeService`·`NoticeResponse`: [api/notice.md](../../api/notice.md)의 계약 그대로. 요청 `platform`은 `ANDROID`.
+- `NoticeRemoteDataSource`·`NoticeService`·`NoticeResponse`: [api/notice.md](../../../api/notice.md)의 계약 그대로. 요청 `platform`은 `ANDROID`.
 - `NoticeRepositoryImpl`: Mock을 걷어낸다. `notices: Flow<List<NoticeVO>?>`(캐시), `suspend refreshNotices(): Result<Unit>`(서버 호출 후 `saveNotices`), `readNoticeIds: Flow<Set<Long>>`, `suspend markRead(id)`, `clearNotices()`. `getNotices()`·`getNotice(id)`는 없앤다.
 
 ### domain
@@ -111,5 +111,4 @@ tags: [spec, parfait, notice, data-flow]
 
 ## 미결
 
-- NEW 기준 14일은 이 요구에서 정해졌다. 기획 문서의 읽음 정책이 따로 확정되면 `GetNoticeItemsUseCase`의 상수 한 곳만 바꾼다.
-- 푸시로 공지 상세에 바로 들어가는 진입이 생기면 id 전용 진입점이 필요하다(범위 제외 항목).
+- NEW 기준 14일과 푸시로 공지 상세에 바로 들어가는 진입은 OQ-P-463으로 옮겼다.

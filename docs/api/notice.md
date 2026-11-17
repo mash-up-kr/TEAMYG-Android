@@ -43,5 +43,5 @@ tags: [api, parfait, server-contract, notice]
 ## Android 매핑 · gotcha
 
 - **상세 엔드포인트가 없다.** 목록이 본문까지 담는다. 상세는 목록 값을 `NavKeyNoticeDetail`로 받아 그린다.
-- **읽음 상태 필드가 없다.** "새 공지"는 앱이 게시 14일 미만(KST)이고 이 기기에서 열지 않은 공지로 판정한다([설계](../superpowers/specs/2026-11-11-notice-server-integration-design.md)).
+- **읽음 상태 필드가 없다.** "새 공지"는 앱이 게시 14일 미만(KST)이고 이 기기에서 열지 않은 공지로 판정한다([설계](../superpowers/specs/archive/2026-11-11-notice-server-integration-design.md)).
 - 업데이트 공지에도 `COMMON`이 허용된다(서버 PR 리뷰 노트).
