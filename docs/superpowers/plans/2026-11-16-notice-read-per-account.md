@@ -4,6 +4,8 @@
 
 **Goal:** 공지 읽음 id를 계정별 별칭 키로 저장해, 같은 계정 재로그인은 기록을 유지하고 다른 계정은 0부터 시작하며 Preferences 파일에서 `memberId`를 유추할 수 없게 한다.
 
+> **구현 중 구조 변경:** 이 계획은 `NoticeRepositoryImpl`이 `myAccount`를 읽는 구조로 썼으나, 구현 뒤 계정 판단을 UseCase 로 올렸다(`GetReadNoticeIdsUseCase`·`MarkNoticeReadUseCase`, Repository 는 `memberId` 인자만 받음). 현재 구조는 [스펙](../specs/2026-11-16-notice-read-per-account-design.md)이 정본이다.
+
 **Architecture:** `data/security`에 Keystore HMAC 별칭 생성기(`AccountKeyAlias`)를 두고, `NoticeReadLocalDataSource`가 `MemberId`를 받아 `notice_read_<alias>` 키로 읽고 쓴다. `NoticeRepositoryImpl`은 `UserInfoLocalDataSource.myAccount`에 `flatMapLatest`로 묶는다. 도메인의 `readNoticeIds`/`markRead(id)` 시그니처는 그대로고, 탈퇴만 `clearReadNotices()`로 그 계정 기록을 지운다.
 
 **Tech Stack:** Kotlin, DataStore Preferences, AndroidKeyStore(HMAC-SHA256), Hilt, mockk, kotlin.test, JUnit4 계측 테스트(API 28 에뮬레이터).

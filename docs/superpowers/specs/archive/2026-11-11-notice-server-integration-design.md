@@ -48,7 +48,7 @@ tags: [spec, parfait, notice, data-flow]
 설정 화면 진입 ── refreshNotices() ──▶ 서버 ──▶ NoticeLocalDataSource(인메모리)
                                                       │ notices: StateFlow
             NoticeReadLocalDataSource(DataStore) ──┐  ▼
-              readNoticeIds: Flow<Set<Long>>       └▶ GetNoticeItemsUseCase ─▶ 설정 칩 · 목록 행 칩
+              readNoticeIds(memberId): Flow<Set<Long>>  └▶ GetNoticeItemsUseCase ─▶ 설정 칩 · 목록 행 칩
 상세 화면 진입 ── markRead(id) ──▶ NoticeReadLocalDataSource
 ```
 
@@ -59,15 +59,15 @@ tags: [spec, parfait, notice, data-flow]
 - `NoticeLocalDataSource`(인메모리, `@Singleton`): `notices: StateFlow<List<NoticeVO>?>`, `saveNotices(list)`, `clear()`. `null`은 아직 못 받음, 빈 목록은 공지 0건으로 구분한다. 디스크에 남기지 않는다.
 - `NoticeReadLocalDataSource`(DataStore): 읽은 공지 id 집합. `readNoticeIds(memberId): Flow<Set<Long>>`, `suspend markRead(memberId, id)`, `suspend clear(memberId)`. 읽은 id 는 계정별 별칭 키(`notice_read_<alias>`)로 나뉘어 저장되고 로그아웃해도 지우지 않는다. 설계는 [계정별 읽음 스펙](../2026-11-16-notice-read-per-account-design.md).
 - `NoticeRemoteDataSource`·`NoticeService`·`NoticeResponse`: [api/notice.md](../../../api/notice.md)의 계약 그대로. 요청 `platform`은 `ANDROID`.
-- `NoticeRepositoryImpl`: Mock을 걷어낸다. `notices: Flow<List<NoticeVO>?>`(캐시), `suspend refreshNotices(): Result<Unit>`(서버 호출 후 `saveNotices`), `readNoticeIds: Flow<Set<Long>>`, `suspend markRead(id)`, `clearNotices()`, `suspend clearReadNotices()`(탈퇴 전용). 읽음은 `myAccount`의 계정에 묶는다. `getNotices()`·`getNotice(id)`는 없앤다.
+- `NoticeRepositoryImpl`: Mock을 걷어낸다. `notices: Flow<List<NoticeVO>?>`(캐시), `suspend refreshNotices(): Result<Unit>`(서버 호출 후 `saveNotices`), `readNoticeIds(memberId): Flow<Set<Long>>`, `suspend markRead(memberId, noticeId)`, `clearNotices()`, `suspend clearReadNotices(memberId)`(탈퇴 전용). 어느 계정인지는 UseCase 가 넘긴다(Repository 는 계정을 읽지 않는다). `getNotices()`·`getNotice(id)`는 없앤다.
 
 ### domain
 
 - `NoticeVO(id, title, publishedDate: LocalDate, content)`. 서버 사실만 담고 `isNew`를 두지 않는다 — NEW는 읽음 상태와 오늘 날짜에 따라 바뀌는 파생 값이라 캐시에 박으면 낡는다.
 - `NoticeItemVO(notice: NoticeVO, isNew: Boolean)`: 화면이 그리는 단위.
-- `GetNoticeItemsUseCase`: `notices`와 `readNoticeIds`를 결합해 `Flow<List<NoticeItemVO>?>`를 낸다(`null` 전파). **NEW = `오늘(KST) - publishedDate < 14일` 이고 `id ∉ readNoticeIds`**. 오늘은 주입한 `Clock`과 `Asia/Seoul`로 얻어 테스트에서 고정할 수 있다.
+- `GetNoticeItemsUseCase`: `notices`와 `GetReadNoticeIdsUseCase`(현재 계정의 읽은 id)를 결합해 `Flow<List<NoticeItemVO>?>`를 낸다(`null` 전파). **NEW = `오늘(KST) - publishedDate < 14일` 이고 `id ∉ readNoticeIds`**. 오늘은 주입한 `Clock`과 `Asia/Seoul`로 얻어 테스트에서 고정할 수 있다.
 - `HasNewNoticeUseCase`: 위 결과에 `isNew`가 하나라도 있는지 `Flow<Boolean>`으로 낸다.
-- `RefreshNoticesUseCase`, `MarkNoticeReadUseCase`: Repository를 감싸는 얇은 UseCase.
+- `RefreshNoticesUseCase`: Repository를 감싸는 얇은 UseCase. `MarkNoticeReadUseCase`는 현재 계정을 읽어 `markRead(memberId, noticeId)`로 넘긴다.
 - `LogoutUseCase`: 던지지 않는 인메모리 정리 구간에 `clearNotices()`를 더한다(`clearGroups()` 옆). `TokenAuthenticator`의 세션 종료 분기에도 `noticeLocalDataSource.clear()`를 같은 자리에 더한다 — 두 경로가 같은 캐시를 비워야 로그아웃과 세션 만료의 결과가 같다.
 - 삭제: `GetNoticeUseCase`, `GetNoticesUseCase`.
 
