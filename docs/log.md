@@ -489,3 +489,9 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-16] audit | 281a9e1d9 — #691·#705 공지사항 · #704 알림 설정 API · #694 토핑 가이드선 · #700 인스타그램 공유 · #702 카메라 핀치 줌 · #706 · #697 · #712 약관 풋터 복구
 372파일 +36761/-3844 · 유닛 1812 · 계측 111 · OQ 신설 OQ-P-463 · 해소 없음
+
+## [2026-11-16] change | 공지 읽음 기록을 계정별 별칭 키로 저장
+`notice_read_ids` 단일 키 → `notice_read_<alias>`(Keystore HMAC `AccountKeyAlias`로 `memberId` 비노출) · `NoticeRepository`는 `memberId`를 인자로만 받고 `GetReadNoticeIdsUseCase`·`MarkNoticeReadUseCase`가 `myAccount`로 현재 계정을 풀어 넘김 · 탈퇴만 `clearReadNotices(memberId)`로 그 계정 기록 삭제 · `PastCanvasAlert`(OQ-P-397)는 별도
+
+## [2026-11-17] change | 지난 캔버스 알럿 확인 기록을 계정·그룹별 별칭 키로 저장 (OQ-P-397 해소)
+`past_canvas_alert_seen_group_<id>` → `past_canvas_alert_seen_<alias>`(`AccountKeyAlias.alias("past-canvas-alert:<groupId>", memberId)`로 계정·그룹 id 비노출) · `PastCanvasAlertRepository`는 `memberId`를 인자로 받고 `GetLastSeenClosedDateUseCase`·`MarkPastCanvasAlertSeenUseCase`가 `myAccount`로 현재 계정을 풀어 넘김 · 옛 키(1.1.2+ 배포분)는 읽을 때 처음 읽는 계정의 새 키로 옮기고 지움 · 탈퇴 때 지우지 않음

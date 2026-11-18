@@ -5,6 +5,7 @@ import com.teamyg.parfait.data.source.notice.local.NoticeLocalDataSource
 import com.teamyg.parfait.data.source.notice.local.NoticeReadLocalDataSource
 import com.teamyg.parfait.data.source.notice.remote.NoticeRemoteDataSource
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.notice.NoticeVO
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -83,21 +84,30 @@ class NoticeRepositoryImplTest {
     }
 
     @Test
-    fun readNoticeIds_exposesReadStorageFlow() = runTest {
-        // Given 읽음 저장소에 id 가 있다
-        every { readLocal.readNoticeIds } returns flowOf(setOf(1L, 2L))
+    fun readNoticeIds_delegatesToTheGivenMembersRecords() = runTest {
+        // Given 계정 1 의 읽음 저장소에 id 가 있다
+        every { readLocal.readNoticeIds(MemberId(1L)) } returns flowOf(setOf(1L, 2L))
 
-        // Then 그 값을 그대로 구독한다
-        assertEquals(setOf(1L, 2L), repository.readNoticeIds.first())
+        // Then 넘겨받은 계정의 값을 그대로 구독한다
+        assertEquals(setOf(1L, 2L), repository.readNoticeIds(MemberId(1L)).first())
     }
 
     @Test
-    fun markRead_delegatesToReadStorage() = runTest {
-        // When 읽음 처리한다
-        repository.markRead(3L)
+    fun markRead_delegatesWithTheGivenMember() = runTest {
+        // When 계정 1 로 읽음 처리한다
+        repository.markRead(MemberId(1L), 3L)
 
-        // Then 읽음 저장소에 맡긴다
-        coVerify(exactly = 1) { readLocal.markRead(3L) }
+        // Then 그 계정으로 읽음 저장소에 맡긴다
+        coVerify(exactly = 1) { readLocal.markRead(MemberId(1L), 3L) }
+    }
+
+    @Test
+    fun clearReadNotices_clearsTheGivenMemberOnly() = runTest {
+        // When 계정 1 의 읽음 기록을 지운다
+        repository.clearReadNotices(MemberId(1L))
+
+        // Then 그 계정의 기록만 지운다
+        coVerify(exactly = 1) { readLocal.clear(MemberId(1L)) }
     }
 
     @Test
@@ -105,8 +115,8 @@ class NoticeRepositoryImplTest {
         // When 세션이 끝나 캐시를 비운다
         repository.clearNotices()
 
-        // Then 캐시만 비우고 읽음 기록은 건드리지 않는다 — 기기 단위로 유지한다
+        // Then 캐시만 비우고 읽음 기록은 지우지 않는다 — 같은 계정으로 다시 들어오면 이어 쓴다
         verify(exactly = 1) { local.clear() }
-        coVerify(exactly = 0) { readLocal.markRead(any()) }
+        coVerify(exactly = 0) { readLocal.clear(any()) }
     }
 }

@@ -16,11 +16,12 @@ import kotlin.time.Clock
  */
 class GetNoticeItemsUseCase @Inject constructor(
     private val noticeRepository: NoticeRepository,
+    private val getReadNoticeIds: GetReadNoticeIdsUseCase,
     private val clock: Clock,
 ) {
     operator fun invoke(): Flow<List<NoticeItemVO>?> = combine(
         noticeRepository.notices,
-        noticeRepository.readNoticeIds,
+        getReadNoticeIds(),
     ) { notices, readIds ->
         val today = clock.now().toLocalDateTime(SEOUL).date
 

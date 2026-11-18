@@ -15,6 +15,9 @@ import javax.inject.Inject
  * 자동로그인이 인증 거절로 실패했을 때의 `BootstrapSessionUseCase`, 서버가 계정을 지워 준
  * 뒤의 `WithdrawUseCase`. 지울 대상이 같으므로 한쪽만 늘어나지 않도록 여기 모은다.
  *
+ * 공지 읽음 기록은 의도적 예외다. 같은 계정으로 다시 들어오면 이어 쓰도록 남기고, 탈퇴만
+ * `WithdrawUseCase` 가 따로 지운다.
+ *
  * [AuthRepository.logout] 은 서버 호출이 실패해도 로컬 토큰을 지우고 항상
  * `Result.success` 를 돌려준다(계약) — 그래서 계정 정보 정리는 그 결과를 보지 않고
  * 항상 실행한다. 하나만 지우면 계정 전환 시 이전 사용자 정보가 남는다.

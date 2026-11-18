@@ -29,12 +29,13 @@ import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
-import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetLastSeenClosedDateUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.parfait.MarkPastCanvasAlertSeenUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
@@ -90,7 +91,8 @@ class CanvasMainViewModelTest {
     private val saveCanvasVideoToGallery: SaveCanvasVideoToGalleryUseCase = mockk()
 
     private val startToppingDraft: StartToppingDraftUseCase = mockk(relaxUnitFun = true)
-    private val pastCanvasAlertRepository: PastCanvasAlertRepository = mockk(relaxUnitFun = true)
+    private val getLastSeenClosedDate: GetLastSeenClosedDateUseCase = mockk()
+    private val markPastCanvasAlertSeen: MarkPastCanvasAlertSeenUseCase = mockk(relaxUnitFun = true)
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
@@ -130,7 +132,7 @@ class CanvasMainViewModelTest {
         coEvery { getParfaitDetail(any(), any()) } returns Result.success(canvas(YESTERDAY_PARFAIT_ID, yesterday))
         every { getMyGroupsFlow() } returns flowOf(listOf(GROUP))
         coEvery { refreshMyGroups() } returns Result.success(Unit)
-        coEvery { pastCanvasAlertRepository.lastSeenClosedDate(any()) } returns null
+        coEvery { getLastSeenClosedDate(any()) } returns null
     }
 
     @After
@@ -158,7 +160,8 @@ class CanvasMainViewModelTest {
         saveCanvasToGalleryUseCase = saveCanvasToGallery,
         saveCanvasVideoToGalleryUseCase = saveCanvasVideoToGallery,
         startToppingDraft = startToppingDraft,
-        pastCanvasAlertRepository = pastCanvasAlertRepository,
+        getLastSeenClosedDate = getLastSeenClosedDate,
+        markPastCanvasAlertSeen = markPastCanvasAlertSeen,
         analyticsLogger = analyticsLogger,
     )
 
@@ -379,7 +382,7 @@ class CanvasMainViewModelTest {
     fun todayCanvas_firstTimeCheckingThisGroup_seedsBaselineWithoutShowingAlert() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 이 기기·이 그룹 조합을 한 번도 확인한 적이 없다(배포 직후 기존 그룹 포함)
-            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns null
+            coEvery { getLastSeenClosedDate(GroupId(GROUP_ID)) } returns null
             val viewModel = enteredViewModel()
 
             viewModel.effect.test {
@@ -392,14 +395,14 @@ class CanvasMainViewModelTest {
                 expectNoEvents()
             }
 
-            coVerify(exactly = 1) { pastCanvasAlertRepository.markSeen(GroupId(GROUP_ID), yesterday) }
+            coVerify(exactly = 1) { markPastCanvasAlertSeen(GroupId(GROUP_ID), yesterday) }
         }
 
     @Test
     fun todayCanvas_lastClosedDateChangedFromPreviouslySeenDate_showsPastCanvasAlertAndMarksSeen() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 그저께까지 확인했고, 어제는 세 명 중 두 명이 토핑을 올렸다(한 명은 두 장)
-            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
+            coEvery { getLastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
             coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
                 canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
                     members = listOf(member("모카"), member("연경이"), member("판다")),
@@ -424,14 +427,14 @@ class CanvasMainViewModelTest {
             }
 
             // 그리고 같은 마감일을 다시 보여주지 않도록 기록해 둔다
-            coVerify(exactly = 1) { pastCanvasAlertRepository.markSeen(GroupId(GROUP_ID), yesterday) }
+            coVerify(exactly = 1) { markPastCanvasAlertSeen(GroupId(GROUP_ID), yesterday) }
         }
 
     @Test
     fun todayCanvas_closedCanvasHasToppingFromLeftMember_countsLeftMemberAsContributor() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 어제 올린 두 명 중 한 명은 탈퇴해 그룹원 목록에 없다
-            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
+            coEvery { getLastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
             coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
                 canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
                     members = listOf(member("모카")),
@@ -459,7 +462,7 @@ class CanvasMainViewModelTest {
     fun todayCanvas_closedCanvasHasTextOnlyContributor_countsTextContributor() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 어제 사진은 한 명만 올렸고, 다른 한 명은 텍스트만 올렸다
-            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
+            coEvery { getLastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
             coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
                 canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
                     toppings = listOf(topping(positionZ = 1, placedByGroupMemberId = 1L)),
@@ -483,7 +486,7 @@ class CanvasMainViewModelTest {
     @Test
     fun todayCanvas_closedCanvasHasPhotoAndTextFromSameMember_countsOnce() = runTest(mainDispatcherRule.dispatcher) {
         // Given 한 명이 사진과 텍스트를 모두 올렸다
-        coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
+        coEvery { getLastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
         coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
             canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
                 toppings = listOf(topping(positionZ = 1, placedByGroupMemberId = 1L)),
@@ -508,7 +511,7 @@ class CanvasMainViewModelTest {
     fun todayCanvas_closedCanvasDetailFetchFails_doesNotShowPastCanvasAlertAndDoesNotMarkSeen() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 토핑을 올린 사람 수를 세려고 어제 캔버스를 조회하는데 실패한다
-            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
+            coEvery { getLastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
             coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns
                 Result.failure(IOException("network"))
             val viewModel = enteredViewModel()
@@ -523,7 +526,7 @@ class CanvasMainViewModelTest {
             }
 
             // 그리고 "봤다"로 남기지 않는다 — 그래야 다음 확인에서 다시 조회를 시도한다
-            coVerify(exactly = 0) { pastCanvasAlertRepository.markSeen(any(), any()) }
+            coVerify(exactly = 0) { markPastCanvasAlertSeen(any(), any()) }
         }
 
     @Test
@@ -532,7 +535,7 @@ class CanvasMainViewModelTest {
             // Given 며칠 앱을 안 연 사이(또는 중간에 토핑 0건인 날이 껴서), 새로 확인한
             // 마감일이 어제가 아니라 그저께다 — 그래도 이 마감을 처음 확인하는 순간이므로 알린다
             val threeDaysAgo = today.minus(DatePeriod(days = 3))
-            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns threeDaysAgo
+            coEvery { getLastSeenClosedDate(GroupId(GROUP_ID)) } returns threeDaysAgo
             coEvery { getParfaitHistories(any(), any()) } returns Result.success(
                 listOf(
                     PastCanvasVO(
@@ -564,14 +567,14 @@ class CanvasMainViewModelTest {
             }
 
             // 같은 마감일로는 다시 알리지 않도록 기준을 갱신해 둔다
-            coVerify(exactly = 1) { pastCanvasAlertRepository.markSeen(GroupId(GROUP_ID), dayBeforeYesterday) }
+            coVerify(exactly = 1) { markPastCanvasAlertSeen(GroupId(GROUP_ID), dayBeforeYesterday) }
         }
 
     @Test
     fun todayCanvas_lastClosedDateAlreadySeen_doesNotShowPastCanvasAlertAgain() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 이 그룹은 이 마감일을 이미 확인했다
-            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns yesterday
+            coEvery { getLastSeenClosedDate(GroupId(GROUP_ID)) } returns yesterday
             val viewModel = enteredViewModel()
 
             viewModel.effect.test {
@@ -584,7 +587,7 @@ class CanvasMainViewModelTest {
             }
 
             // 이미 같은 값이므로 다시 기록할 이유도 없다
-            coVerify(exactly = 0) { pastCanvasAlertRepository.markSeen(any(), any()) }
+            coVerify(exactly = 0) { markPastCanvasAlertSeen(any(), any()) }
         }
 
     @Test
