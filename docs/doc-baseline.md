@@ -10,9 +10,9 @@
 
 ## 현재 기준선
 - **repo**: `mash-up-kr/TEAMYG-Android` `develop`
-- **커밋**: `b508c3b32` (`Merge pull request #695 from mash-up-kr/docs/sync-server-api-baseline`)
-- **검증일**: 2026-11-08 (91회차)
-- **테스트 수**: 유닛 1655 · 계측 106
+- **커밋**: `281a9e1d9` (`Merge pull request #713 from mash-up-kr/docs/sync-server-api-baseline`)
+- **검증일**: 2026-11-16 (92회차)
+- **테스트 수**: 유닛 1812 · 계측 111
 - **미머지 추적 항목**: 둘(`feature/debug-mode`, OQ-P-311 계보 · `chore/rename-tjyg-android-in-docs` — 문서 표기 일괄 교체)
 - **실기기 미확인 이월**: [status.md 「실기기 미확인」](status.md#실기기-미확인)
 

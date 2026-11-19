@@ -2,8 +2,8 @@
 id: notification
 title: 알림(기기 FCM 토큰 등록 · 푸시 발송)
 server_module: http/notification
-server_commit: 8b4a94b
-verified: 2026-10-25
+server_commit: 64a5a80
+verified: 2026-11-15
 android_status: partial
 related_spec:
 related_adr: ADR-0013, ADR-0017
@@ -19,7 +19,7 @@ tags: [api, parfait, server-contract, notification]
 [서버가 보내는 푸시](#서버가-보내는-푸시--그룹-이벤트-알림outbox)부터가 **HTTP 응답 스키마가 아닌 계약**이라
 엔드포인트를 세는 방식으로는 이 계약의 변화가 보이지 않는다.
 
-푸시는 **5종**이다. `data.type` 문자열 기준이다.
+푸시는 **6종**이다. `data.type` 문자열 기준이다.
 
 | `data.type` | 트리거 | 수신자 | 경로 | `data.route` |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ tags: [api, parfait, server-contract, notification]
 | `TEXT` | 텍스트 토핑 배치(`PlaceParfaitTextService.place`) | 같은 그룹의 남은 구성원 − 작성자 | Outbox · 단건 | `canvas` |
 | `REMIND_AM` | 매일 10:00 KST 배치 | 활성 그룹이 있고 토큰이 있는 이용자 전원 | 배치 · 멀티캐스트 | `group` |
 | `REMIND_PM` | 매일 20:00 KST 배치 | 같음 | 배치 · 멀티캐스트 | `group` |
+| `ACTIVITY_DIGEST` | `activityDigestEnabled=true`인 수신자의 10분 묶음 윈도우가 닫힐 때(`ActivityDigestCoordinator`가 연 예약 행의 `scheduled_at` 도달) | 그 활동(토핑·배경·텍스트)을 겪은 단일 수신자 본인 | Outbox · 단건(예약 행) | `canvas` |
 
 **캔버스 마감·그룹 초대·텍스트 수정/삭제·토핑 재배치·토핑 일괄 수정은 발송 코드가 없다.**
 
@@ -36,6 +37,8 @@ tags: [api, parfait, server-contract, notification]
 | 메서드 | 경로 | 인증 | 요청 | 응답 | Android |
 |---|---|---|---|---|---|
 | POST | `/api/v1/notifications/devices` | **필요**(화이트리스트 밖) | `RegisterDeviceTokenRequest` | 없음(204, envelope 없음) | **구현됨·결선됨**(PR #450 — 세션 축 넷에서 부른다: 로그인·가입·앱 진입의 성공 분기 + `onNewToken`) |
+| GET | `/api/v1/notifications/settings` | **필요** | 없음 | `NotificationSettingsResponse` | **구현됨·결선됨**(S-105, 아래 [알림 설정 조회·변경](#알림-설정-조회변경s-105)) |
+| PATCH | `/api/v1/notifications/settings` | **필요** | `UpdateNotificationSettingsRequest`(둘 다 optional) | `NotificationSettingsResponse`(변경 후 전체) | **구현됨·결선됨**(S-105, 같은 절) |
 
 **삭제 엔드포인트는 없다.** 커밋 제목이 "저장/삭제 API"라고 적지만 HTTP 표면은 등록 하나뿐이고,
 삭제는 다른 도메인·발송 경로의 부수 효과로만 일어난다
@@ -82,6 +85,43 @@ tags: [api, parfait, server-contract, notification]
   `CommonErrorCode.INVALID_REQUEST`(`GlobalExceptionHandler`의 bad-request 핸들러), 401 4종은 전역 인증
   (`AuthErrorCode`)이다. 즉 **실패 표현이 전부 전역 계약이다.** 발송 실패도 마찬가지로 **HTTP 에러가
   아니다** — 아무에게도 응답으로 나가지 않고 서버 로그와 `notification_outbox.last_error`에만 남는다.
+
+### GET/PATCH /api/v1/notifications/settings (S-105)
+
+> 서버 PR #218(`parfait.http.api.notification.controller.NotificationSettingsController`). 이 둘은 위
+> 기기 토큰·푸시 발송 파이프라인과 **별개 축**이다 — 회원이 **직접 설정하는** 알림 수신 여부를 다룬다.
+
+- **인증**: **필요**. `memberId`는 `Authentication.name`에서 꺼낸다(다른 엔드포인트와 동형).
+- **응답 필드**(`NotificationSettingsResponse`, GET·PATCH 공통)
+
+| 필드 | 타입 | 의미 |
+|---|---|---|
+| `dailyReminderEnabled` | Boolean | 오늘의 캔버스 오픈·마감 리마인드(P-02·P-03) 수신 여부. 기본값 **true** |
+| `activityDigestEnabled` | Boolean | 그룹원 활동(사진·텍스트·배경 변경) 알림을 모아 받을지. 기본값 **false** |
+
+  `member` 테이블에 `NOT NULL DEFAULT`로 컬럼 2개를 더했다(V25) — 기존 회원도 기본값이 자동으로 채워진다.
+
+- **PATCH 요청 필드**(`UpdateNotificationSettingsRequest`, 둘 다 optional)
+
+| 필드 | 타입 | 비고 |
+|---|---|---|
+| `dailyReminderEnabled` | Boolean? | `null`(미전송)이면 그 필드는 바꾸지 않는다 |
+| `activityDigestEnabled` | Boolean? | 같음 |
+
+  **부분 변경이 컬럼별 원자적 UPDATE다** — 두 토글을 동시에 저장해도 서로 덮어쓰지 않는다. 둘 다
+  `null`이면 아무것도 쓰지 않고 현재 설정을 그대로 돌려준다(`NotificationSettingsService.update`).
+
+- **이 설정이 다른 발송 경로에 미치는 효과**
+  - `dailyReminderEnabled = false`인 회원은 P-02·P-03(오전·저녁 리마인드) 발송 대상에서 **빠진다**
+    (위 [데일리 리마인드](#서버가-보내는-푸시--데일리-리마인드p-02p-03)의 대상 조회가 이 값을 추가로 본다).
+    **활동 알림은 이 설정의 영향을 받지 않는다.**
+  - `activityDigestEnabled = true`인 회원은 그룹원 활동(사진·텍스트·배경 변경)을 **즉시 1건 + 이후
+    ~10분 묶음 1건**(`그사이 새 소식이 N개 쌓였어요`, 100건 이상은 `99+`)으로 받는다(P-06,
+    `ActivityDigestCoordinator`). 묶음 알림의 `data`는 `type: "ACTIVITY_DIGEST"` · `route: "canvas"` ·
+    `groupId` · `date`로, **기존 Outbox 3종(`TOPPING`·`BACKGROUND`·`TEXT`)과 키 구성이 완전히 같다** —
+    `route=canvas` + `groupId`만 보고 캔버스로 이동하는 Android 수신 로직이 **코드 변경 없이** 이 타입도
+    받는다. `type`을 enum으로 좁히지 않고 서버 값을 그대로 분석에 싣는 설계(`push-opened-raw-type-log`)
+    덕에 `APP_PUSH_OPENED`에도 자동으로 잡힌다.
 
 ## 등록은 upsert다 — `token`이 유일 키
 
@@ -197,6 +237,11 @@ outbox에 담는다. 발송 전에 텍스트가 수정·삭제돼도 디스패�
 | 수신자가 그룹을 나갔다 | 구성원 조회가 널이거나 `leftAt != null` | `CANCELLED_RECEIVER_LEFT` |
 | 수신자에게 등록된 기기 토큰이 없다 | `findByMemberId`가 빈 목록 | `NO_DEVICE_TOKEN` |
 | (`TEXT`만) 미리보기가 빈 문자열 | `generateTextPreview`가 널 | `CANCELLED_EMPTY_PREVIEW` |
+| (`ACTIVITY_DIGEST`만) 발송 시점에 모아 받기가 꺼져 있다 | `NotificationSettingsQueryPort.findByMemberId(...).activityDigestEnabled`가 `false` | `CANCELLED_DIGEST_DISABLED` |
+| (`ACTIVITY_DIGEST`만) 윈도우 안에 쌓인(DEFERRED) 활동이 0건이다 | `coordinator.countAlive(dedupKey)`가 0 — DEFERRED 행만 세며 토핑·텍스트가 지워졌으면 빠지고(배경은 삭제 불가라 안 빠짐), **윈도우를 연 첫 활동은 SEND_NOW로 따로 나가 셈에 없다**(활동이 그 하나뿐이면 요약 푸시는 취소된다) | `CANCELLED_EMPTY_DIGEST` |
+
+`ACTIVITY_DIGEST`는 **윈도우를 연 시점**이 아니라 **발송 시점의 설정값**을 다시 읽는다 — 윈도우가 열린
+뒤 모아 받기를 꺼도 그 윈도우의 예약 발송은 취소된다.
 
 **행위자가 그룹을 나간 경우는 취소가 아니라 문구 치환이다**(정책 E-05, 위 표의 `누군가`). **캔버스·토핑·
 텍스트 자체의 존재는 검사하지 않는다** — 그룹이 살아 있으면 대상이 지워져도 나간다.
@@ -218,9 +263,14 @@ outbox에 담는다. 발송 전에 텍스트가 수정·삭제돼도 디스패�
 | `TOPPING` | `TOPPING` / `TOPPING_PLACED` | `topping-placed:{toppingId}:{수신자}` |
 | `BACKGROUND` | `PARFAIT` / `BACKGROUND_CHANGED` | `background-changed:{parfaitId}:{변경시각 yyyyMMddHHmmssSSS}:{수신자}` |
 | `TEXT` | `TEXT` / `TEXT_PLACED` | `text-placed:{textId}:{수신자}` |
+| `ACTIVITY_DIGEST` | `GROUP` / `ACTIVITY_DIGEST` | `activity-digest:{수신자}:{groupId}:{parfaitDate}:{윈도우시작 yyyyMMddHHmmss}` |
 
   `BACKGROUND`의 키에 변경 시각(`saved.updatedAt`, 밀리초)이 들어가므로 **변경 한 번마다 별개의 알림**이다.
   같은 밀리초 안의 두 변경만 하나로 접힌다.
+  `ACTIVITY_DIGEST`의 윈도우 시작은 `DEDUP_TIME_FORMAT`을 14자(초)까지만 잘라(`DIGEST_KEY_TIME_LENGTH`) 쓴다 — 밀리초는 키에 들어가지 않는다.
+  `ACTIVITY_DIGEST`의 `scheduled_at`(발송 시각)은 윈도우 시작 + 10분이지만, **그 캔버스의 마감(다음 날
+  03:00 KST)을 넘기지 않는다**(`NotificationOutbox.digestWindowEnd`) — 03:00 가까이 열린 윈도우는 10분보다
+  짧게 끝난다.
 - **지연은 폴링 주기에 걸린다.** `OutboxPollingWorker`가 기본 2초(`notification.outbox.poll-interval-ms`)
   간격으로 돌고, 위 리스너가 커밋 직후 워커를 즉시 깨우므로 정상 경로는 거의 즉시다. **깨우는 신호가
   유실돼도 다음 폴링이 잡는다.**
@@ -402,6 +452,9 @@ Outbox를 안 쓰는 근거를 커밋 메시지가 적는다 — 묶일 사용�
 | 성공 204·본문 없음 | `ApiCaller.safeApiCallNoContent` — 반환 타입에 envelope를 두지 않는다. `Result<Unit>`으로 나온다 |
 | 등록 해제 엔드포인트 없음 | 서비스에도 없다. 로그아웃·탈퇴가 서버에서 대신 지운다는 사실을 KDoc이 가리킨다 |
 | **푸시 수신·채널·딥링크** | ~~**대응 심볼 0건**~~ → **셋 다 생겼다**(2026-09-05, PR #446·#447) — 아래 [푸시 수신·딥링크](#푸시-수신딥링크-2026-09-05-pr-446447) |
+| `GET`/`PATCH /api/v1/notifications/settings` | `NotificationSettingService` — `NotificationSettingRemoteDataSourceImpl`이 `ApiCaller.safeApiCall`로 감싸고 `NotificationSettingRepositoryImpl`이 `:domain`에 넘긴다. **로컬 캐시가 없다** — `PolicyRepositoryImpl`과 같은 순수 원격 패스스루(화면이 매 진입마다 조회) |
+| 응답 `dailyReminderEnabled`·`activityDigestEnabled` | `NotificationSettingsResponse` → `NotificationSettingVO.isCanvasNotificationEnabled`·`isActivityNotificationEnabled`로 매핑(`toNotificationSettingVO`). 이름이 다른 것은 **의도다** — 서버 필드명은 유지, 도메인 어휘는 기존 VO를 그대로 쓴다 |
+| PATCH 부분 변경(null=유지) | `UpdateNotificationSettingsRequest`의 두 필드가 전부 nullable. `updateCanvasNotification`·`updateActivityNotification` 각각 자기 필드만 채우고 나머지는 `null`로 보낸다 — 서버가 PATCH 응답으로 돌려주는 전체 설정은 **읽지 않는다**(ViewModel이 이미 요청한 값으로 로컬 state를 낙관적 갱신하므로) |
 
 도메인 모델은 `domain.model.notification.DeviceToken`(`@JvmInline value class`) 하나다.
 `upsert`라 반복 호출해도 된다는 계약은 `NotificationRemoteDataSourceImpl`의 KDoc이 받아 적었다.
@@ -533,8 +586,10 @@ base intent로 남아 되살릴 때 다시 오는 것은 `FLAG_ACTIVITY_LAUNCHED
 - 세션 없는(`session_id` 널) 행을 로그아웃이 못 지우는 구간을 서버가 닫을지, 앱이 재등록으로 덮을지
   → [open-questions](../synthesis/open-questions.md) OQ-P-342
 - ~~알림 종류가 토핑 등록 1종뿐이고(커밋 제목의 "3종"과 어긋난다)~~ → ✅ **3종이 됐다**(2026-09-04,
-  `[Feat/#128]` — 토핑 등록 · `REMIND_AM` · `REMIND_PM`) — OQ-P-343의 그 갈래는 해소. **남은 것은
-  수신 설정이다** — 알림을 끄겠다는 의사를 담는 자리가 서버·앱 어디에도 없다
+  `[Feat/#128]` — 토핑 등록 · `REMIND_AM` · `REMIND_PM`) — OQ-P-343의 그 갈래는 해소. ~~**남은 것은
+  수신 설정이다** — 알림을 끄겠다는 의사를 담는 자리가 서버·앱 어디에도 없다~~ → ✅ **생겼다**(2026-11-05,
+  S-105 — 위 [알림 설정 조회·변경](#알림-설정-조회변경s-105)). 다만 **캔버스만 진짜로 끌 수 있고
+  활동 쪽은 묶음 전환일 뿐 차단이 아니다** — "꺼도 알림은 그대로 온다"는 활동 쪽에서는 여전히 사실이다
   → [open-questions](../synthesis/open-questions.md) OQ-P-343
 - 리마인드 대상 산출이 **알림 권한을 보지 않는다** — 서버 KDoc의 "권한 거부 이용자는 토큰이 없다"는
   전제가 앱 동작(권한과 무관한 세션 축 등록)과 어긋난다

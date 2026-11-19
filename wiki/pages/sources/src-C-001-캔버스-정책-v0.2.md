@@ -1,12 +1,15 @@
 ---
 tags: [정책설계, C-001, 캔버스, 레이아웃]
 sources: [C-001-캔버스-정책-v0.2.md]
-updated: 2026-09-17
-status: current
+updated: 2026-11-13
+status: superseded
 supersedes: [src-C-001-캔버스-정책-v0.1]
+superseded_by: [src-C-001-캔버스-정책-v0.3]
 ---
 
 # 캔버스 정책 v0.2 (C-001)
+
+> 이 판본은 [[src-C-001-캔버스-정책-v0.3]](2026-09-18)로 **대체됐다.** `v0.3`이 Background Blur 폐기를 명시하고 Dot Grid 간격을 22px로, 비율 표기를 9:16으로 적는다. 현행 사실은 `v0.3`에서 확인한다.
 
 ## 요약
 

@@ -14,8 +14,12 @@ import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSource
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.notification.remote.NotificationRemoteDataSource
 import com.teamyg.parfait.data.source.notification.remote.NotificationRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.notification.remote.NotificationSettingRemoteDataSource
+import com.teamyg.parfait.data.source.notification.remote.NotificationSettingRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.notice.remote.NoticeRemoteDataSource
+import com.teamyg.parfait.data.source.notice.remote.NoticeRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.policy.remote.PolicyRemoteDataSource
 import com.teamyg.parfait.data.source.policy.remote.PolicyRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.topping.remote.ParfaitImageRemoteDataSource
@@ -34,6 +38,10 @@ interface RemoteDataSourceModule {
     @Binds
     @Singleton
     fun bindAuthRemoteDataSource(authRemoteDataSourceImpl: AuthRemoteDataSourceImpl): AuthRemoteDataSource
+
+    @Binds
+    @Singleton
+    fun bindNoticeRemoteDataSource(noticeRemoteDataSourceImpl: NoticeRemoteDataSourceImpl): NoticeRemoteDataSource
 
     @Binds
     @Singleton
@@ -86,4 +94,10 @@ interface RemoteDataSourceModule {
     fun bindNotificationRemoteDataSource(
         notificationRemoteDataSourceImpl: NotificationRemoteDataSourceImpl,
     ): NotificationRemoteDataSource
+
+    @Binds
+    @Singleton
+    fun bindNotificationSettingRemoteDataSource(
+        notificationSettingRemoteDataSourceImpl: NotificationSettingRemoteDataSourceImpl,
+    ): NotificationSettingRemoteDataSource
 }
