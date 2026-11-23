@@ -146,7 +146,8 @@ tags: [spec, parfait, C-001, animation]
 - 키는 `AccountKeyAlias`로 가린 계정(그룹)이고, 값은 `LocalDate` 문자열이다.
 - 별칭 생성에 실패하면 읽기는 `null`, 쓰기는 건너뛴다. 연출이 화면을 막지 않기 위해서다.
 - 읽기는 `data.first()`로 하고 `edit`은 쓸 때만 탄다.
-- 로그아웃은 기록을 지우지 않고, 탈퇴(`WithdrawUseCase`)만 그 계정 기록을 지운다.
+- 로그아웃·탈퇴 모두 기록을 지우지 않는다. 키가 별칭이라 그룹 id 없이는 지울 수 없고, `PastCanvasAlert`도
+  같은 이유로 지우지 않는다.
 
 ### 화면
 
@@ -155,8 +156,9 @@ tags: [spec, parfait, C-001, animation]
 - 컴포지션 쪽 `CanvasEmptyIntroState`는 `Animatable`(더미 y·알파, 9글자 색, 닫기 알파)만 들고, 값
   getter가 `phase`를 거치게 해서 단계만 바뀌어도 완료·닫힘 상태가 보이게 한다.
 - `YGCanvas`의 `emptyMessage: String`을 `emptyContent` 슬롯으로 바꿔 텍스트 스팬과 더미 레이어를
-  캔버스 feature 쪽에서 그린다. 조건은 `isEmpty`다. 기존 사용처(프리뷰·테스트 포함)는 계획 단계에서
-  전부 확인한다.
+  캔버스 feature 쪽에서 그린다. 슬롯은 `isEmpty`면 그린다. 기존 회색(`Gray100`) 안내판 면은 배경이 없을
+  때만 깔고, 배경이 있으면 고른 배경 위에 텍스트와 더미만 올린다. 기존 사용처(프리뷰·테스트)는 같은 문구를
+  `YGCanvasEmptyMessage`로 그린다.
 
 ## 테스트
 
@@ -173,6 +175,7 @@ tags: [spec, parfait, C-001, animation]
 - `docs/status.md` 캔버스 메인(C-001) 절을 현재 상태로 덮어쓴다. 안내판 조건 변경과 OQ-P-304 해소를
   반영한다.
 - `docs/log.md`에 한 줄을 추가한다. ADR은 새로 쓰지 않는다(ADR-0008, ADR-0019 범위).
+- 구현 계획: [plans/2026-11-23-c001-empty-intro-animation.md](../plans/2026-11-23-c001-empty-intro-animation.md)
 
 ## 주의 / 열린 질문
 
