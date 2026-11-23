@@ -7901,4 +7901,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (확인 안 함 — 구현은 잠정)
 - **해소 메모**: ①은 TalkBack·실기기를 본 뒤 지운다. ②는 Figma와 다르면 `CanvasEmptyIntroImage` 목록 한 곳을 고친다.
 
-<!-- oq-next: 465 -->
+### [2026-11-24] 강제 업데이트 기준 버전을 올리는 주체와 선택 업데이트 UI가 정해지지 않았다
+
+- **ID**: OQ-P-465
+- **출처**: [강제 업데이트 스펙](../superpowers/specs/2026-11-24-force-update-design.md) · 서버 `TEAMYG-SERVER` `feat/#225`(`app_version` 테이블)
+- **항목**: ① 서버 `app_version.minimum_version`을 언제 누가 올리는지 정해지지 않았다. 행 등록은 배포 때 서버팀이 하기로 했다. ② 선택 업데이트(`OPTIONAL`) UI 시나리오가 없어 앱은 `OPTIONAL`을 `NONE`과 같이 통과시킨다.
+- **상태**: 미해결 (구현을 막지 않음)
+- **해소 메모**: ①은 운영 절차로 정해지면 [api](../api/README.md) 쪽 앱 버전 문서에 적는다. ②가 정해지면 `CheckForceUpdateUseCase`와 스플래시 판정에 `OPTIONAL` 분기를 더한다 — 도메인 `AppUpdateType`에는 이미 `OPTIONAL`이 있다.
+
+<!-- oq-next: 466 -->
