@@ -194,8 +194,8 @@ data class CanvasMainUiState(
         get() = isCanvasEmpty.not()
 
     /**
-     * [YGCanvas] 의 빈 캔버스 안내판과 정확히 반대 조건이다 — 안내판이 덮고 있을 때는
-     * 저장할 배경도 토핑도 없으므로 저장 아이콘도 함께 감춘다.
+     * [YGCanvas] 가 빈 캔버스에 회색 면을 까는 조건(토핑도 배경도 없음)과 정확히 반대다 — 저장할
+     * 것이 없으므로 저장 아이콘도 함께 감춘다.
      */
     val isCanvasSaveVisible: Boolean
         get() = (isCanvasEmpty && canvasBackground == null).not()

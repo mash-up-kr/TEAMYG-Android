@@ -495,3 +495,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-17] change | 지난 캔버스 알럿 확인 기록을 계정·그룹별 별칭 키로 저장 (OQ-P-397 해소)
 `past_canvas_alert_seen_group_<id>` → `past_canvas_alert_seen_<alias>`(`AccountKeyAlias.alias("past-canvas-alert:<groupId>", memberId)`로 계정·그룹 id 비노출) · `PastCanvasAlertRepository`는 `memberId`를 인자로 받고 `GetLastSeenClosedDateUseCase`·`MarkPastCanvasAlertSeenUseCase`가 `myAccount`로 현재 계정을 풀어 넘김 · 옛 키(1.1.2+ 배포분)는 읽을 때 처음 읽는 계정의 새 키로 옮기고 지움 · 탈퇴 때 지우지 않음
+
+## [2026-11-23] change | C-001 빈 캔버스 안내 애니메이션 추가 (OQ-P-304 해소)
+더미 이미지 3장·글자별 강조 연출을 그룹·캔버스 날짜당 1회 재생(`CanvasEmptyIntroPhase`를 `CanvasMainUiState`가 보유, 기록은 `canvas_intro_played_<alias>`에 마지막 재생 날짜) · `YGCanvas`의 `emptyMessage: String`을 `emptyContent` 슬롯으로 교체하고 안내 문구는 배경과 무관하게 표시, 회색 면은 배경이 없을 때만 · 확인 못 한 부분은 OQ-P-464
