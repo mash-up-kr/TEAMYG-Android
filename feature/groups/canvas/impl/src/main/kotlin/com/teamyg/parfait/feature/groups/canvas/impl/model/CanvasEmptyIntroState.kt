@@ -78,6 +78,7 @@ internal class CanvasEmptyIntroState(private val phase: () -> CanvasEmptyIntroPh
 @Composable
 internal fun rememberCanvasEmptyIntroState(
     phase: CanvasEmptyIntroPhase,
+    isPaused: Boolean,
     onAnimationFinished: () -> Unit,
     onDismissFinished: () -> Unit,
 ): CanvasEmptyIntroState {
@@ -86,9 +87,10 @@ internal fun rememberCanvasEmptyIntroState(
     val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
     val state = remember { CanvasEmptyIntroState { currentPhase } }
 
-    LaunchedEffect(state, phase) {
+    LaunchedEffect(state, phase, isPaused) {
         when (phase) {
-            CanvasEmptyIntroPhase.Entering -> {
+            // 로딩 덮개 아래에서 시작하면 앞부분이 가려지므로 덮개가 걷힌 뒤에 재생한다
+            CanvasEmptyIntroPhase.Entering -> if (isPaused.not()) {
                 state.play()
                 currentOnAnimationFinished()
             }

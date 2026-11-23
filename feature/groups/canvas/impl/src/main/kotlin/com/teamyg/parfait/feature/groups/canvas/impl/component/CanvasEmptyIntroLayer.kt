@@ -1,6 +1,8 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -13,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -43,7 +46,13 @@ internal fun CanvasEmptyIntroLayer(
     message: String,
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            // 아래 토핑 레이어의 판정 입력이 다운을 소비하면 루트가 빈 영역 터치로 세지 못한다. 포인터 입력을
+            // 가진 형제가 위에 있으면 아래 형제는 이벤트를 받지 않으므로, 소비하지 않고 이벤트만 가로챈다
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false) } },
+    ) {
         CANVAS_EMPTY_INTRO_IMAGES.forEachIndexed { index, image ->
             val density = LocalDensity.current
             val centerX = constraints.maxWidth * image.centerXFraction

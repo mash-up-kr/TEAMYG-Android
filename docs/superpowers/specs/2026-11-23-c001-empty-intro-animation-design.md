@@ -87,6 +87,8 @@ tags: [spec, parfait, C-001, animation]
 | `Dismissing` | 앱 백그라운드 | `Dismissed` |
 
 - 한 번 `Dismissing`·`Dismissed`가 되면 같은 화면 진입 동안 다시 재생하지 않는다.
+- 단계가 `Entering`이 돼도 로딩 덮개가 걷히기 전에는 애니메이션을 시작하지 않는다. 덮개는 로딩이 끝나도 최소
+  노출 시간 동안 남아, 그 아래에서 시작하면 앞부분이 가려진다.
 - 토핑 추가 화면에서 돌아와도 같은 ViewModel이므로 단계가 유지된다(`Shown` 그대로). 화면에서 나갔다가
   새로 진입하면 새 ViewModel이라 `Idle`에서 기록을 조회해 `Dismissed`가 된다.
 - 재생 도중 토핑이 생겨 `isCanvasEmpty`가 거짓이 되면 연출 전체를 `Dismissed`로 끝낸다.

@@ -91,6 +91,7 @@ internal fun CanvasMainScreen(
     onLoadStateChange: (CanvasLoadState) -> Unit,
     retryKey: Int,
     modifier: Modifier = Modifier,
+    isEmptyIntroPaused: Boolean = false,
     onEmptyIntroTap: () -> Unit = {},
     onEmptyIntroInteraction: () -> Unit = {},
     onEmptyIntroAnimationFinished: () -> Unit = {},
@@ -109,6 +110,7 @@ internal fun CanvasMainScreen(
 
     val emptyIntroState = rememberCanvasEmptyIntroState(
         phase = canvasState.emptyIntroPhase,
+        isPaused = isEmptyIntroPaused,
         onAnimationFinished = onEmptyIntroAnimationFinished,
         onDismissFinished = onEmptyIntroDismissFinished,
     )
