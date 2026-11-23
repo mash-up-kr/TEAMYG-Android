@@ -37,11 +37,14 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetCanvasIntroPlayedDateUseCase
+import com.teamyg.parfait.domain.usecase.parfait.MarkCanvasIntroPlayedUseCase
 import com.teamyg.parfait.domain.usecase.parfait.MarkPastCanvasAlertSeenUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
@@ -122,6 +125,8 @@ data class CanvasMainUiState(
     val spotlightedKey: CanvasToppingKey? = null,
     /** 아직 오늘 캔버스를 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
     val isInitialLoading: Boolean = false,
+    /** 토핑이 없는 오늘 캔버스의 안내 연출 단계. 지난 날을 보는 동안은 `Idle` 로 남는다 */
+    val emptyIntroPhase: CanvasEmptyIntroPhase = CanvasEmptyIntroPhase.Idle,
 ) : UiState {
     /** 지난 날 상세를 기다리는 동안에는 직전에 보던 것을 그대로 둔다 */
     val displayedCanvas: CanvasVO?
@@ -313,8 +318,19 @@ sealed interface CanvasMainIntent : UiIntent {
     /** Spotlight 상태에서 강조된 토핑 밖(Dim 영역)을 탭했다 */
     data object OnClickSpotlightDim : CanvasMainIntent
 
-    /** 앱이 백그라운드로 이동했다가 복귀했다. Spotlight 를 해제한다 */
+    /** 앱이 백그라운드로 이동했다가 복귀했다. Spotlight 를 해제하고 안내 연출을 끝 상태로 건너뛴다 */
     data object OnAppReturnedFromBackground : CanvasMainIntent
+
+    /** 안내 연출의 등장 애니메이션이 끝까지 재생됐다 */
+    data object OnEmptyIntroAnimationFinished : CanvasMainIntent
+
+    /** 버튼이 받지 않은 빈 영역 터치 */
+    data object OnEmptyIntroTap : CanvasMainIntent
+
+    /** 뒤로가기·메뉴·토핑 추가처럼 정상 동작하는 버튼을 눌렀다 */
+    data object OnEmptyIntroInteraction : CanvasMainIntent
+
+    data object OnEmptyIntroDismissFinished : CanvasMainIntent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -339,6 +355,8 @@ constructor(
     private val startToppingDraft: StartToppingDraftUseCase,
     private val getLastSeenClosedDate: GetLastSeenClosedDateUseCase,
     private val markPastCanvasAlertSeen: MarkPastCanvasAlertSeenUseCase,
+    private val getCanvasIntroPlayedDate: GetCanvasIntroPlayedDateUseCase,
+    private val markCanvasIntroPlayed: MarkCanvasIntroPlayedUseCase,
     private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
@@ -411,7 +429,46 @@ constructor(
                 )
             }
             canvas?.let(::checkShowPastCanvasAlert)
+            canvas?.let(::syncEmptyIntro)
         }
+    }
+
+    /**
+     * 연출은 오늘 캔버스가 비어 있을 때 하루 한 번만 시작한다. 시작하는 순간 기록하므로 재생 도중
+     * 나가도 같은 날 다시 재생하지 않는다. 폴링이 같은 빈 캔버스를 다시 흘려도 단계가 [Idle] 이
+     * 아니면 건드리지 않는다.
+     */
+    private fun syncEmptyIntro(canvas: CanvasVO) {
+        if (canvas.toppings.isNotEmpty() || canvas.texts.isNotEmpty()) {
+            updateState {
+                when (emptyIntroPhase) {
+                    CanvasEmptyIntroPhase.Entering, CanvasEmptyIntroPhase.Shown ->
+                        copy(emptyIntroPhase = CanvasEmptyIntroPhase.Dismissed)
+
+                    else -> this
+                }
+            }
+        } else if (state.value.emptyIntroPhase == CanvasEmptyIntroPhase.Idle) {
+            launch(key = EMPTY_INTRO_KEY) { startEmptyIntroIfUnplayed(canvas) }
+        }
+    }
+
+    private suspend fun startEmptyIntroIfUnplayed(canvas: CanvasVO) {
+        val alreadyPlayed = getCanvasIntroPlayedDate(groupId) == canvas.date
+
+        // 기록을 읽는 사이 토핑이 올라왔거나 단계가 바뀌었으면 시작하지 않는다
+        if (state.value.emptyIntroPhase != CanvasEmptyIntroPhase.Idle || state.value.isCanvasEmpty.not()) return
+
+        if (alreadyPlayed) {
+            updateState { copy(emptyIntroPhase = CanvasEmptyIntroPhase.Dismissed) }
+        } else {
+            updateState { copy(emptyIntroPhase = CanvasEmptyIntroPhase.Entering) }
+            markCanvasIntroPlayed(groupId, canvas.date)
+        }
+    }
+
+    private fun updateEmptyIntroPhase(transform: (CanvasEmptyIntroPhase) -> CanvasEmptyIntroPhase) {
+        updateState { copy(emptyIntroPhase = transform(emptyIntroPhase)) }
     }
 
     /**
@@ -652,7 +709,21 @@ constructor(
 
             is CanvasMainIntent.OnClickSpotlightDim -> resetSpotlight()
 
-            is CanvasMainIntent.OnAppReturnedFromBackground -> resetSpotlight()
+            is CanvasMainIntent.OnAppReturnedFromBackground -> {
+                resetSpotlight()
+                updateEmptyIntroPhase(CanvasEmptyIntroPhase::onStop)
+            }
+
+            is CanvasMainIntent.OnEmptyIntroAnimationFinished ->
+                updateEmptyIntroPhase(CanvasEmptyIntroPhase::onAnimationFinished)
+
+            is CanvasMainIntent.OnEmptyIntroTap -> updateEmptyIntroPhase(CanvasEmptyIntroPhase::onTap)
+
+            is CanvasMainIntent.OnEmptyIntroInteraction ->
+                updateEmptyIntroPhase(CanvasEmptyIntroPhase::onInteraction)
+
+            is CanvasMainIntent.OnEmptyIntroDismissFinished ->
+                updateEmptyIntroPhase(CanvasEmptyIntroPhase::onDismissFinished)
         }
     }
 
@@ -1095,5 +1166,6 @@ constructor(
         const val START_TOPPING_FLOW_KEY = "startToppingFlow"
 
         const val PAST_CANVAS_ALERT_KEY = "pastCanvasAlert"
+        const val EMPTY_INTRO_KEY = "emptyIntro"
     }
 }

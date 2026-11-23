@@ -35,6 +35,8 @@ import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetLastSeenClosedDateUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetCanvasIntroPlayedDateUseCase
+import com.teamyg.parfait.domain.usecase.parfait.MarkCanvasIntroPlayedUseCase
 import com.teamyg.parfait.domain.usecase.parfait.MarkPastCanvasAlertSeenUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
@@ -42,6 +44,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -93,6 +96,8 @@ class CanvasMainViewModelTest {
     private val startToppingDraft: StartToppingDraftUseCase = mockk(relaxUnitFun = true)
     private val getLastSeenClosedDate: GetLastSeenClosedDateUseCase = mockk()
     private val markPastCanvasAlertSeen: MarkPastCanvasAlertSeenUseCase = mockk(relaxUnitFun = true)
+    private val getCanvasIntroPlayedDate: GetCanvasIntroPlayedDateUseCase = mockk()
+    private val markCanvasIntroPlayed: MarkCanvasIntroPlayedUseCase = mockk(relaxUnitFun = true)
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
@@ -133,6 +138,7 @@ class CanvasMainViewModelTest {
         every { getMyGroupsFlow() } returns flowOf(listOf(GROUP))
         coEvery { refreshMyGroups() } returns Result.success(Unit)
         coEvery { getLastSeenClosedDate(any()) } returns null
+        coEvery { getCanvasIntroPlayedDate(any()) } returns null
     }
 
     @After
@@ -162,6 +168,8 @@ class CanvasMainViewModelTest {
         startToppingDraft = startToppingDraft,
         getLastSeenClosedDate = getLastSeenClosedDate,
         markPastCanvasAlertSeen = markPastCanvasAlertSeen,
+        getCanvasIntroPlayedDate = getCanvasIntroPlayedDate,
+        markCanvasIntroPlayed = markCanvasIntroPlayed,
         analyticsLogger = analyticsLogger,
     )
 
@@ -1417,6 +1425,174 @@ class CanvasMainViewModelTest {
             // Then 주기마다 도는 폴링의 실패로 토스트를 쌓지 않는다 — 화면은 이미 캔버스를 그렸다
             expectNoEvents()
         }
+    }
+
+    @Test
+    fun emptyTodayCanvas_noPlayedRecord_entersIntroAndMarksPlayedWithCanvasDate() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 토핑이 없는 오늘 캔버스이고 재생 기록이 없다
+            // When 화면이 열린다
+            val viewModel = enteredViewModel()
+
+            // Then 연출을 시작하며 재생을 시작하는 시점에 그 캔버스 날짜로 기록한다
+            assertEquals(CanvasEmptyIntroPhase.Entering, viewModel.state.value.emptyIntroPhase)
+            coVerify(exactly = 1) { markCanvasIntroPlayed(GroupId(GROUP_ID), today) }
+        }
+
+    @Test
+    fun emptyTodayCanvas_playedRecordIsToday_goesStraightToDismissedWithoutMarking() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 오늘 캔버스를 이미 재생했다
+            coEvery { getCanvasIntroPlayedDate(GroupId(GROUP_ID)) } returns today
+
+            // When 화면이 열린다
+            val viewModel = enteredViewModel()
+
+            // Then 더미 없이 텍스트만 보이고 다시 기록하지 않는다
+            assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.emptyIntroPhase)
+            coVerify(exactly = 0) { markCanvasIntroPlayed(any(), any()) }
+        }
+
+    @Test
+    fun emptyTodayCanvas_playedRecordIsYesterday_entersIntroAgain() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 어제 캔버스만 재생했다(03시 이후 새 캔버스가 생겼다)
+        coEvery { getCanvasIntroPlayedDate(GroupId(GROUP_ID)) } returns yesterday
+
+        // When 화면이 열린다
+        val viewModel = enteredViewModel()
+
+        // Then 같은 그룹도 다시 재생한다
+        assertEquals(CanvasEmptyIntroPhase.Entering, viewModel.state.value.emptyIntroPhase)
+        coVerify(exactly = 1) { markCanvasIntroPlayed(GroupId(GROUP_ID), today) }
+    }
+
+    @Test
+    fun todayCanvasWithToppings_doesNotStartIntro() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 토핑이 있는 오늘 캔버스
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(topping(positionZ = 1)))
+
+        // When 화면이 열린다
+        val viewModel = enteredViewModel()
+
+        // Then 연출을 시작하지 않고 기록도 하지 않는다
+        assertEquals(CanvasEmptyIntroPhase.Idle, viewModel.state.value.emptyIntroPhase)
+        coVerify(exactly = 0) { markCanvasIntroPlayed(any(), any()) }
+    }
+
+    @Test
+    fun emptyCanvasOfAPastDay_doesNotStartIntro() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스에는 토핑이 있다
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(topping(positionZ = 1)))
+        val viewModel = enteredViewModel()
+
+        // When 비어 있는 지난 날을 연다
+        viewModel.processIntent(CanvasMainIntent.ClickDate(yesterday))
+        advanceUntilIdle()
+
+        // Then 지난 날 캔버스는 재생하지 않는다
+        assertEquals(CanvasEmptyIntroPhase.Idle, viewModel.state.value.emptyIntroPhase)
+        coVerify(exactly = 0) { markCanvasIntroPlayed(any(), any()) }
+    }
+
+    @Test
+    fun toppingArrivesDuringIntro_endsIntroAsDismissed() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 재생 중이다
+        val viewModel = enteredViewModel()
+        assertEquals(CanvasEmptyIntroPhase.Entering, viewModel.state.value.emptyIntroPhase)
+
+        // When 다른 멤버가 토핑을 올려 캔버스가 비지 않게 된다
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(topping(positionZ = 1)))
+        advanceUntilIdle()
+
+        // Then 연출은 끝난다
+        assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.emptyIntroPhase)
+    }
+
+    @Test
+    fun canvasReemittedWhilePlaying_marksPlayedOnlyOnce() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 재생이 시작됐다
+        val viewModel = enteredViewModel()
+
+        // When 폴링이 같은 빈 캔버스를 다시 흘린다
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(groupName = GroupName("바뀐 이름"))
+        advanceUntilIdle()
+
+        // Then 기록은 한 번뿐이고 단계도 그대로다
+        assertEquals(CanvasEmptyIntroPhase.Entering, viewModel.state.value.emptyIntroPhase)
+        coVerify(exactly = 1) { markCanvasIntroPlayed(any(), any()) }
+    }
+
+    @Test
+    fun emptyIntroIntents_applyThePhaseTransitions() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 재생 중이다
+        val viewModel = enteredViewModel()
+
+        // When 재생 도중 버튼을 누른다
+        viewModel.processIntent(CanvasMainIntent.OnEmptyIntroInteraction)
+        // Then 재생 완료 상태가 된다
+        assertEquals(CanvasEmptyIntroPhase.Shown, viewModel.state.value.emptyIntroPhase)
+
+        // When 완료 뒤 버튼을 누른다
+        viewModel.processIntent(CanvasMainIntent.OnEmptyIntroInteraction)
+        // Then 디졸브로 닫는다
+        assertEquals(CanvasEmptyIntroPhase.Dismissing, viewModel.state.value.emptyIntroPhase)
+
+        // When 디졸브가 끝난다
+        viewModel.processIntent(CanvasMainIntent.OnEmptyIntroDismissFinished)
+        // Then 닫힌 상태다
+        assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.emptyIntroPhase)
+    }
+
+    @Test
+    fun emptyIntroTap_whileEntering_dismissesFromThatMoment() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 재생 중이다
+        val viewModel = enteredViewModel()
+
+        // When 빈 영역을 탭한다
+        viewModel.processIntent(CanvasMainIntent.OnEmptyIntroTap)
+
+        // Then 그 시점부터 닫는다
+        assertEquals(CanvasEmptyIntroPhase.Dismissing, viewModel.state.value.emptyIntroPhase)
+    }
+
+    @Test
+    fun emptyIntroAnimationFinished_whileEntering_becomesShown() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = enteredViewModel()
+
+        viewModel.processIntent(CanvasMainIntent.OnEmptyIntroAnimationFinished)
+
+        assertEquals(CanvasEmptyIntroPhase.Shown, viewModel.state.value.emptyIntroPhase)
+    }
+
+    @Test
+    fun appReturnedFromBackground_skipsTheIntroToItsEndState() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 재생 중이다
+        val viewModel = enteredViewModel()
+
+        // When 백그라운드에 다녀온다
+        viewModel.processIntent(CanvasMainIntent.OnAppReturnedFromBackground)
+        // Then 재생 완료 상태다
+        assertEquals(CanvasEmptyIntroPhase.Shown, viewModel.state.value.emptyIntroPhase)
+
+        // When 닫는 도중 다시 다녀온다
+        viewModel.processIntent(CanvasMainIntent.OnEmptyIntroTap)
+        viewModel.processIntent(CanvasMainIntent.OnAppReturnedFromBackground)
+        // Then 닫힌 상태다
+        assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.emptyIntroPhase)
+    }
+
+    @Test
+    fun returningFromAnotherScreen_keepsShownPhase() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 재생 도중 버튼을 눌러 완료 상태가 됐다
+        val viewModel = enteredViewModel()
+        viewModel.processIntent(CanvasMainIntent.OnEmptyIntroInteraction)
+
+        // When 다른 화면에 다녀와 같은 ViewModel 로 다시 화면이 앞에 선다
+        viewModel.processIntent(CanvasMainIntent.Enter)
+        advanceUntilIdle()
+
+        // Then 완료 상태가 유지된다
+        assertEquals(CanvasEmptyIntroPhase.Shown, viewModel.state.value.emptyIntroPhase)
     }
 
     private companion object {
