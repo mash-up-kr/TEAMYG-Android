@@ -8,7 +8,6 @@ internal object CanvasEmptyIntroTimeline {
     const val IMAGE_OFFSET_DP = 60
     private const val IMAGE_STEP_MILLIS = 500
 
-    const val HIGHLIGHT_TEXT = "함께 남기고 싶은 순간"
     const val HIGHLIGHT_UP_MILLIS = 150
     const val HIGHLIGHT_DOWN_MILLIS = 300
     private const val HIGHLIGHT_START_MILLIS = 500
@@ -23,6 +22,9 @@ internal object CanvasEmptyIntroTimeline {
     val HighlightUpEasing = CubicBezierEasing(0f, 0f, 0.58f, 1f)
     val HighlightDownEasing = CubicBezierEasing(0.42f, 0f, 0.58f, 1f)
     val ExitEasing = CubicBezierEasing(0f, 0f, 0.58f, 1f)
+
+    /** 공백은 건너뛰고 글자만 센다 — 강조는 글자 단위로 이어진다 */
+    fun highlightCharCount(text: String): Int = text.count { it != ' ' }
 
     fun imageDelayMillis(index: Int): Int = IMAGE_STEP_MILLIS * (index + 1)
 

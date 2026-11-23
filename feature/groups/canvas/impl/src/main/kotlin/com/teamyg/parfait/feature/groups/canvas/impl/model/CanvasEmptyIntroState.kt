@@ -11,7 +11,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.EXIT_DURATION_MILLIS
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.ExitEasing
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.HIGHLIGHT_DOWN_MILLIS
-import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.HIGHLIGHT_TEXT
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.HIGHLIGHT_UP_MILLIS
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.HighlightDownEasing
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.HighlightUpEasing
@@ -30,9 +29,12 @@ import kotlinx.coroutines.launch
  * 만들어져도 `Shown` 에서 이어진다.
  */
 @Stable
-internal class CanvasEmptyIntroState(private val phase: () -> CanvasEmptyIntroPhase) {
+internal class CanvasEmptyIntroState(
+    highlightCharCount: Int,
+    private val phase: () -> CanvasEmptyIntroPhase,
+) {
     private val images = List(IMAGE_COUNT) { Animatable(0f) }
-    private val highlights = List(HIGHLIGHT_TEXT.count { it != ' ' }) { Animatable(0f) }
+    private val highlights = List(highlightCharCount) { Animatable(0f) }
     private val exit = Animatable(1f)
 
     fun imageProgress(index: Int): Float = phase().enterValue(images[index].value)
@@ -77,6 +79,7 @@ internal class CanvasEmptyIntroState(private val phase: () -> CanvasEmptyIntroPh
 
 @Composable
 internal fun rememberCanvasEmptyIntroState(
+    highlightCharCount: Int,
     phase: CanvasEmptyIntroPhase,
     isPaused: Boolean,
     onAnimationFinished: () -> Unit,
@@ -85,7 +88,7 @@ internal fun rememberCanvasEmptyIntroState(
     val currentPhase by rememberUpdatedState(phase)
     val currentOnAnimationFinished by rememberUpdatedState(onAnimationFinished)
     val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
-    val state = remember { CanvasEmptyIntroState { currentPhase } }
+    val state = remember(highlightCharCount) { CanvasEmptyIntroState(highlightCharCount) { currentPhase } }
 
     LaunchedEffect(state, phase, isPaused) {
         when (phase) {

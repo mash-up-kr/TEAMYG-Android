@@ -31,6 +31,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackgroundState
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.highlightCharCount
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberCanvasEmptyIntroState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
@@ -108,7 +109,9 @@ internal fun CanvasMainScreen(
         isMenuExpanded = true
     }
 
+    val emptyHighlight = stringResource(R.string.canvas_main_empty_highlight)
     val emptyIntroState = rememberCanvasEmptyIntroState(
+        highlightCharCount = highlightCharCount(emptyHighlight),
         phase = canvasState.emptyIntroPhase,
         isPaused = isEmptyIntroPaused,
         onAnimationFinished = onEmptyIntroAnimationFinished,
@@ -240,9 +243,9 @@ internal fun CanvasMainScreen(
             },
             isEmpty = canvasState.isCanvasEmpty,
             emptyContent = {
-                val message = stringResource(R.string.canvas_main_empty_message)
+                val message = stringResource(R.string.canvas_main_empty_message, emptyHighlight)
                 if (canvasState.isEmptyIntroVisible) {
-                    CanvasEmptyIntroLayer(state = emptyIntroState, message = message)
+                    CanvasEmptyIntroLayer(state = emptyIntroState, message = message, highlight = emptyHighlight)
                 } else {
                     YGCanvasEmptyMessage(text = message)
                 }

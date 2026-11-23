@@ -35,8 +35,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CANVAS_EMPTY_INTRO_IMAGES
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroState
-import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.HIGHLIGHT_TEXT
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.IMAGE_OFFSET_DP
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.highlightCharCount
 import kotlin.math.roundToInt
 
 /** 이미지를 먼저 깔고 그 위에 안내 문구를 올린다 — 문구가 이미지에 가려 읽히지 않으면 안 된다 */
@@ -44,6 +44,7 @@ import kotlin.math.roundToInt
 internal fun CanvasEmptyIntroLayer(
     state: CanvasEmptyIntroState,
     message: String,
+    highlight: String,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(
@@ -76,20 +77,21 @@ internal fun CanvasEmptyIntroLayer(
             )
         }
 
-        YGCanvasEmptyMessage(text = highlightedMessage(message) { index -> state.highlight(index) })
+        YGCanvasEmptyMessage(text = highlightedMessage(message, highlight) { index -> state.highlight(index) })
     }
 }
 
 private fun highlightedMessage(
     message: String,
+    highlightText: String,
     highlight: (charIndex: Int) -> Float,
 ): AnnotatedString = buildAnnotatedString {
     append(message)
 
-    val start = message.indexOf(HIGHLIGHT_TEXT)
+    val start = message.indexOf(highlightText)
     if (start >= 0) {
         var charIndex = 0
-        HIGHLIGHT_TEXT.forEachIndexed { offset, char ->
+        highlightText.forEachIndexed { offset, char ->
             if (char != ' ') {
                 val color: Color = lerp(YGAtomicColors.Gray.Gray500, YGAtomicColors.Gray.Black, highlight(charIndex))
                 addStyle(SpanStyle(color = color), start + offset, start + offset + 1)
@@ -116,9 +118,11 @@ private fun CanvasEmptyIntroLayerPreview(
             .size(width = 360.dp, height = 480.dp)
             .background(YGAtomicColors.Gray.Gray100),
     ) {
+        val highlight = stringResource(R.string.canvas_main_empty_highlight)
         CanvasEmptyIntroLayer(
-            state = remember(phase) { CanvasEmptyIntroState { phase } },
-            message = stringResource(R.string.canvas_main_empty_message),
+            state = remember(phase) { CanvasEmptyIntroState(highlightCharCount(highlight)) { phase } },
+            message = stringResource(R.string.canvas_main_empty_message, highlight),
+            highlight = highlight,
         )
     }
 }

@@ -1,11 +1,11 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.model
 
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.HIGHLIGHT_DOWN_MILLIS
-import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.HIGHLIGHT_TEXT
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.HIGHLIGHT_UP_MILLIS
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.IMAGE_COUNT
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.IMAGE_DURATION_MILLIS
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.TOTAL_MILLIS
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.highlightCharCount
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.highlightDelayMillis
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.imageDelayMillis
 import kotlin.test.Test
@@ -24,8 +24,8 @@ class CanvasEmptyIntroTimelineTest {
     }
 
     @Test
-    fun highlightText_hasNineNonSpaceCharacters() {
-        assertEquals(9, HIGHLIGHT_TEXT.count { it != ' ' })
+    fun highlightCharCount_skipsSpaces() {
+        assertEquals(9, highlightCharCount("함께 남기고 싶은 순간"))
     }
 
     @Test
@@ -36,7 +36,7 @@ class CanvasEmptyIntroTimelineTest {
 
     @Test
     fun lastHighlightedCharacter_returnsToGrayAt2150() {
-        val lastIndex = HIGHLIGHT_TEXT.count { it != ' ' } - 1
+        val lastIndex = highlightCharCount("함께 남기고 싶은 순간") - 1
 
         assertEquals(2150, highlightDelayMillis(lastIndex) + HIGHLIGHT_UP_MILLIS + HIGHLIGHT_DOWN_MILLIS)
     }
