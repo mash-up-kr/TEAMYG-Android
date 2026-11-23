@@ -185,6 +185,10 @@ data class CanvasMainUiState(
     val isCanvasEmpty: Boolean
         get() = toppings.isEmpty() && texts.isEmpty()
 
+    /** 지난 날은 재생하지 않으므로 오늘을 볼 때만 더미와 강조를 그린다 */
+    val isEmptyIntroVisible: Boolean
+        get() = isViewingToday && emptyIntroPhase.isPlaying
+
     /** 영상 저장은 토핑이 하나라도 쌓여야 성립한다 — [isCanvasEmpty] 와 반대지만 뜻이 달라 따로 둔다 */
     val isVideoSaveEnabled: Boolean
         get() = isCanvasEmpty.not()

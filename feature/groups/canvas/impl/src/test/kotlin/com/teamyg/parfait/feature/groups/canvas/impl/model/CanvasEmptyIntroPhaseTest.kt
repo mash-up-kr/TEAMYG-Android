@@ -72,7 +72,7 @@ class CanvasEmptyIntroPhaseTest {
         assertEquals(0f, Idle.enterValue(0.4f))
         assertEquals(0.4f, Entering.enterValue(0.4f))
         assertEquals(1f, Shown.enterValue(0.4f))
-        assertEquals(1f, Dismissing.enterValue(0.4f))
+        assertEquals(0.4f, Dismissing.enterValue(0.4f))
         assertEquals(0f, Dismissed.enterValue(0.4f))
     }
 

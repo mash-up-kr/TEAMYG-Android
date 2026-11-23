@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -82,11 +83,11 @@ fun YGCanvas(
     isMenuExpanded: Boolean = false,
     reloadKey: Int = 0,
     onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit = {},
-    /** 토핑이 하나도 없는 캔버스. [background] 까지 미설정일 때만 [emptyMessage] 안내판이 덮는다 */
+    /** 토핑이 하나도 없는 캔버스. [emptyContent] 가 덮고, 회색 면은 [background] 가 미설정일 때만 깔린다 */
     isEmpty: Boolean = false,
     isCalendarVisible: Boolean = false,
     expandedItems: List<YGCanvasMenuItem> = emptyList(),
-    emptyMessage: String = "",
+    emptyContent: @Composable BoxScope.() -> Unit = {},
     isSaveVisible: Boolean = false,
     onClickSave: () -> Unit = {},
     saveContentDescription: String? = null,
@@ -129,7 +130,7 @@ fun YGCanvas(
                     reloadKey = reloadKey,
                     onBackgroundStateChange = onBackgroundStateChange,
                     isEmpty = isEmpty,
-                    emptyMessage = emptyMessage,
+                    emptyContent = emptyContent,
                     content = content,
                     captureGraphicsLayer = captureGraphicsLayer,
                     dateSelect = {
@@ -278,7 +279,7 @@ private fun CanvasArea(
     reloadKey: Int,
     onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit,
     isEmpty: Boolean,
-    emptyMessage: String,
+    emptyContent: @Composable BoxScope.() -> Unit,
     dateSelect: @Composable () -> Unit,
     content: @Composable BoxScope.() -> Unit,
     captureGraphicsLayer: GraphicsLayer? = null,
@@ -359,29 +360,48 @@ private fun CanvasArea(
             YGSkeleton(modifier = Modifier.matchParentSize())
         }
 
-        // 배경도 토핑도 없을 때만 회색 안내판이 덮는다 — 배경이 정해지는 순간 안내는 사라지고
-        // 고른 배경이 그대로 보여야 한다
-        if (isEmpty && background == null) {
+        // 회색 면은 배경이 없을 때만 깐다 — 고른 배경을 가리면 안 되고, 안내 내용은 그 위에 그대로 올린다
+        if (isEmpty) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(color = YGAtomicColors.Gray.Gray100),
+                    .then(
+                        if (background == null) {
+                            Modifier.background(color = YGAtomicColors.Gray.Gray100)
+                        } else {
+                            Modifier
+                        },
+                    ),
             ) {
-                Text(
-                    text = emptyMessage,
-                    style = YGTheme.typography.caption.c01M,
-                    color = YGAtomicColors.Gray.Gray500,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(horizontal = YGTheme.layout.padding.padding6),
-                )
+                emptyContent()
             }
         }
 
         dateSelect()
     }
 }
+
+@Composable
+fun BoxScope.YGCanvasEmptyMessage(
+    text: AnnotatedString,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        style = YGTheme.typography.caption.c01M,
+        color = YGAtomicColors.Gray.Gray500,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .align(Alignment.Center)
+            .padding(horizontal = YGTheme.layout.padding.padding6),
+    )
+}
+
+@Composable
+fun BoxScope.YGCanvasEmptyMessage(
+    text: String,
+    modifier: Modifier = Modifier,
+) = YGCanvasEmptyMessage(text = AnnotatedString(text), modifier = modifier)
 
 @YGPreview
 @Composable
@@ -401,6 +421,6 @@ private fun YGCanvasPreview() = PreviewBox {
             onClick = {},
         ),
         isEmpty = true,
-        emptyMessage = "아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요",
+        emptyContent = { YGCanvasEmptyMessage("아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요") },
     )
 }

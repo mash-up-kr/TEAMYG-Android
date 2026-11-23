@@ -41,8 +41,8 @@ enum class CanvasEmptyIntroPhase {
 
     fun enterValue(animated: Float): Float = when (this) {
         Idle, Dismissed -> 0f
-        Entering -> animated
-        Shown, Dismissing -> 1f
+        Entering, Dismissing -> animated
+        Shown -> 1f
     }
 
     fun exitValue(animated: Float): Float = when (this) {
