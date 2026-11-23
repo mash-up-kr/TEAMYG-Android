@@ -334,6 +334,7 @@ sealed interface CanvasMainIntent : UiIntent {
     /** 뒤로가기·메뉴·토핑 추가처럼 정상 동작하는 버튼을 눌렀다 */
     data object OnEmptyIntroInteraction : CanvasMainIntent
 
+    /** 닫히는 디졸브가 끝나 더미와 강조가 화면에서 완전히 사라졌다 */
     data object OnEmptyIntroDismissFinished : CanvasMainIntent
 }
 
