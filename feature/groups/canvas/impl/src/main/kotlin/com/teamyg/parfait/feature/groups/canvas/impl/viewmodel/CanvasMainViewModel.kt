@@ -195,12 +195,13 @@ data class CanvasMainUiState(
     val isVideoSaveEnabled: Boolean
         get() = isCanvasEmpty.not()
 
-    /**
-     * [YGCanvas] 가 빈 캔버스에 회색 면을 까는 조건(토핑도 배경도 없음)과 정확히 반대다 — 저장할
-     * 것이 없으므로 저장 아이콘도 함께 감춘다.
-     */
+    /** [YGCanvas] 가 안내판을 까는 조건 — 토핑도 배경도 없다. 배경을 고른 캔버스에는 안내도 연출도 없다 */
+    val isEmptyPlaceholderVisible: Boolean
+        get() = isCanvasEmpty && canvasBackground == null
+
+    /** 안내판이 덮는 캔버스에는 저장할 것이 없으므로 저장 아이콘도 함께 감춘다 */
     val isCanvasSaveVisible: Boolean
-        get() = (isCanvasEmpty && canvasBackground == null).not()
+        get() = isEmptyPlaceholderVisible.not()
 }
 
 sealed interface CanvasMainEffect : UiSideEffect {
@@ -444,7 +445,7 @@ constructor(
      * 재생 도중 나가도 같은 날 다시 재생하지 않는다.
      */
     private fun syncEmptyIntro(canvas: CanvasVO) {
-        val isEmpty = canvas.toppings.isEmpty() && canvas.texts.isEmpty()
+        val isEmpty = canvas.toppings.isEmpty() && canvas.texts.isEmpty() && canvas.background == null
 
         if (state.value.emptyIntroCanvasDate != canvas.date) {
             updateState {
@@ -473,7 +474,7 @@ constructor(
         val current = state.value
         val isStillThisDecision = current.emptyIntroCanvasDate == canvas.date &&
             current.emptyIntroPhase == CanvasEmptyIntroPhase.Idle
-        if (isStillThisDecision.not() || current.isCanvasEmpty.not()) return
+        if (isStillThisDecision.not() || current.isEmptyPlaceholderVisible.not()) return
 
         if (alreadyPlayed) {
             updateState { copy(emptyIntroPhase = CanvasEmptyIntroPhase.Dismissed) }

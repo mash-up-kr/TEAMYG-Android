@@ -8,6 +8,7 @@ import com.teamyg.parfait.core.analytics.AnalyticsEvent
 import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -1476,6 +1477,19 @@ class CanvasMainViewModelTest {
         val viewModel = enteredViewModel()
 
         // Then 이 진입에서는 연출하지 않기로 정해지고 기록도 하지 않는다
+        assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.emptyIntroPhase)
+        coVerify(exactly = 0) { markCanvasIntroPlayed(any(), any()) }
+    }
+
+    @Test
+    fun emptyTodayCanvasWithBackground_doesNotStartIntro() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 토핑은 없지만 배경을 고른 오늘 캔버스
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(background = CanvasBackground.Color("#C2E4FC"))
+
+        // When 화면이 열린다
+        val viewModel = enteredViewModel()
+
+        // Then 안내판이 뜨지 않는 캔버스라 연출도 하지 않고 기록도 하지 않는다
         assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.emptyIntroPhase)
         coVerify(exactly = 0) { markCanvasIntroPlayed(any(), any()) }
     }

@@ -56,14 +56,14 @@ class YGCanvasTest {
     }
 
     @Test
-    fun ygCanvas_emptyWithBackground_showsEmptyMessageOverTheBackground() {
+    fun ygCanvas_emptyWithBackground_hidesEmptyMessage() {
         // Given · When 토핑은 없지만 배경을 고른 캔버스
         composeTestRule.setContent {
             EmptyYGCanvas(background = YGCanvasBackground.Solid(Color(0xFFC2E4FC)))
         }
 
-        // Then 고른 배경 위에 안내 문구가 그대로 올라간다
-        composeTestRule.onNodeWithText(EMPTY_MESSAGE).assertIsDisplayed()
+        // Then 고른 배경이 그대로 보여야 하므로 안내 문구는 사라진다
+        composeTestRule.onNodeWithText(EMPTY_MESSAGE).assertDoesNotExist()
     }
 
     @Test

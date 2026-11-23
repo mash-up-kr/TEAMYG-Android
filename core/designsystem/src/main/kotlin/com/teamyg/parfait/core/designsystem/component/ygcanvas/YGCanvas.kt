@@ -83,7 +83,7 @@ fun YGCanvas(
     isMenuExpanded: Boolean = false,
     reloadKey: Int = 0,
     onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit = {},
-    /** 토핑이 하나도 없는 캔버스. [emptyContent] 가 덮고, 회색 면은 [background] 가 미설정일 때만 깔린다 */
+    /** 토핑이 하나도 없는 캔버스. [background] 까지 미설정일 때만 [emptyContent] 안내판이 덮는다 */
     isEmpty: Boolean = false,
     isCalendarVisible: Boolean = false,
     expandedItems: List<YGCanvasMenuItem> = emptyList(),
@@ -360,18 +360,13 @@ private fun CanvasArea(
             YGSkeleton(modifier = Modifier.matchParentSize())
         }
 
-        // 회색 면은 배경이 없을 때만 깐다 — 고른 배경을 가리면 안 되고, 안내 내용은 그 위에 그대로 올린다
-        if (isEmpty) {
+        // 배경도 토핑도 없을 때만 회색 안내판이 덮는다 — 배경이 정해지는 순간 안내는 사라지고
+        // 고른 배경이 그대로 보여야 한다
+        if (isEmpty && background == null) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .then(
-                        if (background == null) {
-                            Modifier.background(color = YGAtomicColors.Gray.Gray100)
-                        } else {
-                            Modifier
-                        },
-                    ),
+                    .background(color = YGAtomicColors.Gray.Gray100),
             ) {
                 emptyContent()
             }
