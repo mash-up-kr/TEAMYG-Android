@@ -65,6 +65,7 @@ import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -1474,8 +1475,8 @@ class CanvasMainViewModelTest {
         // When 화면이 열린다
         val viewModel = enteredViewModel()
 
-        // Then 연출을 시작하지 않고 기록도 하지 않는다
-        assertEquals(CanvasEmptyIntroPhase.Idle, viewModel.state.value.emptyIntroPhase)
+        // Then 이 진입에서는 연출하지 않기로 정해지고 기록도 하지 않는다
+        assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.emptyIntroPhase)
         coVerify(exactly = 0) { markCanvasIntroPlayed(any(), any()) }
     }
 
@@ -1490,7 +1491,7 @@ class CanvasMainViewModelTest {
         advanceUntilIdle()
 
         // Then 지난 날 캔버스는 재생하지 않는다
-        assertEquals(CanvasEmptyIntroPhase.Idle, viewModel.state.value.emptyIntroPhase)
+        assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.emptyIntroPhase)
         coVerify(exactly = 0) { markCanvasIntroPlayed(any(), any()) }
     }
 
@@ -1520,6 +1521,58 @@ class CanvasMainViewModelTest {
         // Then 기록은 한 번뿐이고 단계도 그대로다
         assertEquals(CanvasEmptyIntroPhase.Entering, viewModel.state.value.emptyIntroPhase)
         coVerify(exactly = 1) { markCanvasIntroPlayed(any(), any()) }
+    }
+
+    @Test
+    fun newCanvasDateWhileViewModelIsAlive_playsIntroAgainAndMarksTheNewDate() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 오늘 캔버스의 연출을 끝까지 보고 닫았다
+            val viewModel = enteredViewModel()
+            viewModel.processIntent(CanvasMainIntent.OnEmptyIntroInteraction)
+            viewModel.processIntent(CanvasMainIntent.OnEmptyIntroInteraction)
+            viewModel.processIntent(CanvasMainIntent.OnEmptyIntroDismissFinished)
+            assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.emptyIntroPhase)
+
+            // When 화면을 연 채 03시가 지나 새 날짜의 빈 캔버스가 내려온다
+            val tomorrow = today.plus(DatePeriod(days = 1))
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID + 1, tomorrow)
+            advanceUntilIdle()
+
+            // Then 같은 그룹도 새 날짜로 다시 1회 재생하고 그 날짜를 기록한다
+            assertEquals(CanvasEmptyIntroPhase.Entering, viewModel.state.value.emptyIntroPhase)
+            coVerify(exactly = 1) { markCanvasIntroPlayed(GroupId(GROUP_ID), tomorrow) }
+        }
+
+    @Test
+    fun newCanvasDateWhileIntroIsShown_replacesYesterdaysIntro() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 어제 캔버스의 연출이 완료 상태로 남아 있다
+        val viewModel = enteredViewModel()
+        viewModel.processIntent(CanvasMainIntent.OnEmptyIntroAnimationFinished)
+        assertEquals(CanvasEmptyIntroPhase.Shown, viewModel.state.value.emptyIntroPhase)
+
+        // When 새 날짜의 빈 캔버스가 내려온다
+        val tomorrow = today.plus(DatePeriod(days = 1))
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID + 1, tomorrow)
+        advanceUntilIdle()
+
+        // Then 어제 더미가 남지 않고 새 날짜의 연출이 시작된다
+        assertEquals(CanvasEmptyIntroPhase.Entering, viewModel.state.value.emptyIntroPhase)
+        coVerify(exactly = 1) { markCanvasIntroPlayed(GroupId(GROUP_ID), tomorrow) }
+    }
+
+    @Test
+    fun canvasBecomesEmptyAfterEntering_doesNotPlayIntroMidSession() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 토핑이 있는 오늘 캔버스로 진입했다
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(topping(positionZ = 1)))
+        val viewModel = enteredViewModel()
+
+        // When 그 토핑이 지워져 같은 날짜의 빈 캔버스가 내려온다
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
+        advanceUntilIdle()
+
+        // Then 진입 시점에 정해진 대로 연출하지 않는다
+        assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.emptyIntroPhase)
+        coVerify(exactly = 0) { markCanvasIntroPlayed(any(), any()) }
     }
 
     @Test

@@ -127,6 +127,8 @@ data class CanvasMainUiState(
     val isInitialLoading: Boolean = false,
     /** 토핑이 없는 오늘 캔버스의 안내 연출 단계. 지난 날을 보는 동안은 `Idle` 로 남는다 */
     val emptyIntroPhase: CanvasEmptyIntroPhase = CanvasEmptyIntroPhase.Idle,
+    /** [emptyIntroPhase] 가 어느 캔버스 날짜에 대해 정해졌는지. 날짜가 바뀌면 그 날짜의 판단을 새로 한다 */
+    val emptyIntroCanvasDate: LocalDate? = null,
 ) : UiState {
     /** 지난 날 상세를 기다리는 동안에는 직전에 보던 것을 그대로 둔다 */
     val displayedCanvas: CanvasVO?
@@ -438,12 +440,26 @@ constructor(
     }
 
     /**
-     * 연출은 오늘 캔버스가 비어 있을 때 하루 한 번만 시작한다. 시작하는 순간 기록하므로 재생 도중
-     * 나가도 같은 날 다시 재생하지 않는다. 폴링이 같은 빈 캔버스를 다시 흘려도 단계가 [Idle] 이
-     * 아니면 건드리지 않는다.
+     * 연출은 캔버스 날짜마다 **그 날짜의 첫 방출**에서 한 번 판단한다 — 비어 있고 아직 재생하지 않았을
+     * 때만 시작하고, 그렇지 않으면 그 날짜는 연출 없이 끝낸다. 화면을 연 채 03시가 지나 날짜가 바뀌면
+     * 어제의 단계(완료 상태로 남은 더미 포함)를 버리고 새 날짜로 다시 판단한다. 같은 날짜 안에서
+     * 캔버스가 중간에 비게 돼도(토핑 삭제) 진입 시점의 판단을 뒤집지 않는다.
+     *
+     * 시작하는 순간 기록하므로 재생 도중 나가도 같은 날 다시 재생하지 않는다. 폴링이 같은 빈
+     * 캔버스를 다시 흘려도 같은 날짜면 건드리지 않는다.
      */
     private fun syncEmptyIntro(canvas: CanvasVO) {
-        if (canvas.toppings.isNotEmpty() || canvas.texts.isNotEmpty()) {
+        val isEmpty = canvas.toppings.isEmpty() && canvas.texts.isEmpty()
+
+        if (state.value.emptyIntroCanvasDate != canvas.date) {
+            updateState {
+                copy(
+                    emptyIntroCanvasDate = canvas.date,
+                    emptyIntroPhase = if (isEmpty) CanvasEmptyIntroPhase.Idle else CanvasEmptyIntroPhase.Dismissed,
+                )
+            }
+            if (isEmpty) launch(key = EMPTY_INTRO_KEY) { startEmptyIntroIfUnplayed(canvas) }
+        } else if (isEmpty.not()) {
             updateState {
                 when (emptyIntroPhase) {
                     CanvasEmptyIntroPhase.Entering, CanvasEmptyIntroPhase.Shown ->
@@ -452,16 +468,17 @@ constructor(
                     else -> this
                 }
             }
-        } else if (state.value.emptyIntroPhase == CanvasEmptyIntroPhase.Idle) {
-            launch(key = EMPTY_INTRO_KEY) { startEmptyIntroIfUnplayed(canvas) }
         }
     }
 
     private suspend fun startEmptyIntroIfUnplayed(canvas: CanvasVO) {
         val alreadyPlayed = getCanvasIntroPlayedDate(groupId) == canvas.date
 
-        // 기록을 읽는 사이 토핑이 올라왔거나 단계가 바뀌었으면 시작하지 않는다
-        if (state.value.emptyIntroPhase != CanvasEmptyIntroPhase.Idle || state.value.isCanvasEmpty.not()) return
+        // 기록을 읽는 사이 토핑이 올라왔거나 날짜·단계가 바뀌었으면 시작하지 않는다
+        val current = state.value
+        val isStillThisDecision = current.emptyIntroCanvasDate == canvas.date &&
+            current.emptyIntroPhase == CanvasEmptyIntroPhase.Idle
+        if (isStillThisDecision.not() || current.isCanvasEmpty.not()) return
 
         if (alreadyPlayed) {
             updateState { copy(emptyIntroPhase = CanvasEmptyIntroPhase.Dismissed) }
