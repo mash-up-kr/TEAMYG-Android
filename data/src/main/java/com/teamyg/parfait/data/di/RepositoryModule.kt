@@ -95,9 +95,7 @@ interface RepositoryModule {
 
     @Binds
     @Singleton
-    fun bindCanvasIntroRepository(
-        canvasIntroRepositoryImpl: CanvasIntroRepositoryImpl,
-    ): CanvasIntroRepository
+    fun bindCanvasIntroRepository(canvasIntroRepositoryImpl: CanvasIntroRepositoryImpl): CanvasIntroRepository
 
     @Binds
     @Singleton
