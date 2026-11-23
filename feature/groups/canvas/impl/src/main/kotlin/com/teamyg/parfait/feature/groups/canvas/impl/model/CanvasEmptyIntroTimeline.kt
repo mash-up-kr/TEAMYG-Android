@@ -23,7 +23,6 @@ internal object CanvasEmptyIntroTimeline {
     val HighlightDownEasing = CubicBezierEasing(0.42f, 0f, 0.58f, 1f)
     val ExitEasing = CubicBezierEasing(0f, 0f, 0.58f, 1f)
 
-    /** 공백은 건너뛰고 글자만 센다 — 강조는 글자 단위로 이어진다 */
     fun highlightCharCount(text: String): Int = text.count { it != ' ' }
 
     fun imageDelayMillis(index: Int): Int = IMAGE_STEP_MILLIS * (index + 1)

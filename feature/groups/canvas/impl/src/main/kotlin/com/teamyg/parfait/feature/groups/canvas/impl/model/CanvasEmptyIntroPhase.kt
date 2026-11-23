@@ -21,7 +21,6 @@ enum class CanvasEmptyIntroPhase {
         else -> this
     }
 
-    /** 뒤로가기·메뉴·토핑 추가처럼 정상 동작하는 버튼을 눌렀을 때 */
     fun onInteraction(): CanvasEmptyIntroPhase = when (this) {
         Entering -> Shown
         Shown -> Dismissing

@@ -327,10 +327,8 @@ sealed interface CanvasMainIntent : UiIntent {
     /** 앱이 백그라운드로 이동했다가 복귀했다. Spotlight 를 해제하고 안내 연출을 끝 상태로 건너뛴다 */
     data object OnAppReturnedFromBackground : CanvasMainIntent
 
-    /** 안내 연출의 등장 애니메이션이 끝까지 재생됐다 */
     data object OnEmptyIntroAnimationFinished : CanvasMainIntent
 
-    /** 버튼이 받지 않은 빈 영역 터치 */
     data object OnEmptyIntroTap : CanvasMainIntent
 
     /** 뒤로가기·메뉴·토핑 추가처럼 정상 동작하는 버튼을 눌렀다 */
@@ -440,13 +438,9 @@ constructor(
     }
 
     /**
-     * 연출은 캔버스 날짜마다 **그 날짜의 첫 방출**에서 한 번 판단한다 — 비어 있고 아직 재생하지 않았을
-     * 때만 시작하고, 그렇지 않으면 그 날짜는 연출 없이 끝낸다. 화면을 연 채 03시가 지나 날짜가 바뀌면
-     * 어제의 단계(완료 상태로 남은 더미 포함)를 버리고 새 날짜로 다시 판단한다. 같은 날짜 안에서
-     * 캔버스가 중간에 비게 돼도(토핑 삭제) 진입 시점의 판단을 뒤집지 않는다.
-     *
-     * 시작하는 순간 기록하므로 재생 도중 나가도 같은 날 다시 재생하지 않는다. 폴링이 같은 빈
-     * 캔버스를 다시 흘려도 같은 날짜면 건드리지 않는다.
+     * 연출 여부는 캔버스 날짜마다 첫 방출에서 한 번만 정한다. 03시가 지나 날짜가 바뀌면 어제의 단계를
+     * 버리고 다시 정하고, 같은 날짜 안에서 캔버스가 중간에 비어도 뒤집지 않는다. 시작하는 순간 기록하므로
+     * 재생 도중 나가도 같은 날 다시 재생하지 않는다.
      */
     private fun syncEmptyIntro(canvas: CanvasVO) {
         val isEmpty = canvas.toppings.isEmpty() && canvas.texts.isEmpty()
