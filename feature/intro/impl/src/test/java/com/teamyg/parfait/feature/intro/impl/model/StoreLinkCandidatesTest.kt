@@ -28,13 +28,17 @@ class StoreLinkCandidatesTest {
     }
 
     @Test
-    fun storeLinkCandidates_nonPlayHttps_isIgnored() {
-        assertEquals(listOf(market, web), storeLinkCandidates("https://example.com/app.apk", packageName))
+    fun storeLinkCandidates_otherHttpsStoreUrl_comesFirst() {
+        val storeUrl = "https://example.com/notice/1"
+
+        assertEquals(listOf(storeUrl, market, web), storeLinkCandidates(storeUrl, packageName))
     }
 
     @Test
-    fun storeLinkCandidates_lookalikeHost_isIgnored() {
-        assertEquals(listOf(market, web), storeLinkCandidates("https://play.google.com.evil.com/x", packageName))
+    fun storeLinkCandidates_intentScheme_isIgnored() {
+        val storeUrl = "intent://scan/#Intent;scheme=zxing;package=com.example;end"
+
+        assertEquals(listOf(market, web), storeLinkCandidates(storeUrl, packageName))
     }
 
     @Test

@@ -133,8 +133,9 @@ tags: [spec, parfait, splash, force-update]
 - `SplashRoute`가 이펙트를 처리한다.
   - `QuitApp` → `Activity.finishAndRemoveTask()`.
   - `OpenStore` → 아래 순서로 **처리할 앱이 있는 첫 후보**를 연다.
-    1. `storeUrl` — **scheme이 `market`이거나, `https`이면서 host가 `play.google.com`일 때만.**
-       그 밖의 값(다른 host, 형식 오류)은 무시한다. Play 밖 경로로 업데이트를 유도하지 않기 위해서다.
+    1. `storeUrl` — **scheme이 `market`이거나 `https`일 때만.** Play가 아닌 `https`는 공지·멀티 링크 같은
+       안내 페이지로 보내는 경우로, 외부 브라우저로 연다. `http`·`intent` 등 다른 스킴과 형식 오류는 무시한다.
+       APK 직접 배포 링크는 넣지 않는다(Play 정책 — 사용자 확인: 직접 APK 배포 없음).
     2. `market://details?id=<packageName>`
     3. `https://play.google.com/store/apps/details?id=<packageName>`
     4. 모두 실패 → 토스트 "스토어를 열 수 없어요. Play 스토어에서 파르페를 업데이트해 주세요", 모달 유지.
@@ -178,7 +179,7 @@ Figma `A-001-Update`(node `7315:17518`)와 `YGModalPopup`을 대조했다. 아�
 - 매퍼: `"FORCE"`·`"OPTIONAL"`·`"NONE"` → 대응 값, 모르는 문자열 → `UNKNOWN`.
 - `AppVersionRemoteDataSourceImpl`·`AppVersionRepositoryImpl`: 쿼리 `platform=ANDROID`·`version`,
   경로, 400/404/500 응답이 `Result` 실패가 되는지(선례 `NoticeRemoteDataSourceImplTest`·`NoticeRepositoryImplTest`).
-- 스토어 후보 함수: `storeUrl` null / `market://` / `https://play.google.com` / 다른 host / 형식 오류.
+- 스토어 후보 함수: `storeUrl` null / `market://` / `https://play.google.com` / 다른 https host / `intent`·`http` / 형식 오류.
 - `SplashViewModel`
   - 세 신호의 도착 순서와 무관하게 셋 다 와야 진행.
   - `Required` → 이동 이펙트 없음 + 모달 상태. `NotRequired` → 기존 이동 케이스(회귀, 기존

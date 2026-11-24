@@ -43,7 +43,7 @@ fun SplashRoute(
                 SplashSideEffect.NavigateToGroupList -> navigator.replaceAll(destination = NavKeyGroupList)
 
                 is SplashSideEffect.OpenStore -> {
-                    val opened = context.openPlayStore(storeLinkCandidates(effect.storeUrl, context.packageName))
+                    val opened = context.openUpdateLink(storeLinkCandidates(effect.storeUrl, context.packageName))
                     // YGToastHost는 모달 Dialog 창 아래에 그려져 딤에 가려지므로 시스템 Toast를 쓴다
                     if (!opened) {
                         Toast.makeText(context, R.string.splash_store_open_failed, Toast.LENGTH_LONG).show()
@@ -76,7 +76,8 @@ fun SplashRoute(
     }
 }
 
-private fun Context.openPlayStore(links: List<String>): Boolean = links.any { link ->
+// Play 를 먼저 시도하고, 받지 못한 https(Play 웹·공지 페이지)만 외부 브라우저로 연다
+private fun Context.openUpdateLink(links: List<String>): Boolean = links.any { link ->
     val isWebLink = link.startsWith("https://")
     tryStartViewIntent(link, packageName = PLAY_STORE_PACKAGE) ||
         (isWebLink && tryStartViewIntent(link))
