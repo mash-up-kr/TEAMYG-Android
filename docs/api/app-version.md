@@ -62,7 +62,6 @@ tags: [api, parfait, server-contract, app-version]
 - **`updateType`은 문자열로 받는다.** enum으로 바로 역직렬화하면 서버가 값을 추가하는 순간 파싱이 터져 fail-open으로 묻힌다. 모르는 값은 `UNKNOWN`으로 두고 강제로 취급하지 않는다.
 - **`OPTIONAL`은 `NONE`과 같다.** 선택 업데이트 UI가 없어 통과시키고, 도메인 `AppUpdateType`에는 값만 있다 (OQ-P-464 ②).
 - **`storeUrl`은 허용 출처만 쓴다.** `market` 스킴이거나 `https` + 호스트 `play.google.com`일 때만 맨 앞 후보가 된다. 아니면 버리고 `market://details?id=<패키지>` → `https://play.google.com/store/apps/details?id=<패키지>` 순서로 연다(`storeLinkCandidates`). 서버 값이 null이어도 같다.
-- **인증 클라이언트.** `PolicyService`와 같은 기본 Retrofit 클라이언트를 쓴다. 서버가 화이트리스트라 토큰 유무는 상관없다.
 - **`version`은 `APP_VERSION_NAME`을 그대로 보낸다.** `versionNameSuffix`를 붙이면 서버가 400을 주고 fail-open으로 영영 판정되지 않는다.
 
 ## 미결
