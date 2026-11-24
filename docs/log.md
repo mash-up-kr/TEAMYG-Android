@@ -498,3 +498,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-23] change | C-001 빈 캔버스 안내 애니메이션 추가 (OQ-P-304 해소)
 더미 이미지 3장·글자별 강조 연출을 그룹·캔버스 날짜당 1회 재생(`CanvasEmptyIntroPhase`를 `CanvasMainUiState`가 보유, 기록은 `canvas_intro_played_<alias>`에 마지막 재생 날짜) · `YGCanvas`의 `emptyMessage: String`을 `emptyContent` 슬롯으로 교체하고 안내 문구는 배경과 무관하게 표시, 회색 면은 배경이 없을 때만 · 확인 못 한 부분은 OQ-P-464
+
+## [2026-11-24] check | 강제 업데이트 실기기 확인
+SM-A356N · 로컬 목 서버(`adb reverse` + `-PYG_BASE_URL`) · FORCE 모달 노출, BACK·바깥 탭에도 유지, [업데이트] Play 직행(d1e29b6 이후), 복귀 시 모달 유지, [종료]로 최근 앱 제거, 404·10초 지연 시 로그인 진입 확인 · 회전은 세로 고정이라 해당 없음

@@ -62,8 +62,10 @@ tags: [api, parfait, server-contract, app-version]
 - **`updateType`은 문자열로 받는다.** enum으로 바로 역직렬화하면 서버가 값을 추가하는 순간 파싱이 터져 fail-open으로 묻힌다. 모르는 값은 `UNKNOWN`으로 두고 강제로 취급하지 않는다.
 - **`OPTIONAL`은 `NONE`과 같다.** 선택 업데이트 UI가 없어 통과시키고, 도메인 `AppUpdateType`에는 값만 있다 (OQ-P-464 ②).
 - **`storeUrl`은 허용 출처만 쓴다.** `market` 스킴이거나 `https` + 호스트 `play.google.com`일 때만 맨 앞 후보가 된다. 아니면 버리고 `market://details?id=<패키지>` → `https://play.google.com/store/apps/details?id=<패키지>` 순서로 연다(`storeLinkCandidates`). 서버 값이 null이어도 같다.
+- **`@NoAuth`.** `AppVersionService.checkVersion`에 붙어 있다. 없으면 `AuthInterceptor`가 저장된 토큰을 실어 보내고, 401이면 `TokenAuthenticator`가 재발급·강제 로그아웃을 건드린다. 재발급 Mutex를 기다리다 3초 상한을 넘기면 구버전 사용자가 그대로 통과한다.
+- **스토어는 Play 전용이다.** 스토어 인텐트는 `com.android.vending`(`PLAY_STORE_PACKAGE`, `SplashRoute.kt`)으로 고정한다. 안 그러면 삼성 기기에서 원스토어·갤럭시 스토어 선택창이 뜬다. Play가 없으면 https 후보만 패키지 지정 없이 다시 열어 브라우저로 간다.
 - **`version`은 `APP_VERSION_NAME`을 그대로 보낸다.** `versionNameSuffix`를 붙이면 서버가 400을 주고 fail-open으로 영영 판정되지 않는다.
 
 ## 미결
 
-- `minimum_version`을 언제 누가 올리는지, `OPTIONAL` UI 시나리오 → [open-questions](../synthesis/open-questions.md) OQ-P-464
+- `minimum_version`을 언제 누가 올리는지, `OPTIONAL` UI 시나리오(①②), 실서버 `FORCE` 응답 실측(③) → [open-questions](../synthesis/open-questions.md) OQ-P-464

@@ -16,6 +16,7 @@
 
 ## 강제 업데이트 (A-001)
 - 상태: 스플래시가 부트스트랩·로띠와 함께 `GET api/v1/app-versions/check`([api/app-version.md](api/app-version.md))를 `APP_VERSION_NAME`으로 부르고, 셋이 모이면 판정이 `FORCE`일 때만 `YGModalForceUpdate`로 진입을 막는다. [종료]는 `finishAndRemoveTask`, [업데이트]는 `storeLinkCandidates`가 만든 후보를 차례로 연다. 조회 실패·404·500·3초 초과·`OPTIONAL`·모르는 `updateType`은 전부 기존 진입으로 간다(fail-open).
+- ⚠️ 스토어 이동은 Play 전용이다. 인텐트가 `com.android.vending`(`PLAY_STORE_PACKAGE`, `SplashRoute.kt`)으로 고정돼 있어 삼성 기기에서도 원스토어·갤럭시 스토어 선택창이 뜨지 않는다. Play가 없으면 https 후보만 패키지 없이 재시도해 브라우저로 간다. 버전 체크는 `@NoAuth`라 토큰을 싣지 않는다
 - 앵커: `CheckForceUpdateUseCase`, `AppVersionRepositoryImpl`, `AppVersionRemoteDataSourceImpl`, `AppVersionService`, `SplashViewModel`, `VERSION_CHECK_TIMEOUT`, `storeLinkCandidates`, `YGModalForceUpdate`
 - ⚠️ 서버(`TEAMYG-SERVER` `feat/#225`)가 미머지·미배포라 실서버 응답을 받아 본 적이 없다. 배포 전에는 404로 통과하고, 배포 뒤에도 서버 DB에 ANDROID 행이 없으면 500(`APP_VERSION_NOT_FOUND`)이라 기능이 조용히 꺼진다 (OQ-P-464)
 - ⚠️ 선택 업데이트(`OPTIONAL`) UI가 없어 `NONE`처럼 통과한다. `versionNameSuffix`를 붙이면 서버가 400을 줘 판정이 영영 안 된다 (OQ-P-464)

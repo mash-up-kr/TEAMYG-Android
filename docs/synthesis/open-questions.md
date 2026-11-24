@@ -7905,7 +7905,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-465
 - **출처**: [강제 업데이트 스펙](../superpowers/specs/2026-11-24-force-update-design.md) · 서버 `TEAMYG-SERVER` `feat/#225`(`app_version` 테이블)
-- **항목**: ① 서버 `app_version.minimum_version`을 언제 누가 올리는지 정해지지 않았다. 행 등록은 배포 때 서버팀이 하기로 했다. ② 선택 업데이트(`OPTIONAL`) UI 시나리오가 없어 앱은 `OPTIONAL`을 `NONE`과 같이 통과시킨다. ③ 실서버(배포 후)에서 `FORCE` 응답으로 모달 노출·[업데이트] 스토어 이동·[종료]를 확인하지 않았다(서버 `feat/#225` 미배포).
+- **항목**: ① 서버 `app_version.minimum_version`을 언제 누가 올리는지 정해지지 않았다. 행 등록은 배포 때 서버팀이 하기로 했다. ② 선택 업데이트(`OPTIONAL`) UI 시나리오가 없어 앱은 `OPTIONAL`을 `NONE`과 같이 통과시킨다. ③ 실서버(배포 후)에서 `FORCE` 응답으로 모달 노출·[업데이트] 스토어 이동·[종료]를 확인하지 않았다(서버 `feat/#225` 미배포). 실기기 로컬 목 서버로 확인하지 못한 수동 항목: `storeUrl`이 null일 때 `market://` 이동, Play가 없는 기기의 웹 폴백, FORCE 모달 중 딥링크·앱링크가 소비되지 않는지.
 - **상태**: 미해결 (구현을 막지 않음)
 - **해소 메모**: ①은 운영 절차로 정해지면 [api](../api/README.md) 쪽 앱 버전 문서에 적는다. ②가 정해지면 `CheckForceUpdateUseCase`와 스플래시 판정에 `OPTIONAL` 분기를 더한다 — 도메인 `AppUpdateType`에는 이미 `OPTIONAL`이 있다. ③은 배포 후 실서버에서 `minimum_version`을 잠시 올려 확인한다.
 
