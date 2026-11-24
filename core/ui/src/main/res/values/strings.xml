@@ -23,4 +23,8 @@
     <string name="yg_modal_quit_confirm">그만두기</string>
     <string name="yg_modal_quit_continue_add">계속 추가</string>
     <string name="yg_modal_quit_continue_edit">계속 편집</string>
+    <string name="yg_modal_force_update_title">업데이트가 필요해요</string>
+    <string name="yg_modal_force_update_body">서비스를 계속 이용하려면\n최신 버전으로 업데이트해 주세요</string>
+    <string name="yg_modal_force_update_quit">종료</string>
+    <string name="yg_modal_force_update_confirm">업데이트</string>
 </resources>
