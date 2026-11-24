@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.intro.impl.splash
 
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
@@ -23,6 +24,9 @@ import com.teamyg.parfait.feature.intro.impl.model.storeLinkCandidates
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
 
+// 패키지를 지정하지 않으면 시스템 선택창이 원스토어·갤럭시 스토어 같은 Play 밖 스토어를 함께 보여준다
+private const val PLAY_STORE_PACKAGE = "com.android.vending"
+
 @Composable
 fun SplashRoute(
     navigator: Navigator,
@@ -41,14 +45,7 @@ fun SplashRoute(
                 SplashSideEffect.NavigateToGroupList -> navigator.replaceAll(destination = NavKeyGroupList)
 
                 is SplashSideEffect.OpenStore -> {
-                    val opened = storeLinkCandidates(effect.storeUrl, context.packageName).any { link ->
-                        try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, link.toUri()))
-                            true
-                        } catch (_: ActivityNotFoundException) {
-                            false
-                        }
-                    }
+                    val opened = context.openPlayStore(storeLinkCandidates(effect.storeUrl, context.packageName))
                     // YGToastHost는 모달 Dialog 창 아래에 그려져 딤에 가려지므로 시스템 Toast를 쓴다
                     if (!opened) {
                         Toast.makeText(context, R.string.splash_store_open_failed, Toast.LENGTH_LONG).show()
@@ -79,4 +76,22 @@ fun SplashRoute(
             onUpdate = { viewModel.processIntent(SplashIntent.UpdateClick) },
         )
     }
+}
+
+private fun Context.openPlayStore(links: List<String>): Boolean = links.any { link ->
+    val isWebLink = link.startsWith("https://")
+    startViewIntent(link, packageName = PLAY_STORE_PACKAGE) ||
+        (isWebLink && startViewIntent(link, packageName = null))
+}
+
+private fun Context.startViewIntent(
+    link: String,
+    packageName: String?,
+): Boolean = try {
+    startActivity(Intent(Intent.ACTION_VIEW, link.toUri()).setPackage(packageName))
+    true
+} catch (_: ActivityNotFoundException) {
+    false
+} catch (_: SecurityException) {
+    false
 }
