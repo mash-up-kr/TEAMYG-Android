@@ -7897,8 +7897,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-464
 - **출처**: `CanvasEmptyIntroPhase`·`CanvasEmptyIntroState`·`CanvasEmptyIntroLayer`·`CanvasEmptyIntroImage`(이슈 #726) × [c001-empty-intro-animation 스펙](../superpowers/specs/2026-11-23-c001-empty-intro-animation-design.md) — 단계 전이와 타임라인 수치는 JVM 테스트로 고정했지만 화면 연출은 렌더 결과를 확인한 기록이 없다. 정책 원본은 이슈 본문이고 `wiki/raw`에는 없다.
-- **항목**: ① 이미지 등장·글자 강조·디졸브는 Pixel_9 에뮬레이터(API 36)로 흐름을 확인했지만 프레임 단위 타이밍 계측은 없고, TalkBack과 실기기는 본 적이 없다. ② 더미 이미지 크기를 PNG 픽셀 수 = dp로 해석한 것과 배치 비율이 이미지 **중심** 기준이라는 해석은 Figma 대조 전이다. 회전각은 받지 못해 0도다.
+- **항목**: ① 이미지 등장·글자 강조·디졸브는 Pixel_9 에뮬레이터(API 36)로 흐름을 확인했지만 프레임 단위 타이밍 계측은 없고, TalkBack과 실기기는 본 적이 없다. ② 더미 이미지 크기를 PNG 픽셀 수 = dp로 해석한 것과 배치 비율이 이미지 **중심** 기준이라는 해석은 Figma 대조 전이다. 회전각은 받지 못해 0도다. ③ 더미 이미지는 받은 PNG 한 장(`drawable-nodpi`)이라 1x 내보내기라면 고밀도 기기에서 확대되어 흐릴 수 있다 — 3x/4x 원본을 받아 같은 자리에서 교체한다.
 - **상태**: 미해결 (확인 안 함 — 구현은 잠정)
-- **해소 메모**: ①은 TalkBack·실기기를 본 뒤 지운다. ②는 Figma와 다르면 `CanvasEmptyIntroImage` 목록 한 곳을 고친다.
+- **해소 메모**: ①은 TalkBack·실기기를 본 뒤 지운다. ②는 Figma와 다르면 `CanvasEmptyIntroImage` 목록 한 곳을 고친다. ③은 고해상도 원본으로 `drawable-nodpi`의 PNG 3장을 교체하면 지운다.
 
 <!-- oq-next: 465 -->
