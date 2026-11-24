@@ -14,6 +14,13 @@
 - ⚠️ 스플래시는 공용 `YGLoadingLottie` 대신 `LottieAnimation`을 직접 부르고 모듈이 로띠 의존을 따로 단다 — 종료·파싱 실패 신호가 공용 표면에 없어서다 (OQ-P-230)
 - 설계: [user-info-ssot](superpowers/specs/archive/2026-08-15-user-info-ssot.md), [a002-login-onboarding](superpowers/specs/archive/2026-08-11-a002-login-onboarding.md), [a002-kakao-login-api](superpowers/specs/archive/2026-08-13-a002-kakao-login-api.md), [intro-term-agree](superpowers/specs/archive/2026-07-22-intro-term-agree.md), [s004-terms-privacy-webview](superpowers/specs/archive/2026-07-20-s004-terms-privacy-webview.md), [ADR-0021](adr/0021-token-refresh-forced-logout.md), [ADR-0022](adr/0022-user-info-local-ssot.md)
 
+## 강제 업데이트 (A-001)
+- 상태: 스플래시가 부트스트랩·로띠와 함께 `GET api/v1/app-versions/check`([api/app-version.md](api/app-version.md))를 `APP_VERSION_NAME`으로 부르고, 셋이 모이면 판정이 `FORCE`일 때만 `YGModalForceUpdate`로 진입을 막는다. [종료]는 `finishAndRemoveTask`, [업데이트]는 `storeLinkCandidates`가 만든 후보를 차례로 연다. 조회 실패·404·500·3초 초과·`OPTIONAL`·모르는 `updateType`은 전부 기존 진입으로 간다(fail-open).
+- 앵커: `CheckForceUpdateUseCase`, `AppVersionRepositoryImpl`, `AppVersionRemoteDataSourceImpl`, `AppVersionService`, `SplashViewModel`, `VERSION_CHECK_TIMEOUT`, `storeLinkCandidates`, `YGModalForceUpdate`
+- ⚠️ 서버(`TEAMYG-SERVER` `feat/#225`)가 미머지·미배포라 실서버 응답을 받아 본 적이 없다. 배포 전에는 404로 통과하고, 배포 뒤에도 서버 DB에 ANDROID 행이 없으면 500(`APP_VERSION_NOT_FOUND`)이라 기능이 조용히 꺼진다 (OQ-P-464)
+- ⚠️ 선택 업데이트(`OPTIONAL`) UI가 없어 `NONE`처럼 통과한다. `versionNameSuffix`를 붙이면 서버가 400을 줘 판정이 영영 안 된다 (OQ-P-464)
+- 설계: [force-update-design](superpowers/specs/2026-11-24-force-update-design.md)
+
 ## 그룹 목록 (G-001)
 - 상태: `GroupListViewModel`이 그룹 인메모리 캐시(`GetMyGroupsFlowUseCase`)와 계정 SSoT(`GetMyAccountFlowUseCase`)를 구독해 그리고, 화면에 설 때마다 `RefreshMyGroupsUseCase`로 다시 조회한다. 첫 조회만 공통 로딩 덮개를 씌우고, 재진입 조회가 실패하면 보던 목록을 남기며, 당겨서 새로고침이 실패할 때만 에러 화면으로 간다. 토핑은 `ToppingLayout` 지그재그 위에 400ms 간격으로 쌓이고, 오늘 캔버스 토핑이 있으면 테두리까지 그린다. 없으면 `groupId`로 고른 템플릿을 그린다. 토핑을 누르면 C-001로, 그룹 추가 오버레이를 누르면 A-005·A-004로 간다. 상단 바는 "내 그룹 N"을 보이고 미조회(`null`)에서는 개수를 그리지 않는다. 0건이 확정되면(`isEmptyConfirmed`) 화면에 설 때마다 컴포지션이 든 `GroupListEmptyIntroState`가 더미 그룹 3개(`GROUP_LIST_EMPTY_DUMMY_GROUPS`)를 500ms 간격으로 내려 보이고 2.5초에 안내 툴팁을 띄운다. 3초 이후 버튼이 아닌 곳을 누르면 더미와 툴팁이 함께 사라지고, 이후 재진입 전까지 다시 뜨지 않는다. 등장 중 터치는 무시하되 그룹 추가 칩을 누르면 전부 드러난 상태로 건너뛰며, 앱이 멈추면 진행 중 애니메이션을 끝 상태로 건너뛴다. 더미는 접근성 트리에서 제외되고, 툴팁은 보이지 않는 동안 컴포지션에서 빠진다. 툴팁은 Material 팝업이 아니라 일반 컴포저블이다 (OQ-P-426)
 - 앵커: `GroupListViewModel`, `GetMyGroupsFlowUseCase`, `GroupListEmptyIntroState`, `GROUP_LIST_EMPTY_DUMMY_GROUPS`, `YGToppingTextTemplate`, `ToppingLayout`, `GroupListParfaitLayout`, `feature/groups/list/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/list/impl/util/ToppingImage.kt`
@@ -220,6 +227,7 @@
 - OQ-P-301 — 카메라 권한 거부 화면의 수정 결과를 실기기에서 본 사람이 없다
 - OQ-P-400 — 세그멘테이션 1차 경로 회귀와 C-101-Loading 흐름(갤러리 content uri 재읽기, 팝업 중 결과 보류, 편집 완료 뒤 백스택)을 실기기로 본 적이 없다
 - OQ-P-260 — 화면 전환 애니메이션의 모양·시간·방향을 실기기로 본 적이 없다
+- OQ-P-464 — 강제 업데이트가 실서버 응답으로 `FORCE`를 받아 모달을 띄운 적이 없고, 모달의 스토어 이동도 실기기로 본 적이 없다
 - OQ-P-146 — 로그인 실기기 검증 항목과 앱의 첫 실서버 호출 왕복이 한 번도 돌지 않았다
 - OQ-P-350 — 교체된 스플래시 로고 애니메이션을 본 사람이 없고 되돌아가도 잡을 수단이 없다
 - OQ-P-267 — 누끼 후보 필터 상수 둘이 실측 근거 없이 정해졌다

@@ -1,7 +1,7 @@
 ---
 id: force-update
 title: 강제 업데이트 (Force Update)
-status: draft
+status: implemented
 category: feature
 platforms: android
 verified: 2026-11-24
@@ -11,6 +11,12 @@ related_code:
   - YGModalPopup.kt#YGModalPopup
   - AppInfo.kt#APP_VERSION_NAME
   - BootstrapSessionUseCase.kt#BootstrapSessionUseCase
+  - AppVersionService.kt#AppVersionService
+  - AppVersionRemoteDataSourceImpl.kt#AppVersionRemoteDataSourceImpl
+  - AppVersionRepositoryImpl.kt#AppVersionRepositoryImpl
+  - CheckForceUpdateUseCase.kt#CheckForceUpdateUseCase
+  - StoreLinkCandidates.kt#storeLinkCandidates
+  - YGModalForceUpdate.kt#YGModalForceUpdate
 related_adr:
 related_spec:
 related_architecture:
