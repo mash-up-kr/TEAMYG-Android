@@ -49,6 +49,7 @@ internal class CanvasEmptyIntroState(
     val exitAlpha: Float get() = phase().exitValue(exit.value)
 
     suspend fun play() {
+        reset()
         coroutineScope {
             images.forEachIndexed { index, image ->
                 launch {
@@ -64,6 +65,13 @@ internal class CanvasEmptyIntroState(
                 }
             }
         }
+    }
+
+    /** 컴포지션이 03시를 넘겨 살아 있어도 새 날짜의 연출이 처음부터 재생되도록, 어제 재생이 남긴 값을 비운다 */
+    suspend fun reset() {
+        images.forEach { it.snapTo(0f) }
+        highlights.forEach { it.snapTo(0f) }
+        exit.snapTo(1f)
     }
 
     /** 재생을 건너뛰고 완료 상태가 됐을 때, 이어지는 디졸브가 이 값에서 출발하도록 맞춘다 */
@@ -104,6 +112,8 @@ internal fun rememberCanvasEmptyIntroState(
                 state.dismiss()
                 currentOnDismissFinished()
             }
+
+            CanvasEmptyIntroPhase.Idle -> state.reset()
 
             else -> Unit
         }
