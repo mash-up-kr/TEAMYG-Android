@@ -5,34 +5,53 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.APP_VERSION_NAME
+import com.teamyg.parfait.domain.model.appversion.AppUpdateCheck
 import com.teamyg.parfait.domain.model.session.SessionBootstrap
+import com.teamyg.parfait.domain.usecase.appversion.CheckForceUpdateUseCase
 import com.teamyg.parfait.domain.usecase.session.BootstrapSessionUseCase
+import com.teamyg.parfait.feature.intro.impl.model.VERSION_CHECK_TIMEOUT
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 /**
- * 다음 화면으로 가려면 두 가지가 모두 끝나야 한다 — 부트스트랩 응답과 로띠 재생이다. 둘은
- * 서로를 기다리지 않고 각자 끝나므로 어느 쪽이 먼저일지 정해져 있지 않다. 그래서 각각을
- * 상태로 남겨 두고, 나중에 끝난 쪽이 이동을 일으킨다.
+ * 다음 화면으로 가려면 세 가지가 모두 끝나야 한다 — 부트스트랩 응답, 버전 판정, 로띠 재생이다.
+ * 셋은 서로를 기다리지 않고 각자 끝나므로 어느 쪽이 먼저일지 정해져 있지 않다. 그래서 각각을
+ * 상태로 남겨 두고, 마지막에 끝난 쪽이 이동을 일으킨다.
  *
  * @property destination 부트스트랩이 정한 목적지. `null` 은 아직 응답을 못 받은 것이다
  * @property isAnimationFinished 로띠가 끝났는지. 재생을 마쳤거나 로띠를 불러오지 못한 경우다
+ * @property updateCheck 버전 판정. `null` 은 아직 모르는 것이다
  */
 data class SplashState(
     val destination: SessionBootstrap? = null,
     val isAnimationFinished: Boolean = false,
-) : UiState
+    val updateCheck: AppUpdateCheck? = null,
+) : UiState {
+    /** 이펙트가 아니라 상태로 둔다 — 재구성·회전 뒤에도, 스토어에서 돌아와도 모달이 남아야 한다. */
+    val isForceUpdateVisible: Boolean
+        get() = destination != null && isAnimationFinished && updateCheck is AppUpdateCheck.Required
+}
 
 sealed interface SplashIntent : UiIntent {
     data object Init : SplashIntent
 
     data object AnimationFinished : SplashIntent
+
+    data object UpdateClick : SplashIntent
+
+    data object QuitClick : SplashIntent
 }
 
 sealed interface SplashSideEffect : UiSideEffect {
     data object NavigateToLogin : SplashSideEffect
 
     data object NavigateToGroupList : SplashSideEffect
+
+    data class OpenStore(val storeUrl: String?) : SplashSideEffect
+
+    data object QuitApp : SplashSideEffect
 }
 
 @HiltViewModel
@@ -40,6 +59,7 @@ class SplashViewModel
 @Inject
 constructor(
     private val bootstrapSession: BootstrapSessionUseCase,
+    private val checkForceUpdate: CheckForceUpdateUseCase,
 ) : BaseViewModel<SplashState, SplashIntent, SplashSideEffect>(initialState = SplashState()) {
     init {
         viewModelLogger.i { "SplashViewModel::init" }
@@ -50,6 +70,8 @@ constructor(
         when (intent) {
             SplashIntent.Init -> handleInit()
             SplashIntent.AnimationFinished -> handleAnimationFinished()
+            SplashIntent.UpdateClick -> handleUpdateClick()
+            SplashIntent.QuitClick -> postSideEffect(SplashSideEffect.QuitApp)
         }
     }
 
@@ -60,6 +82,10 @@ constructor(
      * [KEY_BOOTSTRAP] 로 감싸는 이유 — 지금은 진입점이 [SplashIntent.Init] 하나라 두 번째
      * 호출이 실제로 발생하진 않지만, 같은 key 로 guard 를 걸어 두면 이후 다른 진입점(예:
      * 포그라운드 복귀)이 생겨도 조회가 겹치지 않는다.
+     *
+     * 부트스트랩의 부수효과(푸시 토큰 등록, 인증 거절 시 로그아웃)는 강제 업데이트 중에도 막지 않는다.
+     *
+     * 버전 체크는 상한을 넘기거나 예외로 끝나도 통과로 본다 — 스플래시에 갇히는 쪽이 더 나쁘다.
      */
     private fun handleInit() {
         launch(key = KEY_BOOTSTRAP) {
@@ -68,6 +94,21 @@ constructor(
             updateState { copy(destination = destination) }
             navigateIfReady()
         }
+        launch(
+            key = KEY_VERSION_CHECK,
+            onError = { applyUpdateCheck(AppUpdateCheck.NotRequired) },
+        ) {
+            val updateCheck = withTimeoutOrNull(VERSION_CHECK_TIMEOUT) {
+                checkForceUpdate(APP_VERSION_NAME)
+            } ?: AppUpdateCheck.NotRequired
+
+            applyUpdateCheck(updateCheck)
+        }
+    }
+
+    private fun applyUpdateCheck(updateCheck: AppUpdateCheck) {
+        updateState { copy(updateCheck = updateCheck) }
+        navigateIfReady()
     }
 
     /**
@@ -81,11 +122,20 @@ constructor(
         navigateIfReady()
     }
 
+    private fun handleUpdateClick() {
+        val updateCheck = state.value.updateCheck as? AppUpdateCheck.Required ?: return
+
+        postSideEffect(SplashSideEffect.OpenStore(updateCheck.storeUrl))
+    }
+
+    /** `Required` 면 이펙트 없이 끝난다 — 모달은 [SplashState.isForceUpdateVisible] 이 그린다. */
     private fun navigateIfReady() {
         val current = state.value
         val destination = current.destination
+        val updateCheck = current.updateCheck
 
-        if (destination == null || !current.isAnimationFinished) return
+        if (destination == null || !current.isAnimationFinished || updateCheck == null) return
+        if (updateCheck is AppUpdateCheck.Required) return
 
         postSideEffect(
             when (destination) {
@@ -97,5 +147,6 @@ constructor(
 
     private companion object {
         const val KEY_BOOTSTRAP = "bootstrap"
+        const val KEY_VERSION_CHECK = "version_check"
     }
 }

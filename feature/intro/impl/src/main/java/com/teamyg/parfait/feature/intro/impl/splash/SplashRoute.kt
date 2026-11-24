@@ -22,7 +22,11 @@ fun SplashRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 SplashSideEffect.NavigateToLogin -> navigator.replaceAll(destination = NavKeyLogin)
+
                 SplashSideEffect.NavigateToGroupList -> navigator.replaceAll(destination = NavKeyGroupList)
+
+                // TODO(강제 업데이트): 스토어 열기와 앱 종료는 Task 5에서 처리한다
+                is SplashSideEffect.OpenStore, SplashSideEffect.QuitApp -> Unit
             }
         }
     }
