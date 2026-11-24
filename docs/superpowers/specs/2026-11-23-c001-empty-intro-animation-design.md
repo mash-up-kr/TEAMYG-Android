@@ -99,8 +99,9 @@ tags: [spec, parfait, C-001, animation]
 
 ### 더미 이미지 타임라인
 
-- 자산: `Group 1/2/3.png`를 `drawable-nodpi`에 `canvas_empty_intro_1~3`으로 넣는다.
-  크기는 PNG 픽셀 수를 그대로 dp로 쓴다 — 134×134, 180×193, 248×254.
+- 자산: 디자인이 준 x4 원본(`Group 1/2/3.png`)을 `canvas_empty_intro_1~3`으로 `drawable-mdpi`~`xxxhdpi`에
+  밀도별로 둔다(원본이 xxxhdpi, 나머지는 같은 원본을 줄여 만든다). 크기는 x1 기준 dp로 쓴다 — 134×134,
+  180×193, 248×254.
 - 시작 상태: 최종 위치에서 Y `-60dp`, 불투명도 0. 종료 상태: 최종 위치, 불투명도 1.
 - 이동과 불투명도를 1,000ms 동안 함께 적용하고 이징은 `CubicBezierEasing(0f, 0f, 0f, 1f)`.
 - 시작은 진입 기준 500 / 1,000 / 1,500ms. 마지막 이미지는 2,500ms에 끝난다.
