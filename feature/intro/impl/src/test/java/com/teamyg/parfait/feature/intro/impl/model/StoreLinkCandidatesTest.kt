@@ -33,6 +33,11 @@ class StoreLinkCandidatesTest {
     }
 
     @Test
+    fun storeLinkCandidates_lookalikeHost_isIgnored() {
+        assertEquals(listOf(market, web), storeLinkCandidates("https://play.google.com.evil.com/x", packageName))
+    }
+
+    @Test
     fun storeLinkCandidates_httpPlayHost_isIgnored() {
         val storeUrl = "http://play.google.com/store/apps/details?id=other"
 

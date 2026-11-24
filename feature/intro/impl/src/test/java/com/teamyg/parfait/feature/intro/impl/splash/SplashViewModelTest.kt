@@ -235,8 +235,12 @@ class SplashViewModelTest {
             runCurrent()
             expectNoEvents()
 
-            // When 상한 3초를 넘긴다
-            advanceTimeBy(3_001)
+            // When 상한 3초 직전까지는 기다린다
+            advanceTimeBy(2_999)
+            expectNoEvents()
+
+            // And 상한 3초를 넘긴다
+            advanceTimeBy(2)
 
             // Then 통과로 보고 넘어간다 — 스플래시에 갇히지 않는다
             assertEquals(SplashSideEffect.NavigateToGroupList, awaitItem())
