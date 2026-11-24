@@ -10,4 +10,6 @@
 
     <string name="term_agree_signup_error_network">네트워크 연결을 확인해 주세요</string>
     <string name="term_agree_signup_error_unknown">가입에 실패했어요. 잠시 후 다시 시도해 주세요</string>
+
+    <string name="splash_store_open_failed">스토어를 열 수 없어요. Play 스토어에서 파르페를 업데이트해 주세요</string>
 </resources>
