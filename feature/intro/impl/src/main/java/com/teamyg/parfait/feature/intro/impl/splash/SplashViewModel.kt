@@ -29,9 +29,14 @@ data class SplashState(
     val isAnimationFinished: Boolean = false,
     val updateCheck: AppUpdateCheck? = null,
 ) : UiState {
-    /** 이펙트가 아니라 상태로 둔다 — 재구성·회전 뒤에도, 스토어에서 돌아와도 모달이 남아야 한다. */
+    /**
+     * 이펙트가 아니라 상태로 둔다 — 재구성·회전 뒤에도, 스토어에서 돌아와도 모달이 남아야 한다.
+     *
+     * 부트스트랩 응답은 기다리지 않는다. 부트스트랩에는 상한이 없어서, 기다리면 판정이 끝난 뒤에도
+     * 스플래시에 멈춰 있게 된다. 로띠가 끝나기는 기다린다 — 재생 중에 모달이 끊고 들어오지 않게 한다.
+     */
     val isForceUpdateVisible: Boolean
-        get() = destination != null && isAnimationFinished && updateCheck is AppUpdateCheck.Required
+        get() = isAnimationFinished && updateCheck is AppUpdateCheck.Required
 }
 
 sealed interface SplashIntent : UiIntent {
@@ -86,6 +91,9 @@ constructor(
      * 부트스트랩의 부수효과(푸시 토큰 등록, 인증 거절 시 로그아웃)는 강제 업데이트 중에도 막지 않는다.
      *
      * 버전 체크는 상한을 넘기거나 예외로 끝나도 통과로 본다 — 스플래시에 갇히는 쪽이 더 나쁘다.
+     * 통과 처리가 세 군데인 건 막는 실패가 서로 달라서다. 서버 조회 실패는 [CheckForceUpdateUseCase] 가,
+     * 화면이 기다릴 수 있는 시간은 여기의 [VERSION_CHECK_TIMEOUT] 이, 매퍼 버그 같은 예상 못 한 예외는
+     * `onError` 가 맡는다.
      */
     private fun handleInit() {
         launch(key = KEY_BOOTSTRAP) {
@@ -131,11 +139,9 @@ constructor(
     /** `Required` 면 이펙트 없이 끝난다 — 모달은 [SplashState.isForceUpdateVisible] 이 그린다. */
     private fun navigateIfReady() {
         val current = state.value
-        val destination = current.destination
-        val updateCheck = current.updateCheck
+        val destination = current.destination ?: return
 
-        if (destination == null || !current.isAnimationFinished || updateCheck == null) return
-        if (updateCheck is AppUpdateCheck.Required) return
+        if (!current.isAnimationFinished || current.updateCheck != AppUpdateCheck.NotRequired) return
 
         postSideEffect(
             when (destination) {

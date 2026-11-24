@@ -183,6 +183,22 @@ class SplashViewModelTest {
     }
 
     @Test
+    fun forceUpdate_bootstrapStillRunning_showsModalAfterAnimation() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 강제 업데이트 대상인데 부트스트랩 응답이 오지 않는다
+        coEvery { bootstrapSession() } coAnswers { awaitCancellation() }
+        coEvery { checkForceUpdate(any()) } returns AppUpdateCheck.Required("market://x")
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 로띠가 끝난다
+        viewModel.processIntent(SplashIntent.AnimationFinished)
+        advanceUntilIdle()
+
+        // Then 부트스트랩을 기다리지 않고 모달을 띄운다
+        assertTrue(viewModel.state.value.isForceUpdateVisible)
+    }
+
+    @Test
     fun forceUpdate_beforeAnimationFinishes_hidesModal() = runTest(mainDispatcherRule.dispatcher) {
         // Given 강제 업데이트 대상이고 부트스트랩도 끝났다
         coEvery { bootstrapSession() } returns SessionBootstrap.ToGroupList

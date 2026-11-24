@@ -18,12 +18,11 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.component.modal.YGModalForceUpdate
 import com.teamyg.parfait.core.util.android.extension.tryStartViewIntent
 import com.teamyg.parfait.feature.intro.impl.R
+import com.teamyg.parfait.feature.intro.impl.model.PLAY_STORE_PACKAGE
+import com.teamyg.parfait.feature.intro.impl.model.UpdateLink
 import com.teamyg.parfait.feature.intro.impl.model.storeLinkCandidates
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
-
-// 패키지를 지정하지 않으면 시스템 선택창이 원스토어·갤럭시 스토어 같은 Play 밖 스토어를 함께 보여준다
-private const val PLAY_STORE_PACKAGE = "com.android.vending"
 
 @Composable
 fun SplashRoute(
@@ -76,9 +75,8 @@ fun SplashRoute(
     }
 }
 
-// Play 를 먼저 시도하고, 받지 못한 https(Play 웹·공지 페이지)만 외부 브라우저로 연다
-private fun Context.openUpdateLink(links: List<String>): Boolean = links.any { link ->
-    val isWebLink = link.startsWith("https://")
-    tryStartViewIntent(link, packageName = PLAY_STORE_PACKAGE) ||
-        (isWebLink && tryStartViewIntent(link))
+// 어떤 링크를 어떤 순서로, 브라우저로 다시 열어도 되는지는 storeLinkCandidates 가 정한다
+private fun Context.openUpdateLink(links: List<UpdateLink>): Boolean = links.any { link ->
+    tryStartViewIntent(link.uri, packageName = PLAY_STORE_PACKAGE) ||
+        (link.opensInBrowser && tryStartViewIntent(link.uri))
 }
