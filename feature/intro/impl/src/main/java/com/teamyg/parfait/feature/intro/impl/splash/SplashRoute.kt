@@ -1,8 +1,6 @@
 package com.teamyg.parfait.feature.intro.impl.splash
 
-import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.WindowInsets
@@ -13,12 +11,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.component.modal.YGModalForceUpdate
+import com.teamyg.parfait.core.util.android.extension.tryStartViewIntent
 import com.teamyg.parfait.feature.intro.impl.R
 import com.teamyg.parfait.feature.intro.impl.model.storeLinkCandidates
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
@@ -80,18 +78,6 @@ fun SplashRoute(
 
 private fun Context.openPlayStore(links: List<String>): Boolean = links.any { link ->
     val isWebLink = link.startsWith("https://")
-    startViewIntent(link, packageName = PLAY_STORE_PACKAGE) ||
-        (isWebLink && startViewIntent(link, packageName = null))
-}
-
-private fun Context.startViewIntent(
-    link: String,
-    packageName: String?,
-): Boolean = try {
-    startActivity(Intent(Intent.ACTION_VIEW, link.toUri()).setPackage(packageName))
-    true
-} catch (_: ActivityNotFoundException) {
-    false
-} catch (_: SecurityException) {
-    false
+    tryStartViewIntent(link, packageName = PLAY_STORE_PACKAGE) ||
+        (isWebLink && tryStartViewIntent(link))
 }
