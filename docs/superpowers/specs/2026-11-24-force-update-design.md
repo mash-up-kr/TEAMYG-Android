@@ -4,7 +4,7 @@ title: 강제 업데이트 (Force Update)
 status: implemented
 category: feature
 platforms: android
-verified: 2026-11-24
+verified: 2026-11-26
 related_code:
   - SplashViewModel.kt#SplashViewModel
   - SplashRoute.kt#SplashRoute
@@ -14,9 +14,10 @@ related_code:
   - AppVersionService.kt#AppVersionService
   - AppVersionRemoteDataSourceImpl.kt#AppVersionRemoteDataSourceImpl
   - AppVersionRepositoryImpl.kt#AppVersionRepositoryImpl
-  - CheckForceUpdateUseCase.kt#CheckForceUpdateUseCase
+  - CheckAppUpdateUseCase.kt#CheckAppUpdateUseCase
   - StoreLinkCandidates.kt#storeLinkCandidates
-  - YGModalForceUpdate.kt#YGModalForceUpdate
+  - YGModalAppUpdate.kt#YGModalForceUpdate
+  - YGModalAppUpdate.kt#YGModalOptionalUpdate
 related_adr:
 related_spec:
 related_architecture:
@@ -43,10 +44,10 @@ tags: [spec, parfait, splash, force-update]
 
 - 스플래시에서 서버 버전 체크 API를 부르고, 응답이 `FORCE`면 업데이트 모달로 진행을 막는다.
 - 모달의 [종료]는 앱을 끝내고, [업데이트]는 스토어를 연다.
+- 응답이 `OPTIONAL`이면 미룰 수 있는 모달을 띄운다. iOS(#168)와 같은 동작이다.
 
 ### 비목표
 
-- **선택 업데이트(`OPTIONAL`) UI.** 시나리오가 정해지지 않았다. `OPTIONAL`은 `NONE`과 똑같이 통과한다.
 - 공용 `YGModalPopup`의 시안 불일치 수정(아래 "시안 대조").
 - 스플래시 밖(포그라운드 복귀 등)에서의 재검사.
 
@@ -77,7 +78,6 @@ tags: [spec, parfait, splash, force-update]
 | 항목 | 결정 주체 | 이번 구현을 막는가 |
 |---|---|---|
 | `minimumVersion`을 언제 누가 올리는가 | 미정 | 아니오 — 값은 서버 DB에 있다 |
-| 선택 업데이트(`OPTIONAL`) UI 시나리오 | 미정(기획·디자인) | 아니오 — 이번엔 통과 처리 |
 
 추적: [open-questions.md](../../synthesis/open-questions.md) `OQ-P-464`.
 
@@ -109,27 +109,31 @@ tags: [spec, parfait, splash, force-update]
   - `AppVersionInfo(updateType: AppUpdateType, storeUrl: String?)` — `minimumVersion`·`latestVersion`은
     앱이 쓰지 않으므로 올리지 않는다.
   - `AppVersionRepository.checkVersion(version: String): Result<AppVersionInfo>`.
-  - `CheckForceUpdateUseCase(version: String): AppUpdateCheck`
-    - `sealed interface AppUpdateCheck { data class Required(val storeUrl: String?); data object NotRequired }`
-    - `FORCE` → `Required(storeUrl)`
-    - `OPTIONAL`·`NONE`·`UNKNOWN` → `NotRequired`
+  - `CheckAppUpdateUseCase(version: String): AppUpdateCheck`
+    - `sealed interface AppUpdateCheck { Required(storeUrl); Optional(storeUrl); NotRequired }`
+    - `FORCE` → `Required(storeUrl)`, `OPTIONAL` → `Optional(storeUrl)`
+    - `NONE`·`UNKNOWN` → `NotRequired`
     - **`Result` 실패(네트워크·400·404·500 전부) → `NotRequired`**
   - 버전 문자열은 유스케이스가 인자로 받는다(도메인은 Android 의존 없음). 호출부가 `APP_VERSION_NAME`을 넘긴다.
 
 ### 스플래시
 
 - `SplashState`에 판정 결과(`AppUpdateCheck?`, `null` = 아직 모름)를 더한다. 모달 노출은 이 값이
-  `Required`이고 로띠가 끝났는지로 정한다.
+  `Required`(강제) 또는 `Optional`(선택)이고 로띠가 끝났는지로 정한다. 부트스트랩 응답은 기다리지 않는다.
 - `Init`에서 부트스트랩과 버전 체크를 **동시에** 시작한다(별도 `launch` key).
 - 버전 체크는 **`withTimeoutOrNull(3초)`** 로 감싼다. 상한을 넘기면 `NotRequired`다. 부트스트랩에는
   상한을 걸지 않는다(기존 동작 유지).
 - 진행 조건: 부트스트랩 목적지, 버전 판정, 로띠 종료 **셋 다** 갖춰졌을 때.
   - `Required` → 이동 이펙트를 내지 않고 모달을 띄운다(이펙트가 아니라 상태 — 재구성·회전에도 남아야 한다).
+  - `Optional` → 이동 이펙트를 내지 않고 선택 업데이트 모달을 띄운다. 사용자가 [나중에]나 [업데이트]를
+    누르면 판정을 `NotRequired`로 바꾸고, 부트스트랩까지 끝났으면 그때 넘어간다.
   - `NotRequired` → 기존대로 `NavigateToLogin` / `NavigateToGroupList`.
 - **부트스트랩의 부수효과는 강제 업데이트 중에도 허용한다.** 성공 시 푸시 토큰 등록
   (`registerCurrentDeviceToken`), 인증 거절 시 `logout()`이 그대로 일어난다. 업데이트 뒤에도 필요한
   동작이라 막지 않는다. 막힌 기기가 받는 푸시는 딥링크가 소비되지 않으므로 화면을 열지 않는다.
 - 인텐트 `UpdateClick` → 이펙트 `OpenStore(storeUrl)`, `QuitClick` → 이펙트 `QuitApp`.
+  선택 업데이트의 `UpdateClick`은 `OpenStore` 뒤에 다음 화면 이동까지 낸다 — 스토어에서 돌아오면 앱 안이다.
+  `LaterClick`은 선택 업데이트일 때만 받는다. 미룬 기록은 저장하지 않아 콜드 스타트마다 다시 뜬다.
 - `SplashRoute`가 이펙트를 처리한다.
   - `QuitApp` → `Activity.finishAndRemoveTask()`.
   - `OpenStore` → 아래 순서로 **처리할 앱이 있는 첫 후보**를 연다.
@@ -138,13 +142,13 @@ tags: [spec, parfait, splash, force-update]
        APK 직접 배포 링크는 넣지 않는다(Play 정책 — 사용자 확인: 직접 APK 배포 없음).
     2. `market://details?id=<packageName>`
     3. `https://play.google.com/store/apps/details?id=<packageName>`
-    4. 모두 실패 → 토스트 "스토어를 열 수 없어요. Play 스토어에서 파르페를 업데이트해 주세요", 모달 유지.
+    4. 모두 실패 → 토스트 "스토어를 열 수 없어요. Play 스토어에서 파르페를 업데이트해 주세요", 강제 업데이트면 모달 유지.
   - 후보 목록을 만드는 로직은 순수 함수로 둔다(테스트 대상).
   - 스토어에서 업데이트 없이 돌아오면 모달이 그대로 남는다(상태가 유지되므로).
 
 ### 모달
 
-- `core:ui`에 `YGModalForceUpdate(onQuit, onUpdate)` — `YGModalPopup` 래퍼, `YGModalQuit`과 같은 형태.
+- `core:ui`의 `YGModalAppUpdate.kt`에 `YGModalForceUpdate(onQuit, onUpdate)`와 `YGModalOptionalUpdate(onLater, onUpdate)` — `YGModalPopup` 래퍼, `YGModalQuit`과 같은 형태.
   - 아이콘 `ic_warning_round`, 제목 "업데이트가 필요해요",
     본문 "서비스를 계속 이용하려면\n최신 버전으로 업데이트해 주세요".
   - secondary **[종료]**, primary [업데이트]. 시안의 "취소"를 "종료"로 바꾼 것은 의도다(사용자 결정).
@@ -174,7 +178,7 @@ Figma `A-001-Update`(node `7315:17518`)와 `YGModalPopup`을 대조했다. 아�
 
 ### 단위
 
-- `CheckForceUpdateUseCase`: `FORCE`→`Required`(storeUrl 전달), `OPTIONAL`·`NONE`·`UNKNOWN`→`NotRequired`,
+- `CheckAppUpdateUseCase`: `FORCE`→`Required`, `OPTIONAL`→`Optional`(둘 다 storeUrl 전달), `NONE`·`UNKNOWN`→`NotRequired`,
   실패→`NotRequired`, 넘긴 버전 문자열이 리포지토리로 그대로 가는지.
 - 매퍼: `"FORCE"`·`"OPTIONAL"`·`"NONE"` → 대응 값, 모르는 문자열 → `UNKNOWN`.
 - `AppVersionRemoteDataSourceImpl`·`AppVersionRepositoryImpl`: 쿼리 `platform=ANDROID`·`version`,

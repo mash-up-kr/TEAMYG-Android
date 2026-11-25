@@ -14,12 +14,12 @@
 - ⚠️ 스플래시는 공용 `YGLoadingLottie` 대신 `LottieAnimation`을 직접 부르고 모듈이 로띠 의존을 따로 단다 — 종료·파싱 실패 신호가 공용 표면에 없어서다 (OQ-P-230)
 - 설계: [user-info-ssot](superpowers/specs/archive/2026-08-15-user-info-ssot.md), [a002-login-onboarding](superpowers/specs/archive/2026-08-11-a002-login-onboarding.md), [a002-kakao-login-api](superpowers/specs/archive/2026-08-13-a002-kakao-login-api.md), [intro-term-agree](superpowers/specs/archive/2026-07-22-intro-term-agree.md), [s004-terms-privacy-webview](superpowers/specs/archive/2026-07-20-s004-terms-privacy-webview.md), [ADR-0021](adr/0021-token-refresh-forced-logout.md), [ADR-0022](adr/0022-user-info-local-ssot.md)
 
-## 강제 업데이트 (A-001)
-- 상태: 스플래시가 부트스트랩·로띠와 함께 `GET api/v1/app-versions/check`([api/app-version.md](api/app-version.md))를 `APP_VERSION_NAME`으로 부르고, 셋이 모이면 판정이 `FORCE`일 때만 `YGModalForceUpdate`로 진입을 막는다. [종료]는 `finishAndRemoveTask`, [업데이트]는 `storeLinkCandidates`가 만든 후보를 차례로 연다. 조회 실패·404·500·3초 초과·`OPTIONAL`·모르는 `updateType`은 전부 기존 진입으로 간다(fail-open).
+## 강제·선택 업데이트 (A-001)
+- 상태: 스플래시가 부트스트랩·로띠와 함께 `GET api/v1/app-versions/check`([api/app-version.md](api/app-version.md))를 `APP_VERSION_NAME`으로 부르고, 로띠가 끝나면 판정에 따라 모달을 띄운다. `FORCE`는 `YGModalForceUpdate`로 진입을 막고 [종료]는 `finishAndRemoveTask`다. `OPTIONAL`은 `YGModalOptionalUpdate`이고 [나중에]·[업데이트] 모두 다음 화면으로 넘어간다. [업데이트]는 `storeLinkCandidates`가 만든 후보를 차례로 연다. 조회 실패·404·500·3초 초과·모르는 `updateType`은 전부 기존 진입으로 간다(fail-open).
 - ⚠️ 스토어 이동은 Play 전용이다. 인텐트가 `com.android.vending`(`PLAY_STORE_PACKAGE`, `model/StoreLinkCandidates.kt`)으로 고정돼 있어 삼성 기기에서도 원스토어·갤럭시 스토어 선택창이 뜨지 않는다. Play가 받지 못한 https 후보(Play 없는 기기의 Play 웹, 서버가 준 안내 페이지)만 패키지 없이 재시도해 브라우저로 간다. 버전 체크는 `@NoAuth`라 토큰을 싣지 않는다
-- 앵커: `CheckForceUpdateUseCase`, `AppVersionRepositoryImpl`, `AppVersionRemoteDataSourceImpl`, `AppVersionService`, `SplashViewModel`, `VERSION_CHECK_TIMEOUT`, `storeLinkCandidates`, `YGModalForceUpdate`
+- 앵커: `CheckAppUpdateUseCase`, `AppVersionRepositoryImpl`, `AppVersionRemoteDataSourceImpl`, `AppVersionService`, `SplashViewModel`, `VERSION_CHECK_TIMEOUT`, `storeLinkCandidates`, `YGModalForceUpdate`, `YGModalOptionalUpdate`
 - ⚠️ 서버(`TEAMYG-SERVER` `feat/#225`)가 미머지·미배포라 실서버 응답을 받아 본 적이 없다. 배포 전에는 404로 통과하고, 배포 뒤에도 서버 DB에 ANDROID 행이 없으면 500(`APP_VERSION_NOT_FOUND`)이라 기능이 조용히 꺼진다 (OQ-P-464)
-- ⚠️ 선택 업데이트(`OPTIONAL`) UI가 없어 `NONE`처럼 통과한다. `versionNameSuffix`를 붙이면 서버가 400을 줘 판정이 영영 안 된다 (OQ-P-464)
+- ⚠️ `versionNameSuffix`를 붙이면 서버가 400을 줘 판정이 영영 안 된다 (OQ-P-464)
 - 설계: [force-update-design](superpowers/specs/2026-11-24-force-update-design.md)
 
 ## 그룹 목록 (G-001)

@@ -8,7 +8,7 @@ import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.APP_VERSION_NAME
 import com.teamyg.parfait.domain.model.appversion.AppUpdateCheck
 import com.teamyg.parfait.domain.model.session.SessionBootstrap
-import com.teamyg.parfait.domain.usecase.appversion.CheckForceUpdateUseCase
+import com.teamyg.parfait.domain.usecase.appversion.CheckAppUpdateUseCase
 import com.teamyg.parfait.domain.usecase.session.BootstrapSessionUseCase
 import com.teamyg.parfait.feature.intro.impl.model.VERSION_CHECK_TIMEOUT
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,7 +22,8 @@ import javax.inject.Inject
  *
  * @property destination 부트스트랩이 정한 목적지. `null` 은 아직 응답을 못 받은 것이다
  * @property isAnimationFinished 로띠가 끝났는지. 재생을 마쳤거나 로띠를 불러오지 못한 경우다
- * @property updateCheck 버전 판정. `null` 은 아직 모르는 것이다
+ * @property updateCheck 버전 판정. `null` 은 아직 모르는 것이다. 선택 업데이트는 사용자가 미루거나 스토어로
+ *   가면 [AppUpdateCheck.NotRequired] 로 바꿔 진행 조건을 채운다
  */
 data class SplashState(
     val destination: SessionBootstrap? = null,
@@ -37,6 +38,10 @@ data class SplashState(
      */
     val isForceUpdateVisible: Boolean
         get() = isAnimationFinished && updateCheck is AppUpdateCheck.Required
+
+    /** 노출 시점은 [isForceUpdateVisible] 과 같다. */
+    val isOptionalUpdateVisible: Boolean
+        get() = isAnimationFinished && updateCheck is AppUpdateCheck.Optional
 }
 
 sealed interface SplashIntent : UiIntent {
@@ -47,6 +52,8 @@ sealed interface SplashIntent : UiIntent {
     data object UpdateClick : SplashIntent
 
     data object QuitClick : SplashIntent
+
+    data object LaterClick : SplashIntent
 }
 
 sealed interface SplashSideEffect : UiSideEffect {
@@ -64,7 +71,7 @@ class SplashViewModel
 @Inject
 constructor(
     private val bootstrapSession: BootstrapSessionUseCase,
-    private val checkForceUpdate: CheckForceUpdateUseCase,
+    private val checkAppUpdate: CheckAppUpdateUseCase,
 ) : BaseViewModel<SplashState, SplashIntent, SplashSideEffect>(initialState = SplashState()) {
     init {
         viewModelLogger.i { "SplashViewModel::init" }
@@ -77,6 +84,7 @@ constructor(
             SplashIntent.AnimationFinished -> handleAnimationFinished()
             SplashIntent.UpdateClick -> handleUpdateClick()
             SplashIntent.QuitClick -> postSideEffect(SplashSideEffect.QuitApp)
+            SplashIntent.LaterClick -> handleLaterClick()
         }
     }
 
@@ -91,7 +99,7 @@ constructor(
      * 부트스트랩의 부수효과(푸시 토큰 등록, 인증 거절 시 로그아웃)는 강제 업데이트 중에도 막지 않는다.
      *
      * 버전 체크는 상한을 넘기거나 예외로 끝나도 통과로 본다 — 스플래시에 갇히는 쪽이 더 나쁘다.
-     * 통과 처리가 세 군데인 건 막는 실패가 서로 달라서다. 서버 조회 실패는 [CheckForceUpdateUseCase] 가,
+     * 통과 처리가 세 군데인 건 막는 실패가 서로 달라서다. 서버 조회 실패는 [CheckAppUpdateUseCase] 가,
      * 화면이 기다릴 수 있는 시간은 여기의 [VERSION_CHECK_TIMEOUT] 이, 매퍼 버그 같은 예상 못 한 예외는
      * `onError` 가 맡는다.
      */
@@ -107,7 +115,7 @@ constructor(
             onError = { applyUpdateCheck(AppUpdateCheck.NotRequired) },
         ) {
             val updateCheck = withTimeoutOrNull(VERSION_CHECK_TIMEOUT) {
-                checkForceUpdate(APP_VERSION_NAME)
+                checkAppUpdate(APP_VERSION_NAME)
             } ?: AppUpdateCheck.NotRequired
 
             applyUpdateCheck(updateCheck)
@@ -130,13 +138,27 @@ constructor(
         navigateIfReady()
     }
 
+    /** 강제 업데이트는 모달을 남겨 둔다. 선택 업데이트는 스토어를 연 뒤 앱도 다음 화면으로 넘긴다. */
     private fun handleUpdateClick() {
-        val updateCheck = state.value.updateCheck as? AppUpdateCheck.Required ?: return
+        when (val updateCheck = state.value.updateCheck) {
+            is AppUpdateCheck.Required -> postSideEffect(SplashSideEffect.OpenStore(updateCheck.storeUrl))
 
-        postSideEffect(SplashSideEffect.OpenStore(updateCheck.storeUrl))
+            is AppUpdateCheck.Optional -> {
+                postSideEffect(SplashSideEffect.OpenStore(updateCheck.storeUrl))
+                applyUpdateCheck(AppUpdateCheck.NotRequired)
+            }
+
+            AppUpdateCheck.NotRequired, null -> Unit
+        }
     }
 
-    /** `Required` 면 이펙트 없이 끝난다 — 모달은 [SplashState.isForceUpdateVisible] 이 그린다. */
+    private fun handleLaterClick() {
+        if (state.value.updateCheck !is AppUpdateCheck.Optional) return
+
+        applyUpdateCheck(AppUpdateCheck.NotRequired)
+    }
+
+    /** `Required`·`Optional` 이면 이펙트 없이 끝난다 — 모달은 상태가 그린다. */
     private fun navigateIfReady() {
         val current = state.value
         val destination = current.destination ?: return

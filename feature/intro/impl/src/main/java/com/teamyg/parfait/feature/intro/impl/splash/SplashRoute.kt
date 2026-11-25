@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.component.modal.YGModalForceUpdate
+import com.teamyg.parfait.core.ui.component.modal.YGModalOptionalUpdate
 import com.teamyg.parfait.core.util.android.extension.tryStartViewIntent
 import com.teamyg.parfait.feature.intro.impl.R
 import com.teamyg.parfait.feature.intro.impl.model.PLAY_STORE_PACKAGE
@@ -70,6 +71,13 @@ fun SplashRoute(
     if (state.isForceUpdateVisible) {
         YGModalForceUpdate(
             onQuit = { viewModel.processIntent(SplashIntent.QuitClick) },
+            onUpdate = { viewModel.processIntent(SplashIntent.UpdateClick) },
+        )
+    }
+
+    if (state.isOptionalUpdateVisible) {
+        YGModalOptionalUpdate(
+            onLater = { viewModel.processIntent(SplashIntent.LaterClick) },
             onUpdate = { viewModel.processIntent(SplashIntent.UpdateClick) },
         )
     }

@@ -13,9 +13,9 @@ import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class CheckForceUpdateUseCaseTest {
+class CheckAppUpdateUseCaseTest {
     private val repository: AppVersionRepository = mockk()
-    private val useCase = CheckForceUpdateUseCase(repository)
+    private val useCase = CheckAppUpdateUseCase(repository)
 
     private fun givenVersionInfo(
         type: AppUpdateType,
@@ -46,12 +46,12 @@ class CheckForceUpdateUseCaseTest {
     }
 
     @Test
-    fun optional_returnsNotRequired() = runTest {
-        // Given 선택 업데이트다
-        givenVersionInfo(AppUpdateType.OPTIONAL)
+    fun optional_returnsOptionalWithStoreUrl() = runTest {
+        // Given 선택 업데이트와 스토어 주소를 준다
+        givenVersionInfo(AppUpdateType.OPTIONAL, "market://details?id=x")
 
-        // Then 막지 않는다
-        assertEquals(AppUpdateCheck.NotRequired, useCase("1.0.0"))
+        // Then 스토어 주소를 담아 선택으로 판정한다
+        assertEquals(AppUpdateCheck.Optional("market://details?id=x"), useCase("1.0.0"))
     }
 
     @Test

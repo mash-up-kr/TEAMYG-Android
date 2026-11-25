@@ -56,11 +56,11 @@ tags: [api, parfait, server-contract, app-version]
 
 ## Android 매핑
 
-앵커: `AppVersionService`, `AppVersionRemoteDataSourceImpl`, `AppVersionRepositoryImpl`, `CheckForceUpdateUseCase`, `SplashViewModel`, `storeLinkCandidates`, `YGModalForceUpdate`, `VERSION_CHECK_TIMEOUT`
+앵커: `AppVersionService`, `AppVersionRemoteDataSourceImpl`, `AppVersionRepositoryImpl`, `CheckAppUpdateUseCase`, `SplashViewModel`, `storeLinkCandidates`, `YGModalForceUpdate`, `YGModalOptionalUpdate`, `VERSION_CHECK_TIMEOUT`
 
-- **fail-open.** 404(서버 미배포)·500(`APP_VERSION_NOT_FOUND` 포함)·네트워크 오류·3초 초과 전부 "강제 아님"으로 통과한다. 재시도 안내는 없다. 판정은 `CheckForceUpdateUseCase` 한 곳이고, 3초 상한은 `SplashViewModel` 쪽(`VERSION_CHECK_TIMEOUT`)이다. 이 결합 때문에 서버가 죽어도 앱은 못 막고, 반대로 서버 DB 행이 빠지면 기능이 조용히 꺼진다.
+- **fail-open.** 404(서버 미배포)·500(`APP_VERSION_NOT_FOUND` 포함)·네트워크 오류·3초 초과 전부 "업데이트 없음"으로 통과한다. 재시도 안내는 없다. 판정은 `CheckAppUpdateUseCase` 한 곳이고, 3초 상한은 `SplashViewModel` 쪽(`VERSION_CHECK_TIMEOUT`)이다. 이 결합 때문에 서버가 죽어도 앱은 못 막고, 반대로 서버 DB 행이 빠지면 기능이 조용히 꺼진다.
 - **`updateType`은 문자열로 받는다.** enum으로 바로 역직렬화하면 서버가 값을 추가하는 순간 파싱이 터져 fail-open으로 묻힌다. 모르는 값은 `UNKNOWN`으로 두고 강제로 취급하지 않는다.
-- **`OPTIONAL`은 `NONE`과 같다.** 선택 업데이트 UI가 없어 통과시키고, 도메인 `AppUpdateType`에는 값만 있다 (OQ-P-464 ②).
+- **`OPTIONAL`은 미룰 수 있는 모달이다.** 문구·아이콘은 `FORCE`와 같고 왼쪽 버튼만 [나중에]다(iOS와 같은 동작, 별도 시안 없음). [나중에]와 [업데이트] 모두 다음 화면으로 넘어가고, [업데이트]는 스토어를 먼저 연다. 미룬 기록은 저장하지 않아 콜드 스타트마다 다시 뜬다. 뒤로가기·바깥 터치로는 닫히지 않는다.
 - **`storeUrl`은 `market`·`https`만 쓴다.** 둘 중 하나면 맨 앞 후보가 된다. Play가 아닌 `https`는 공지·멀티 링크 같은 안내 페이지로 보내는 용도라 외부 브라우저로 열린다. `http`·`intent` 등 다른 스킴과 형식 오류는 버리고 `market://details?id=<패키지>` → `https://play.google.com/store/apps/details?id=<패키지>` 순서로 연다(`storeLinkCandidates`). 서버 값이 null이어도 같다.
 - **`@NoAuth`.** `AppVersionService.checkVersion`에 붙어 있다. 없으면 `AuthInterceptor`가 저장된 토큰을 실어 보내고, 401이면 `TokenAuthenticator`가 재발급·강제 로그아웃을 건드린다. 재발급 Mutex를 기다리다 3초 상한을 넘기면 구버전 사용자가 그대로 통과한다.
 - **스토어는 Play 전용이다.** 스토어 인텐트는 `com.android.vending`(`PLAY_STORE_PACKAGE`, `model/StoreLinkCandidates.kt`)으로 고정한다. 안 그러면 삼성 기기에서 원스토어·갤럭시 스토어 선택창이 뜬다. Play가 받지 못한 https 후보(Play가 없는 기기의 Play 웹, Play가 아닌 안내 페이지, `UpdateLink.opensInBrowser`)만 패키지 지정 없이 다시 열어 브라우저로 간다. ⚠️ `store_url`에 APK 직접 배포 링크를 넣지 않는다 — Play 밖 업데이트 유도는 Play 정책 위반이다.
@@ -68,4 +68,4 @@ tags: [api, parfait, server-contract, app-version]
 
 ## 미결
 
-- `minimum_version`을 언제 누가 올리는지, `OPTIONAL` UI 시나리오(①②), 실서버 `FORCE` 응답 실측(③) → [open-questions](../synthesis/open-questions.md) OQ-P-464
+- `minimum_version`을 언제 누가 올리는지, 실서버 `FORCE`·`OPTIONAL` 응답 실측(③) → [open-questions](../synthesis/open-questions.md) OQ-P-464
