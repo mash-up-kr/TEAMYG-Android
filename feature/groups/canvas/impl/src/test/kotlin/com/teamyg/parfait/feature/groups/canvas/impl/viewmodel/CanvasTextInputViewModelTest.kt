@@ -21,7 +21,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
-import com.teamyg.parfait.domain.usecase.review.ReviewPromptUseCase
+import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
@@ -67,7 +67,7 @@ class CanvasTextInputViewModelTest {
 
     private val refreshTodayParfaitDetail: RefreshTodayParfaitDetailUseCase = mockk()
 
-    private val reviewPromptUseCase: ReviewPromptUseCase = mockk(relaxed = true)
+    private val recordReviewPromptUploadUseCase: RecordReviewPromptUploadUseCase = mockk(relaxed = true)
 
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
@@ -82,7 +82,7 @@ class CanvasTextInputViewModelTest {
             clearToppingDraft = clearToppingDraft,
             placeTextTopping = placeTextTopping,
             refreshTodayParfaitDetail = refreshTodayParfaitDetail,
-            reviewPromptUseCase = reviewPromptUseCase,
+            recordReviewPromptUploadUseCase = recordReviewPromptUploadUseCase,
             analyticsLogger = analyticsLogger,
         )
     }
@@ -228,7 +228,7 @@ class CanvasTextInputViewModelTest {
             clearToppingDraft()
         }
         assertFalse(viewModel.state.value.isLoading)
-        coVerify(exactly = 1) { reviewPromptUseCase.recordUpload() }
+        coVerify(exactly = 1) { recordReviewPromptUploadUseCase() }
     }
 
     @Test
@@ -281,7 +281,7 @@ class CanvasTextInputViewModelTest {
         assertEquals("hi", viewModel.state.value.content)
         coVerify(exactly = 0) { clearToppingDraft() }
         coVerify(exactly = 1) { placeTextTopping(any(), any(), any(), any(), any()) }
-        coVerify(exactly = 0) { reviewPromptUseCase.recordUpload() }
+        coVerify(exactly = 0) { recordReviewPromptUploadUseCase() }
     }
 
     @Test

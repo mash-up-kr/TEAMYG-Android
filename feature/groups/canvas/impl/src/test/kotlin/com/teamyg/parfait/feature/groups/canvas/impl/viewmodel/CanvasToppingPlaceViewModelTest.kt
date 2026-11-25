@@ -32,7 +32,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
-import com.teamyg.parfait.domain.usecase.review.ReviewPromptUseCase
+import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
@@ -105,7 +105,7 @@ class CanvasToppingPlaceViewModelTest {
 
     private val requestTodayParfaitRefreshUseCase: RequestTodayParfaitRefreshUseCase = mockk(relaxed = true)
 
-    private val reviewPromptUseCase: ReviewPromptUseCase = mockk(relaxed = true)
+    private val recordReviewPromptUploadUseCase: RecordReviewPromptUploadUseCase = mockk(relaxed = true)
 
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
@@ -130,7 +130,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
-            reviewPromptUseCase = reviewPromptUseCase,
+            recordReviewPromptUploadUseCase = recordReviewPromptUploadUseCase,
             analyticsLogger = analyticsLogger,
         ).also { viewModel ->
             backgroundScope.launch { viewModel.state.collect { } }
@@ -445,7 +445,7 @@ class CanvasToppingPlaceViewModelTest {
         }
         // 성공한 흐름의 초안이 남으면 다음 진입까지 낡은 알맹이를 들고 있다
         coVerify(exactly = 1) { clearToppingDraft() }
-        coVerify(exactly = 1) { reviewPromptUseCase.recordUpload() }
+        coVerify(exactly = 1) { recordReviewPromptUploadUseCase() }
     }
 
     @Test
@@ -612,7 +612,7 @@ class CanvasToppingPlaceViewModelTest {
         }
         // 실패한 흐름의 초안은 남아야 한다 — 비우면 막 만든 토핑을 통째로 잃는다
         coVerify(exactly = 0) { clearToppingDraft() }
-        coVerify(exactly = 0) { reviewPromptUseCase.recordUpload() }
+        coVerify(exactly = 0) { recordReviewPromptUploadUseCase() }
     }
 
     @Test
@@ -680,7 +680,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
-            reviewPromptUseCase = reviewPromptUseCase,
+            recordReviewPromptUploadUseCase = recordReviewPromptUploadUseCase,
             analyticsLogger = analyticsLogger,
         )
         advanceUntilIdle()
@@ -725,7 +725,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
-            reviewPromptUseCase = reviewPromptUseCase,
+            recordReviewPromptUploadUseCase = recordReviewPromptUploadUseCase,
             analyticsLogger = analyticsLogger,
         )
 

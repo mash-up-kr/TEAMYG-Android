@@ -22,7 +22,7 @@ import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
-import com.teamyg.parfait.domain.usecase.review.ReviewPromptUseCase
+import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
@@ -111,7 +111,7 @@ constructor(
     private val refreshTodayParfaitDetailUseCase: RefreshTodayParfaitDetailUseCase,
     private val uploadImageUseCase: UploadImageUseCase,
     private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
-    private val reviewPromptUseCase: ReviewPromptUseCase,
+    private val recordReviewPromptUploadUseCase: RecordReviewPromptUploadUseCase,
 ) : BaseViewModel<CanvasBGEditUiState, CanvasBGEditIntent, CanvasBGEditEffect>(
     initialState = CanvasBGEditUiState(),
 ) {
@@ -276,7 +276,7 @@ constructor(
                 // viewModelScope 가 취소돼 launch 로 건 갱신이 끊긴다
                 refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
 
-                reviewPromptUseCase.recordUpload()
+                recordReviewPromptUploadUseCase()
 
                 // 이미지 배경의 URL 은 이 응답으로만 알 수 있다. 그것마저 없으면
                 // 고른 값으로 그린다 — 저장은 끝났으니 화면을 막을 이유는 없다
