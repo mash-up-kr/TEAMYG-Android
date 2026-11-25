@@ -21,6 +21,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.review.ReviewPromptUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
@@ -66,6 +67,8 @@ class CanvasTextInputViewModelTest {
 
     private val refreshTodayParfaitDetail: RefreshTodayParfaitDetailUseCase = mockk()
 
+    private val reviewPromptUseCase: ReviewPromptUseCase = mockk(relaxed = true)
+
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun draft() = ToppingDraft(groupId = GroupId(1L), parfaitId = ParfaitId(2L), nextPositionZ = 1)
@@ -79,6 +82,7 @@ class CanvasTextInputViewModelTest {
             clearToppingDraft = clearToppingDraft,
             placeTextTopping = placeTextTopping,
             refreshTodayParfaitDetail = refreshTodayParfaitDetail,
+            reviewPromptUseCase = reviewPromptUseCase,
             analyticsLogger = analyticsLogger,
         )
     }

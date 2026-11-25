@@ -24,4 +24,5 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.exifinterface)
+    implementation(libs.google.play.review.ktx)
 }

@@ -15,6 +15,7 @@ import com.teamyg.parfait.data.repository.notification.NotificationSettingReposi
 import com.teamyg.parfait.data.repository.parfait.ParfaitRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.PastCanvasAlertRepositoryImpl
 import com.teamyg.parfait.data.repository.policy.PolicyRepositoryImpl
+import com.teamyg.parfait.data.repository.review.ReviewPromptRepositoryImpl
 import com.teamyg.parfait.data.repository.topping.TextToppingRepositoryImpl
 import com.teamyg.parfait.data.repository.topping.ToppingDraftRepositoryImpl
 import com.teamyg.parfait.data.repository.topping.ToppingRepositoryImpl
@@ -34,6 +35,7 @@ import com.teamyg.parfait.domain.repository.notification.NotificationSettingRepo
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.repository.policy.PolicyRepository
+import com.teamyg.parfait.domain.repository.review.ReviewPromptRepository
 import com.teamyg.parfait.domain.repository.topping.TextToppingRepository
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.repository.topping.ToppingRepository
@@ -130,4 +132,8 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindNoticeRepository(noticeRepositoryImpl: NoticeRepositoryImpl): NoticeRepository
+
+    @Binds
+    @Singleton
+    fun bindReviewPromptRepository(reviewPromptRepositoryImpl: ReviewPromptRepositoryImpl): ReviewPromptRepository
 }

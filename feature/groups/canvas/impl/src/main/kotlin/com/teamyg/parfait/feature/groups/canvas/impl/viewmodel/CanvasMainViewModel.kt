@@ -40,6 +40,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.MarkPastCanvasAlertSeenUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
+import com.teamyg.parfait.domain.usecase.review.ReviewPromptUseCase
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
@@ -251,6 +252,13 @@ sealed interface CanvasMainEffect : UiSideEffect {
         val date: LocalDate,
         val contributorCount: Int,
     ) : CanvasMainEffect
+
+    /**
+     * 업로드 3회 이상 + 로그인 유지 3일 이상 조건을 충족해 Google Play 인앱 리뷰 플로우를
+     * 띄워 달라는 요청. 조건 판정과 재시도 주기 관리는 ViewModel이 끝낸 뒤에만 온다 —
+     * 라우트는 `context.requestInAppReview()` 호출만 한다.
+     */
+    data object RequestInAppReview : CanvasMainEffect
 }
 
 sealed interface CanvasMainIntent : UiIntent {
@@ -339,6 +347,7 @@ constructor(
     private val startToppingDraft: StartToppingDraftUseCase,
     private val getLastSeenClosedDate: GetLastSeenClosedDateUseCase,
     private val markPastCanvasAlertSeen: MarkPastCanvasAlertSeenUseCase,
+    private val reviewPromptUseCase: ReviewPromptUseCase,
     private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
@@ -411,6 +420,7 @@ constructor(
                 )
             }
             canvas?.let(::checkShowPastCanvasAlert)
+            checkTriggerReviewPrompt()
         }
     }
 
@@ -449,6 +459,23 @@ constructor(
                     contributorCount = contributorCount,
                 ),
             )
+        }
+    }
+
+    /**
+     * 로그인 상태를 처음 감지한 시점을 기준선으로 세우고, 업로드 3회 이상 + 그 기준선으로부터
+     * 3일 이상 지났으면 인앱 리뷰를 요청한다.
+     *
+     * [observeTodayCanvas] 가 오늘 캔버스를 받을 때마다 부른다 — 업로드 화면에서 캔버스 메인으로
+     * 돌아오면 그 캔버스 갱신이 이 콜백을 다시 태운다. 이 ViewModel 은 백스택 재진입에 새로
+     * 만들어지지 않으므로([init] 의 welcome 배너 주석 참고) `init` 에서 한 번만 부르면 업로드가
+     * 쌓여도 다시 확인할 기회가 없다.
+     */
+    private fun checkTriggerReviewPrompt() {
+        launch(key = REVIEW_PROMPT_KEY) {
+            reviewPromptUseCase.markFirstSeen()
+            if (!reviewPromptUseCase.checkAndMarkTriggered()) return@launch
+            postSideEffect(CanvasMainEffect.RequestInAppReview)
         }
     }
 
@@ -1095,5 +1122,7 @@ constructor(
         const val START_TOPPING_FLOW_KEY = "startToppingFlow"
 
         const val PAST_CANVAS_ALERT_KEY = "pastCanvasAlert"
+
+        const val REVIEW_PROMPT_KEY = "reviewPrompt"
     }
 }

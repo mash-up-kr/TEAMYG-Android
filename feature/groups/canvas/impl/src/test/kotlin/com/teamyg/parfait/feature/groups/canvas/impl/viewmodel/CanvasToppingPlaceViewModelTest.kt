@@ -32,6 +32,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
+import com.teamyg.parfait.domain.usecase.review.ReviewPromptUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
@@ -104,6 +105,8 @@ class CanvasToppingPlaceViewModelTest {
 
     private val requestTodayParfaitRefreshUseCase: RequestTodayParfaitRefreshUseCase = mockk(relaxed = true)
 
+    private val reviewPromptUseCase: ReviewPromptUseCase = mockk(relaxed = true)
+
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
@@ -127,6 +130,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            reviewPromptUseCase = reviewPromptUseCase,
             analyticsLogger = analyticsLogger,
         ).also { viewModel ->
             backgroundScope.launch { viewModel.state.collect { } }
@@ -674,6 +678,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            reviewPromptUseCase = reviewPromptUseCase,
             analyticsLogger = analyticsLogger,
         )
         advanceUntilIdle()
@@ -718,6 +723,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            reviewPromptUseCase = reviewPromptUseCase,
             analyticsLogger = analyticsLogger,
         )
 

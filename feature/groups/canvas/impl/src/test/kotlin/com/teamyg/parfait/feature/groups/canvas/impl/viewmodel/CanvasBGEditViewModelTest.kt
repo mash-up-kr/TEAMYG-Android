@@ -31,6 +31,7 @@ import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.review.ReviewPromptUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
 import io.mockk.Called
@@ -74,6 +75,7 @@ class CanvasBGEditViewModelTest {
     private val refreshTodayParfaitDetail: RefreshTodayParfaitDetailUseCase = mockk()
     private val uploadImage: UploadImageUseCase = mockk()
     private val changeCanvasBackground: ChangeCanvasBackgroundUseCase = mockk()
+    private val reviewPromptUseCase: ReviewPromptUseCase = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
@@ -110,6 +112,7 @@ class CanvasBGEditViewModelTest {
         refreshTodayParfaitDetailUseCase = refreshTodayParfaitDetail,
         uploadImageUseCase = uploadImage,
         changeCanvasBackgroundUseCase = changeCanvasBackground,
+        reviewPromptUseCase = reviewPromptUseCase,
     ).also { viewModel ->
         backgroundScope.launch { viewModel.state.collect { } }
         advanceUntilIdle()
