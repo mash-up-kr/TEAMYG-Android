@@ -22,12 +22,13 @@ internal fun storeLinkCandidates(
     val server = storeUrl?.takeIf(::isAllowedServerUrl)
     return listOfNotNull(server, market, web)
         .distinct()
-        .map { UpdateLink(uri = it, opensInBrowser = schemeOf(it) == SCHEME_HTTPS) }
+        .map { UpdateLink(uri = it, opensInBrowser = it.toJavaUriOrNull()?.scheme == SCHEME_HTTPS) }
 }
 
 private fun isAllowedServerUrl(url: String): Boolean {
-    val uri = runCatching { URI(url) }.getOrNull() ?: return false
+    val uri = url.toJavaUriOrNull() ?: return false
     return uri.scheme == SCHEME_MARKET || (uri.scheme == SCHEME_HTTPS && !uri.host.isNullOrBlank())
 }
 
-private fun schemeOf(url: String): String? = runCatching { URI(url).scheme }.getOrNull()
+// android.net.Uri 가 아니라 java.net.URI 다 — 순수 JVM 단위 테스트에서 돌아야 한다
+private fun String.toJavaUriOrNull(): URI? = runCatching { URI(this) }.getOrNull()
