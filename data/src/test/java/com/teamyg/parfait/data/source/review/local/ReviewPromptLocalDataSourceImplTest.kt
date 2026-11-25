@@ -21,83 +21,85 @@ class ReviewPromptLocalDataSourceImplTest {
     private val dataSource = ReviewPromptLocalDataSourceImpl(dataStore, clock)
 
     @Test
-    fun checkAndMarkTriggered_fewerThanThreeUploads_isFalse() = runTest {
-        dataSource.markFirstSeenIfAbsent()
+    fun checkTrigger_fewerThanThreeUploads_isFalse() = runTest {
         repeat(2) { dataSource.incrementUploadCount() }
         now += 4.days
 
-        assertFalse(dataSource.checkAndMarkTriggered())
+        assertFalse(dataSource.checkTrigger())
     }
 
     @Test
-    fun checkAndMarkTriggered_threeUploadsButRetentionNotYetThreeDays_isFalse() = runTest {
-        dataSource.markFirstSeenIfAbsent()
+    fun checkTrigger_threeUploadsButRetentionNotYetThreeDays_isFalse() = runTest {
+        // 최초 감지 기준선은 checkTrigger 가 처음 불릴 때 스스로 세운다
+        assertFalse(dataSource.checkTrigger())
         repeat(3) { dataSource.incrementUploadCount() }
         now += 2.days
 
-        assertFalse(dataSource.checkAndMarkTriggered())
+        assertFalse(dataSource.checkTrigger())
     }
 
     @Test
-    fun checkAndMarkTriggered_threeUploadsAndThreeDaysRetention_isTrue() = runTest {
-        dataSource.markFirstSeenIfAbsent()
+    fun checkTrigger_threeUploadsAndThreeDaysRetention_isTrue() = runTest {
+        assertFalse(dataSource.checkTrigger())
         repeat(3) { dataSource.incrementUploadCount() }
         now += 3.days
 
-        assertTrue(dataSource.checkAndMarkTriggered())
+        assertTrue(dataSource.checkTrigger())
     }
 
     @Test
-    fun checkAndMarkTriggered_neverMarkedFirstSeen_isFalse() = runTest {
-        // 기준선이 없으니 "유지"를 판단할 수 없다
+    fun checkTrigger_firstCall_marksFirstSeenWithoutTriggering() = runTest {
+        // 기준선이 막 세워진 순간이라 "유지 3일"을 만족할 수 없다
         repeat(3) { dataSource.incrementUploadCount() }
 
-        assertFalse(dataSource.checkAndMarkTriggered())
+        assertFalse(dataSource.checkTrigger())
     }
 
     @Test
-    fun checkAndMarkTriggered_recentlyTriggered_isFalseUntilFourMonthsPass() = runTest {
-        dataSource.markFirstSeenIfAbsent()
+    fun checkTrigger_recentlyTriggered_isFalseUntilFourMonthsPass() = runTest {
+        assertFalse(dataSource.checkTrigger())
         repeat(3) { dataSource.incrementUploadCount() }
         now += 3.days
 
         // 첫 트리거 — 이 호출이 같은 자리에서 lastTriggered 도 함께 적는다
-        assertTrue(dataSource.checkAndMarkTriggered())
+        assertTrue(dataSource.checkTrigger())
 
         // 다음날 조건이 다시 충족돼도(추가 업로드 등) 4개월 전에는 재시도하지 않는다
         now += 1.days
-        assertFalse(dataSource.checkAndMarkTriggered())
+        assertFalse(dataSource.checkTrigger())
 
         // 호출로부터 119일째는 아직 막혀 있다
         now += 118.days
-        assertFalse(dataSource.checkAndMarkTriggered())
+        assertFalse(dataSource.checkTrigger())
 
         // 정확히 120일(4개월)이 지나면 다시 트리거된다
         now += 1.days
-        assertTrue(dataSource.checkAndMarkTriggered())
+        assertTrue(dataSource.checkTrigger())
     }
 
     @Test
-    fun markFirstSeenIfAbsent_calledTwice_keepsTheOriginalTimestamp() = runTest {
-        dataSource.markFirstSeenIfAbsent()
-        repeat(3) { dataSource.incrementUploadCount() }
+    fun checkTrigger_calledRepeatedlyBeforeThreshold_keepsTheOriginalFirstSeenTimestamp() = runTest {
+        // 기준선을 세운 첫 호출
+        assertFalse(dataSource.checkTrigger())
         now += 3.days
 
-        dataSource.markFirstSeenIfAbsent()
+        // 기준선이 이미 있으니 다시 불러도 바뀌지 않는다 — 업로드 3회를 채우면 그대로 트리거된다
+        assertFalse(dataSource.checkTrigger())
+        repeat(3) { dataSource.incrementUploadCount() }
 
-        assertTrue(dataSource.checkAndMarkTriggered())
+        assertTrue(dataSource.checkTrigger())
     }
 
     @Test
     fun incrementUploadCount_accumulatesAcrossCalls() = runTest {
-        dataSource.markFirstSeenIfAbsent()
+        assertFalse(dataSource.checkTrigger())
         now += 3.days
 
         dataSource.incrementUploadCount()
-        assertFalse(dataSource.checkAndMarkTriggered())
+        assertFalse(dataSource.checkTrigger())
         dataSource.incrementUploadCount()
-        assertFalse(dataSource.checkAndMarkTriggered())
+        assertFalse(dataSource.checkTrigger())
         dataSource.incrementUploadCount()
-        assertTrue(dataSource.checkAndMarkTriggered())
+        assertTrue(dataSource.checkTrigger())
     }
 }

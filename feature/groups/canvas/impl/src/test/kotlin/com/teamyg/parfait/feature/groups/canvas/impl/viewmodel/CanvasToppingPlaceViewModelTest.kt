@@ -445,6 +445,7 @@ class CanvasToppingPlaceViewModelTest {
         }
         // 성공한 흐름의 초안이 남으면 다음 진입까지 낡은 알맹이를 들고 있다
         coVerify(exactly = 1) { clearToppingDraft() }
+        coVerify(exactly = 1) { reviewPromptUseCase.recordUpload() }
     }
 
     @Test
@@ -611,6 +612,7 @@ class CanvasToppingPlaceViewModelTest {
         }
         // 실패한 흐름의 초안은 남아야 한다 — 비우면 막 만든 토핑을 통째로 잃는다
         coVerify(exactly = 0) { clearToppingDraft() }
+        coVerify(exactly = 0) { reviewPromptUseCase.recordUpload() }
     }
 
     @Test

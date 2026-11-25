@@ -463,8 +463,9 @@ constructor(
     }
 
     /**
-     * 로그인 상태를 처음 감지한 시점을 기준선으로 세우고, 업로드 3회 이상 + 그 기준선으로부터
-     * 3일 이상 지났으면 인앱 리뷰를 요청한다.
+     * 로그인 상태를 처음 감지한 시점을 기준선으로 세우고(없을 때만), 업로드 3회 이상 + 그
+     * 기준선으로부터 3일 이상 지났으면 인앱 리뷰를 요청한다. [ReviewPromptUseCase.checkTrigger]
+     * 가 이 둘을 한 트랜잭션으로 묶어서 호출부는 순서를 신경 쓸 필요가 없다.
      *
      * [observeTodayCanvas] 가 오늘 캔버스를 받을 때마다 부른다 — 업로드 화면에서 캔버스 메인으로
      * 돌아오면 그 캔버스 갱신이 이 콜백을 다시 태운다. 이 ViewModel 은 백스택 재진입에 새로
@@ -473,8 +474,7 @@ constructor(
      */
     private fun checkTriggerReviewPrompt() {
         launch(key = REVIEW_PROMPT_KEY) {
-            reviewPromptUseCase.markFirstSeen()
-            if (!reviewPromptUseCase.checkAndMarkTriggered()) return@launch
+            if (!reviewPromptUseCase.checkTrigger()) return@launch
             postSideEffect(CanvasMainEffect.RequestInAppReview)
         }
     }

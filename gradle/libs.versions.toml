@@ -176,7 +176,7 @@ google-mlkit-subject-segmentation = { group = "com.google.android.gms", name = "
 google-play-install-referrer = { group = "com.android.installreferrer", name = "installreferrer", version.ref = "googlePlayInstallReferrer" }
 
 #In-App Review
-google-play-review-ktx = { group = "com.google.android.play", name = "review-ktx", version.ref = "googlePlayReview" }
+google-play-review = { group = "com.google.android.play", name = "review", version.ref = "googlePlayReview" }
 
 # Logger
 kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }

@@ -228,6 +228,7 @@ class CanvasTextInputViewModelTest {
             clearToppingDraft()
         }
         assertFalse(viewModel.state.value.isLoading)
+        coVerify(exactly = 1) { reviewPromptUseCase.recordUpload() }
     }
 
     @Test
@@ -280,6 +281,7 @@ class CanvasTextInputViewModelTest {
         assertEquals("hi", viewModel.state.value.content)
         coVerify(exactly = 0) { clearToppingDraft() }
         coVerify(exactly = 1) { placeTextTopping(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { reviewPromptUseCase.recordUpload() }
     }
 
     @Test

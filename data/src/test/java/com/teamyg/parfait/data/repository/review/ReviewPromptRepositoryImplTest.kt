@@ -13,13 +13,6 @@ class ReviewPromptRepositoryImplTest {
     private val repository = ReviewPromptRepositoryImpl(local)
 
     @Test
-    fun markFirstSeenIfAbsent_delegatesToLocal() = runTest {
-        repository.markFirstSeenIfAbsent()
-
-        coVerify(exactly = 1) { local.markFirstSeenIfAbsent() }
-    }
-
-    @Test
     fun incrementUploadCount_delegatesToLocal() = runTest {
         repository.incrementUploadCount()
 
@@ -27,9 +20,9 @@ class ReviewPromptRepositoryImplTest {
     }
 
     @Test
-    fun checkAndMarkTriggered_readsFromLocal() = runTest {
-        coEvery { local.checkAndMarkTriggered() } returns true
+    fun checkTrigger_readsFromLocal() = runTest {
+        coEvery { local.checkTrigger() } returns true
 
-        assertTrue(repository.checkAndMarkTriggered())
+        assertTrue(repository.checkTrigger())
     }
 }

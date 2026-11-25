@@ -1,5 +1,7 @@
 package com.teamyg.parfait.domain.usecase.review
 
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
+import com.teamyg.parfait.domain.model.useCaseLogger
 import com.teamyg.parfait.domain.repository.review.ReviewPromptRepository
 import javax.inject.Inject
 
@@ -10,10 +12,16 @@ import javax.inject.Inject
 class ReviewPromptUseCase @Inject constructor(
     private val reviewPromptRepository: ReviewPromptRepository,
 ) {
-    suspend fun markFirstSeen() = reviewPromptRepository.markFirstSeenIfAbsent()
-
-    suspend fun recordUpload() = reviewPromptRepository.incrementUploadCount()
+    /**
+     * 업로드 성공 경로에서 그대로 부른다. 여기서 실패를 삼키는 이유: 서버 저장은 이미 끝난
+     * 뒤라, 집계만 실패했다고 업로드 자체를 에러로 보이면 사용자가 재시도해 중복 업로드가
+     * 생긴다.
+     */
+    suspend fun recordUpload() {
+        runSuspendCatching { reviewPromptRepository.incrementUploadCount() }
+            .onFailure { useCaseLogger.e(it) { "ReviewPromptUseCase - 업로드 집계 실패" } }
+    }
 
     /** 조건이 맞으면 그 자리에서 다음 4개월을 잠그고 true 를 돌린다 */
-    suspend fun checkAndMarkTriggered(): Boolean = reviewPromptRepository.checkAndMarkTriggered()
+    suspend fun checkTrigger(): Boolean = reviewPromptRepository.checkTrigger()
 }

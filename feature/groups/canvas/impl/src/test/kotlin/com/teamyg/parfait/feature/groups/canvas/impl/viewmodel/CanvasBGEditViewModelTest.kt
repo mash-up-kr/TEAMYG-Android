@@ -246,6 +246,7 @@ class CanvasBGEditViewModelTest {
         coVerify(exactly = 1) {
             changeCanvasBackground(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), CanvasBackgroundEdit.Color("#FF6B00"))
         }
+        coVerify(exactly = 1) { reviewPromptUseCase.recordUpload() }
     }
 
     @Test
@@ -317,6 +318,7 @@ class CanvasBGEditViewModelTest {
             assertEquals(CanvasBGEditEffect.ShowError(CanvasBGEditError.NETWORK), awaitItem())
         }
         verify { changeCanvasBackground wasNot Called }
+        coVerify(exactly = 0) { reviewPromptUseCase.recordUpload() }
     }
 
     @Test
@@ -337,6 +339,7 @@ class CanvasBGEditViewModelTest {
             // Then 저장되지 않은 배경을 저장된 것처럼 넘기지 않는다
             assertEquals(CanvasBGEditEffect.ShowError(CanvasBGEditError.BACKGROUND_SAVE_UNKNOWN), awaitItem())
         }
+        coVerify(exactly = 0) { reviewPromptUseCase.recordUpload() }
     }
 
     @Test

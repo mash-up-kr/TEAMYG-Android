@@ -136,7 +136,7 @@ class CanvasMainViewModelTest {
         coEvery { refreshMyGroups() } returns Result.success(Unit)
         coEvery { getLastSeenClosedDate(any()) } returns null
         // 인앱 리뷰 조건은 대부분 테스트와 무관하다 — 기본은 꺼둔다(해당 동작은 별도 테스트가 다룬다)
-        coEvery { reviewPromptUseCase.checkAndMarkTriggered() } returns false
+        coEvery { reviewPromptUseCase.checkTrigger() } returns false
     }
 
     @After
@@ -436,19 +436,20 @@ class CanvasMainViewModelTest {
         }
 
     @Test
-    fun init_alwaysMarksReviewPromptFirstSeen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given, When 화면이 열린다 — 조건 충족 여부와 무관하게 "로그인 유지" 기준선은 항상 세운다
+    fun init_alwaysChecksReviewPromptTrigger() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 화면이 열린다 — 조건 충족 여부와 무관하게 "로그인 유지" 기준선 기록 +
+        // 조건 확인은 매번 한다([ReviewPromptUseCase.checkTrigger] 가 이 둘을 한 번에 본다)
         enteredViewModel()
 
         // Then
-        coVerify(exactly = 1) { reviewPromptUseCase.markFirstSeen() }
+        coVerify(exactly = 1) { reviewPromptUseCase.checkTrigger() }
     }
 
     @Test
     fun init_reviewPromptConditionMet_requestsInAppReview() = runTest(mainDispatcherRule.dispatcher) {
         // Given 업로드 3회 + 로그인 유지 3일 조건을 충족했다 — Google API 는 수락·거절을 알려주지
         // 않으므로, 확인과 동시에(같은 호출 안에서) 다음 4개월 재시도를 잠근다
-        coEvery { reviewPromptUseCase.checkAndMarkTriggered() } returns true
+        coEvery { reviewPromptUseCase.checkTrigger() } returns true
 
         // When
         val viewModel = viewModel()
