@@ -10,11 +10,8 @@ private const val SCHEME_MARKET = "market"
 private const val SCHEME_HTTPS = "https"
 
 /**
- * 업데이트 버튼이 열기를 시도할 순서대로 링크 후보를 돌려준다. 각 후보는 Play 로 먼저 열고,
- * [UpdateLink.opensInBrowser] 인 것만 외부 브라우저로 한 번 더 연다.
- *
- * 서버가 준 [storeUrl]은 `market` 이거나 `https` 일 때만 맨 앞에 둔다. Play 가 아닌 `https` 는 공지·안내
- * 페이지로 보내는 경우다. `http`·`intent` 같은 다른 스킴은 다른 앱을 띄우거나 평문으로 나갈 수 있어 버린다.
+ * 서버가 준 [storeUrl]은 `market`·`https`일 때만 맨 앞에 둔다. Play 가 아닌 `https`는 공지·안내 페이지다.
+ * `http`·`intent` 같은 다른 스킴은 다른 앱을 띄우거나 평문으로 나갈 수 있어 버린다.
  */
 internal fun storeLinkCandidates(
     storeUrl: String?,

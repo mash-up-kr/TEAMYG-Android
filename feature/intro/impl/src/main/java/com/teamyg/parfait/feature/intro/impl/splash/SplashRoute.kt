@@ -83,7 +83,6 @@ fun SplashRoute(
     }
 }
 
-// 어떤 링크를 어떤 순서로, 브라우저로 다시 열어도 되는지는 storeLinkCandidates 가 정한다
 private fun Context.openUpdateLink(links: List<UpdateLink>): Boolean = links.any { link ->
     tryStartViewIntent(link.uri, packageName = PLAY_STORE_PACKAGE) ||
         (link.opensInBrowser && tryStartViewIntent(link.uri))

@@ -9,7 +9,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.ui.R as CoreR
 
-/** 뒤로 가기나 바깥 터치로 닫히지 않는다. 벗어나는 길은 [onQuit]과 [onUpdate] 두 버튼뿐이다 */
+/** 뒤로 가기나 바깥 터치로 닫히지 않는다 */
 @Composable
 fun YGModalForceUpdate(
     onQuit: () -> Unit,
@@ -22,10 +22,7 @@ fun YGModalForceUpdate(
     )
 }
 
-/**
- * 강제 업데이트와 문구·아이콘이 같고 왼쪽 버튼만 다르다. 별도 시안이 없어 강제 업데이트 시안을 따른다.
- * 닫는 길이 [onLater]·[onUpdate] 버튼뿐인 것도 같다 — 다음 화면으로 넘어가는 계기를 버튼 하나로 둔다.
- */
+/** 별도 시안이 없어 강제 업데이트 시안에서 왼쪽 버튼만 바꿨다 */
 @Composable
 fun YGModalOptionalUpdate(
     onLater: () -> Unit,
