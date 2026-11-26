@@ -1,6 +1,6 @@
 package com.teamyg.parfait.feature.intro.impl.model
 
-import java.net.URI
+import com.teamyg.parfait.core.util.jvm.extension.toJavaUriOrNull
 
 /** 패키지를 지정하지 않으면 시스템 선택창이 원스토어·갤럭시 스토어 같은 Play 밖 스토어를 함께 보여준다. */
 internal const val PLAY_STORE_PACKAGE = "com.android.vending"
@@ -29,6 +29,3 @@ private fun isAllowedServerUrl(url: String): Boolean {
     val uri = url.toJavaUriOrNull() ?: return false
     return uri.scheme == SCHEME_MARKET || (uri.scheme == SCHEME_HTTPS && !uri.host.isNullOrBlank())
 }
-
-// android.net.Uri 가 아니라 java.net.URI 다 — 순수 JVM 단위 테스트에서 돌아야 한다
-private fun String.toJavaUriOrNull(): URI? = runCatching { URI(this) }.getOrNull()
