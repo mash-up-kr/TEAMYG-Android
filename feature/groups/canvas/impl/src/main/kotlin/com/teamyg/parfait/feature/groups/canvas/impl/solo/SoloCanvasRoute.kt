@@ -31,6 +31,7 @@ import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveType
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloTextInput
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
@@ -177,14 +178,29 @@ internal fun SoloCanvasRoute(
                     pendingSaveType = CanvasSaveType.VIDEO
                     viewModel.processIntent(SoloCanvasIntent.ClickSaveToGallery)
                 },
+                // 혼자 공간의 토핑은 전부 내 것이라 스포트라이트 없이 바로 재편집으로 간다
+                onClickTopping = { topping ->
+                    navigator.goTo(
+                        destination = NavKeySoloToppingArrange(
+                            initialToppingId = topping.parfaitImageId.value,
+                            initialIsText = false,
+                        ),
+                    )
+                },
+                onClickText = { text ->
+                    navigator.goTo(
+                        destination = NavKeySoloToppingArrange(
+                            initialToppingId = text.parfaitTextId.value,
+                            initialIsText = true,
+                        ),
+                    )
+                },
                 // 혼자 공간은 늘 오늘을 보고 달력이 없어 아래 콜백이 불릴 일이 없다
                 onClickGoToToday = {},
                 onDismissCalendar = {},
                 onSelectYear = {},
                 onSelectMonth = {},
                 onClickDate = {},
-                onClickTopping = {},
-                onClickText = {},
                 onClickSpotlightDim = {},
                 onLoadStateChange = { loadState = it },
                 retryKey = retryKey,
