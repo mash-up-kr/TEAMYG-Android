@@ -17,6 +17,7 @@ import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
 import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
@@ -71,10 +72,13 @@ class CanvasTextInputViewModelTest {
 
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
-    private fun draft() = ToppingDraft(groupId = GroupId(1L), parfaitId = ParfaitId(2L), nextPositionZ = 1)
+    private fun draft() = ToppingDraft(
+        target = ToppingDraftTarget.Group(GroupId(1L), ParfaitId(2L)),
+        nextPositionZ = 1,
+    )
 
-    private fun viewModel(): CanvasTextInputViewModel {
-        every { getToppingDraftFlow() } returns flowOf(draft())
+    private fun viewModel(draft: ToppingDraft = draft()): CanvasTextInputViewModel {
+        every { getToppingDraftFlow() } returns flowOf(draft)
         every { getTodayParfaitFlowUseCase(any(), any()) } returns flowOf<CanvasVO?>(null)
         return CanvasTextInputViewModel(
             getToppingDraftFlow = getToppingDraftFlow,
@@ -104,6 +108,23 @@ class CanvasTextInputViewModelTest {
         viewModel.processIntent(CanvasTextInputIntent.OnContentChange(overLong))
 
         assertEquals(TEXT_TOPPING_MAX_LENGTH, viewModel.state.value.characterCount)
+    }
+
+    @Test
+    fun soloDraft_navigatesBackAndNeverPlaces() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 혼자 공간 초안 — 이 화면이 다룰 대상이 아니다
+        val viewModel = viewModel(draft().copy(target = ToppingDraftTarget.Solo))
+
+        viewModel.effect.test {
+            assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
+        }
+
+        // When 그래도 쌓기를 눌러 본다
+        viewModel.processIntent(CanvasTextInputIntent.OnContentChange("텍스트"))
+        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+
+        // Then 서버로 가지 않는다
+        coVerify(exactly = 0) { placeTextTopping(any(), any(), any(), any(), any()) }
     }
 
     @Test

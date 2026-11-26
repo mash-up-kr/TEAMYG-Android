@@ -43,6 +43,7 @@ import com.teamyg.parfait.domain.usecase.parfait.MarkPastCanvasAlertSeenUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.usecase.review.CheckReviewPromptTriggerUseCase
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
@@ -1137,8 +1138,7 @@ constructor(
             },
         ) {
             startToppingDraft(
-                groupId = groupId,
-                parfaitId = canvas.parfaitId,
+                target = ToppingDraftTarget.Group(groupId = groupId, parfaitId = canvas.parfaitId),
                 nextPositionZ = canvas.nextPositionZ(),
             )
             postSideEffect(effect)

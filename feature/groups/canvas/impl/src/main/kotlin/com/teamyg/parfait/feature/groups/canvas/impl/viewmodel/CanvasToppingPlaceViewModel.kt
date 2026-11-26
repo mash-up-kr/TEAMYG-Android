@@ -30,6 +30,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
@@ -219,17 +220,22 @@ class CanvasToppingPlaceViewModel
     private fun observeDraft() {
         launch(onError = { postSideEffect(effect = CanvasToppingPlaceEffect.DraftMissing) }) {
             getToppingDraftFlow().collect { draft ->
+                val target = draft?.target as? ToppingDraftTarget.Group
+                // 혼자 공간 초안은 이 화면이 다룰 수 없다 — 배치하지 않고 캔버스로 돌아간다
+                if (draft != null && target == null) {
+                    postSideEffect(effect = CanvasToppingPlaceEffect.QuitToCanvas)
+                }
                 updateState {
                     copy(
-                        toppingImagePath = draft?.subjectImagePath,
-                        toppingSourceLongSide = draft?.sourceLongSide,
-                        groupId = draft?.groupId,
-                        parfaitId = draft?.parfaitId,
+                        toppingImagePath = draft?.subjectImagePath.takeIf { target != null },
+                        toppingSourceLongSide = draft?.sourceLongSide.takeIf { target != null },
+                        groupId = target?.groupId,
+                        parfaitId = target?.parfaitId,
                         nextPositionZ = draft?.nextPositionZ,
                         isDraftLoaded = true,
                     )
                 }
-                observedGroupId.value = draft?.groupId
+                observedGroupId.value = target?.groupId
             }
         }
     }

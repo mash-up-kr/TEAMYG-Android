@@ -1,9 +1,8 @@
 package com.teamyg.parfait.domain.repository.topping
 
-import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import kotlinx.coroutines.flow.Flow
 
 interface ToppingDraftRepository {
@@ -15,15 +14,14 @@ interface ToppingDraftRepository {
      * 규칙 하나로 닫는다(`adr/0026-topping-draft-datastore-ssot.md`).
      */
     suspend fun start(
-        groupId: GroupId,
-        parfaitId: ParfaitId,
+        target: ToppingDraftTarget,
         nextPositionZ: Int,
     )
 
     suspend fun clear()
 
     /**
-     * 흐름이 만들어 낸 알맹이를 초안에 적는다. 캔버스 식별값은 진입 때 못 박은 것을 그대로 둔다.
+     * 흐름이 만들어 낸 알맹이를 초안에 적는다. 공간 대상(`target`)은 진입 때 못 박은 것을 그대로 둔다.
      *
      * `cutoutImagePath`는 널을 받는다 — 최근 목록에서 되살린 알맹이는 세그멘테이션을 타지 않아
      * 재편집 마스크가 없다.

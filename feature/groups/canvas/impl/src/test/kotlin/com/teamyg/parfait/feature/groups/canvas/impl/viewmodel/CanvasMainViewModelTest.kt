@@ -45,6 +45,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.usecase.review.CheckReviewPromptTriggerUseCase
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
@@ -907,8 +908,7 @@ class CanvasMainViewModelTest {
         // 조용히 옮겨 가지 않는다. 토핑이 없는 캔버스라 다음 z 는 1 이다
         coVerify(exactly = 1) {
             startToppingDraft(
-                groupId = GroupId(GROUP_ID),
-                parfaitId = ParfaitId(TODAY_PARFAIT_ID),
+                target = ToppingDraftTarget.Group(GroupId(GROUP_ID), ParfaitId(TODAY_PARFAIT_ID)),
                 nextPositionZ = 1,
             )
         }
@@ -929,7 +929,7 @@ class CanvasMainViewModelTest {
         }
 
         // 카메라와 같은 흐름이라 초안도 같이 열린다
-        coVerify(exactly = 1) { startToppingDraft(any(), any(), any()) }
+        coVerify(exactly = 1) { startToppingDraft(any(), any()) }
     }
 
     @Test
@@ -944,7 +944,7 @@ class CanvasMainViewModelTest {
 
         // Then 맨 위 z 보다 하나 크다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 겹친다
         coVerify(exactly = 1) {
-            startToppingDraft(any(), any(), nextPositionZ = 8)
+            startToppingDraft(any(), nextPositionZ = 8)
         }
     }
 
@@ -960,7 +960,7 @@ class CanvasMainViewModelTest {
         advanceUntilIdle()
 
         // Then 둘을 합친 최댓값보다 하나 크다
-        coVerify(exactly = 1) { startToppingDraft(any(), any(), nextPositionZ = 8) }
+        coVerify(exactly = 1) { startToppingDraft(any(), nextPositionZ = 8) }
     }
 
     @Test
@@ -971,7 +971,7 @@ class CanvasMainViewModelTest {
         viewModel.processIntent(CanvasMainIntent.OnClickCamera())
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { startToppingDraft(any(), any(), nextPositionZ = 3) }
+        coVerify(exactly = 1) { startToppingDraft(any(), nextPositionZ = 3) }
     }
 
     @Test
@@ -1177,7 +1177,7 @@ class CanvasMainViewModelTest {
     @Test
     fun clickCamera_draftWriteFails_staysOnTheCanvasAndTellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초안을 쓸 수 없는 상태
-        coEvery { startToppingDraft(any(), any(), any()) } throws IOException("no space")
+        coEvery { startToppingDraft(any(), any()) } throws IOException("no space")
         val viewModel = enteredViewModel()
 
         viewModel.effect.test {
@@ -1202,7 +1202,7 @@ class CanvasMainViewModelTest {
         advanceUntilIdle()
 
         // Then 캔버스 식별값 없이 초안을 열지 않는다 — 그 초안으로는 올릴 데를 정할 수 없다
-        coVerify(exactly = 0) { startToppingDraft(any(), any(), any()) }
+        coVerify(exactly = 0) { startToppingDraft(any(), any()) }
     }
 
     @Test

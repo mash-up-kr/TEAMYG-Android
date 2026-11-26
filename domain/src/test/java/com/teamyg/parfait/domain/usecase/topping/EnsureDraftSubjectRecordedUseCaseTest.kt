@@ -3,6 +3,7 @@ package com.teamyg.parfait.domain.usecase.topping
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -24,8 +25,7 @@ class EnsureDraftSubjectRecordedUseCaseTest {
     private fun givenDraft(subjectImagePath: String?) {
         every { repository.draft } returns flowOf(
             ToppingDraft(
-                groupId = GroupId(1L),
-                parfaitId = ParfaitId(2L),
+                target = ToppingDraftTarget.Group(GroupId(1L), ParfaitId(2L)),
                 nextPositionZ = 0,
                 subjectImagePath = subjectImagePath,
                 cutoutImagePath = null,

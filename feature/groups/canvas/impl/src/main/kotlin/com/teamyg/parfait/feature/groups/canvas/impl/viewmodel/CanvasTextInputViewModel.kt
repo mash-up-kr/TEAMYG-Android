@@ -26,6 +26,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
@@ -190,8 +191,13 @@ constructor(
     private fun observeDraft() {
         launch {
             getToppingDraftFlow().collect { draft ->
+                val target = draft?.target as? ToppingDraftTarget.Group
+                // 혼자 공간 초안은 이 화면이 다룰 수 없다 — 저장하지 않고 돌아간다
+                if (draft != null && target == null) {
+                    postSideEffect(CanvasTextInputEffect.NavigateBack)
+                }
                 observedDraft.value = draft
-                observedGroupId.value = draft?.groupId
+                observedGroupId.value = target?.groupId
             }
         }
     }
@@ -380,17 +386,18 @@ constructor(
     private fun handleOnClickStack() {
         val current = state.value
         val draft = observedDraft.value
+        val target = draft?.target as? ToppingDraftTarget.Group
         analyticsLogger.logEvent(
             AnalyticsEvent(
                 type = AnalyticsEventType.CANVAS_TEXT_STACK_TAPPED,
-                params = mapOf("group_id" to (draft?.groupId?.value?.toString() ?: "")),
+                params = mapOf("group_id" to (target?.groupId?.value?.toString() ?: "")),
             ),
         )
 
         val boxSize = current.textBoxSize
         val canvasSize = current.canvasSize
         // 화면이 빈 내용의 버튼을 막지만, POST 가 멱등이 아니라 여기서도 막는다
-        if (current.content.isBlank() || draft == null || boxSize == null || canvasSize == null) {
+        if (current.content.isBlank() || draft == null || target == null || boxSize == null || canvasSize == null) {
             viewModelLogger.d { "쌓기를 건너뛴다 - 빈 내용이거나 초안·측정값이 아직 없다" }
             return
         }
@@ -422,15 +429,15 @@ constructor(
             try {
                 // POST 는 멱등이 아니라 재시도하지 않는다
                 placeTextTopping(
-                    groupId = draft.groupId,
-                    parfaitId = draft.parfaitId,
+                    groupId = target.groupId,
+                    parfaitId = target.parfaitId,
                     text = current.content,
                     transform = transform,
                     style = style,
                 ).onSuccess {
                     // 나가기 전에 기다린다 — 라우트가 되감으며 viewModelScope 가 취소되면 갱신이 끊긴다
                     runSuspendCatching {
-                        refreshTodayParfaitDetail(groupId = draft.groupId, parfaitId = draft.parfaitId)
+                        refreshTodayParfaitDetail(groupId = target.groupId, parfaitId = target.parfaitId)
                     }.onFailure { throwable ->
                         viewModelLogger.e(throwable) { "오늘 캔버스를 다시 받지 못했다" }
                     }
@@ -444,7 +451,7 @@ constructor(
                     if (failure == PlaceFailure.Uncertain) {
                         // 응답만 유실됐다면 이미 쌓였다 — 뒤 캔버스에 보이도록 갱신해 둔다
                         runSuspendCatching {
-                            refreshTodayParfaitDetail(groupId = draft.groupId, parfaitId = draft.parfaitId)
+                            refreshTodayParfaitDetail(groupId = target.groupId, parfaitId = target.parfaitId)
                         }.onFailure { refreshError ->
                             viewModelLogger.e(refreshError) { "오늘 캔버스를 다시 받지 못했다" }
                         }

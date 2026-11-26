@@ -27,6 +27,7 @@ import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
@@ -90,8 +91,7 @@ class CanvasToppingPlaceViewModelTest {
         parfaitId: ParfaitId = PARFAIT_ID,
         nextPositionZ: Int = 3,
     ) = ToppingDraft(
-        groupId = GroupId(1L),
-        parfaitId = parfaitId,
+        target = ToppingDraftTarget.Group(GroupId(1L), parfaitId),
         nextPositionZ = nextPositionZ,
         subjectImagePath = subjectImagePath,
         cutoutImagePath = "/cache/segmentation/cutout.png",
@@ -1102,6 +1102,19 @@ class CanvasToppingPlaceViewModelTest {
         val state = viewModel.state.value
         assertTrue(state.isBorderPanelOpen)
         assertFalse(state.showQuitDialog)
+    }
+
+    @Test
+    fun soloDraft_quitsToCanvasWithoutPlacing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 혼자 공간 초안 — 이 화면이 다룰 대상이 아니다
+        val viewModel = viewModel(draft().copy(target = ToppingDraftTarget.Solo))
+
+        // Then 배치 상태를 채우지 않고 캔버스로 돌아간다
+        viewModel.effect.test {
+            assertEquals(CanvasToppingPlaceEffect.QuitToCanvas, awaitItem())
+        }
+        assertNull(viewModel.state.value.groupId)
+        assertNull(viewModel.state.value.toppingImagePath)
     }
 
     @Test
