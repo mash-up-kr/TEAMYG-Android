@@ -23,18 +23,29 @@ interface SoloSpaceRepository {
     suspend fun changeBackground(edit: SoloBackgroundEdit): Result<Unit>
 
     /** [filePath]의 파일을 혼자 공간으로 복사해 배치한다. 올리기와 배치가 한 번에 끝난다 */
-    suspend fun placeTopping(filePath: String, transform: ToppingTransform, border: ToppingBorder): Result<Unit>
+    suspend fun placeTopping(
+        filePath: String,
+        transform: ToppingTransform,
+        border: ToppingBorder,
+    ): Result<Unit>
 
     suspend fun updateTransforms(
         updates: List<ToppingTransformUpdate>,
         textUpdates: List<TextToppingTransformUpdate>,
     ): Result<Unit>
 
-    suspend fun updateBorder(id: ParfaitImageId, border: ToppingBorder): Result<Unit>
+    suspend fun updateBorder(
+        id: ParfaitImageId,
+        border: ToppingBorder,
+    ): Result<Unit>
 
     suspend fun deleteTopping(id: ParfaitImageId): Result<Unit>
 
-    suspend fun placeText(text: String, transform: ToppingTransform, style: TextToppingStyle): Result<Unit>
+    suspend fun placeText(
+        text: String,
+        transform: ToppingTransform,
+        style: TextToppingStyle,
+    ): Result<Unit>
 
     suspend fun deleteText(id: ParfaitTextId): Result<Unit>
 

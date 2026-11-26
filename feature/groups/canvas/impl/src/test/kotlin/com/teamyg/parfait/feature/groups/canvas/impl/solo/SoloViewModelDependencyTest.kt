@@ -54,7 +54,8 @@ class SoloViewModelDependencyTest {
             assertTrue(constructors.isNotEmpty(), "${viewModel.simpleName} 에 주입 생성자가 없다")
 
             // When 파라미터 타입을 허용 목록과 대조한다
-            constructors.flatMap { it.parameterTypes.toList() }
+            constructors
+                .flatMap { it.parameterTypes.toList() }
                 .filterNot(::isAllowed)
                 .map { "${viewModel.simpleName} -> ${it.name}" }
         }

@@ -31,8 +31,10 @@ internal fun ToppingDraft.toEntity(): ToppingDraftEntity = when (val draftTarget
 internal fun ToppingDraftEntity.toVO(): ToppingDraft? {
     val target = when {
         isSolo -> ToppingDraftTarget.Solo
+
         groupId != null && parfaitId != null ->
             ToppingDraftTarget.Group(GroupId(groupId), ParfaitId(parfaitId))
+
         else -> return null
     }
 

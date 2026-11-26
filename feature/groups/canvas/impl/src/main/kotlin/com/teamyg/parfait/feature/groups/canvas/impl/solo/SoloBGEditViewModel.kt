@@ -64,8 +64,7 @@ constructor(
                         base.copy(toppings = toppings, texts = texts)
                     }
                     hasSeededFromCanvas = true
-                }
-                .onFailure { throwable ->
+                }.onFailure { throwable ->
                     // 배경은 못 읽어도 고를 수 있어 화면을 막지 않는다
                     viewModelLogger.e(throwable) { "혼자 공간 캔버스를 읽지 못했다" }
                 }
@@ -83,10 +82,15 @@ constructor(
             }
 
             CanvasBGEditIntent.OnClickCamera -> postSideEffect(SoloBGEditEffect.NavigateToCamera)
+
             CanvasBGEditIntent.OnClickGallery -> postSideEffect(SoloBGEditEffect.NavigateToGallery)
+
             CanvasBGEditIntent.OnClickCloseButton -> updateState { copy(showQuitDialog = true) }
+
             CanvasBGEditIntent.OnQuitDialogConfirm -> postSideEffect(SoloBGEditEffect.NavigateBack)
+
             CanvasBGEditIntent.OnQuitDialogCancel -> updateState { copy(showQuitDialog = false) }
+
             CanvasBGEditIntent.OnClickConfirm -> handleOnClickConfirm()
         }
     }

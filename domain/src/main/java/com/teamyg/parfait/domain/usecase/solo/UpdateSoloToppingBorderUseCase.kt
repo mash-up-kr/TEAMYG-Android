@@ -8,6 +8,8 @@ import javax.inject.Inject
 class UpdateSoloToppingBorderUseCase @Inject constructor(
     private val soloSpaceRepository: SoloSpaceRepository,
 ) {
-    suspend operator fun invoke(id: ParfaitImageId, border: ToppingBorder): Result<Unit> =
-        soloSpaceRepository.updateBorder(id, border)
+    suspend operator fun invoke(
+        id: ParfaitImageId,
+        border: ToppingBorder,
+    ): Result<Unit> = soloSpaceRepository.updateBorder(id, border)
 }

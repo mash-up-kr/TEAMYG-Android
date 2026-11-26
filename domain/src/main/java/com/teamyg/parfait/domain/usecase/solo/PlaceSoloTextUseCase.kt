@@ -8,6 +8,9 @@ import javax.inject.Inject
 class PlaceSoloTextUseCase @Inject constructor(
     private val soloSpaceRepository: SoloSpaceRepository,
 ) {
-    suspend operator fun invoke(text: String, transform: ToppingTransform, style: TextToppingStyle): Result<Unit> =
-        soloSpaceRepository.placeText(text, transform, style)
+    suspend operator fun invoke(
+        text: String,
+        transform: ToppingTransform,
+        style: TextToppingStyle,
+    ): Result<Unit> = soloSpaceRepository.placeText(text, transform, style)
 }
