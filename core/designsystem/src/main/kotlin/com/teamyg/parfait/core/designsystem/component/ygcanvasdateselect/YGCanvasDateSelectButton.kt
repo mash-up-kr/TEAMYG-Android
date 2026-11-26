@@ -39,13 +39,14 @@ private val CalendarIconSize = 24.dp
 /**
  * Figma Canvas/Button-Date-Select
  *
+ * @param onClick null 이면 캘린더 아이콘 없이 날짜를 글자로만 보인다. 누를 수 없고 접근성에서도 버튼으로 읽히지 않는다
  * @param isSaveVisible 저장 아이콘을 보일지. 저장할 배경·토핑이 없는 빈 캔버스에서는 감춘다
  */
 @Composable
 fun YGCanvasDateSelectButton(
     date: String,
     day: String,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     isSaveVisible: Boolean = false,
     onClickSave: () -> Unit = {},
@@ -79,16 +80,24 @@ fun YGCanvasDateSelectButton(
             modifier = Modifier
                 .padding(start = YGTheme.layout.padding.padding6)
                 // 아이콘·텍스트를 하나의 클릭 영역으로 함께 감싼다
-                .clickableYGNoRipple(
-                    onClick = onClick,
-                    interactionSource = dateInteractionSource,
-                ),
+                .let {
+                    if (onClick == null) {
+                        it
+                    } else {
+                        it.clickableYGNoRipple(
+                            onClick = onClick,
+                            interactionSource = dateInteractionSource,
+                        )
+                    }
+                },
         ) {
-            CalendarIcon(isPressed = isDatePressed)
+            if (onClick != null) {
+                CalendarIcon(isPressed = isDatePressed)
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(start = YGTheme.layout.padding.padding2),
+                modifier = if (onClick == null) Modifier else Modifier.padding(start = YGTheme.layout.padding.padding2),
             ) {
                 Text(
                     text = date,
@@ -142,6 +151,14 @@ private fun YGCanvasDateSelectButtonPreview() = PreviewBox {
             date = "May 20",
             day = "(Wed)",
             onClick = {},
+            isSaveVisible = true,
+            onClickSave = {},
+        )
+        // 혼자 공간 — 날짜를 고를 수 없다
+        YGCanvasDateSelectButton(
+            date = "May 20",
+            day = "(Wed)",
+            onClick = null,
             isSaveVisible = true,
             onClickSave = {},
         )

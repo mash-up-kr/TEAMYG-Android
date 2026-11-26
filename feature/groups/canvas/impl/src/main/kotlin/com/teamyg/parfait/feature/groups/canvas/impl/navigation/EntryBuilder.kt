@@ -14,9 +14,11 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloCanvas
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasTextInputRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasToppingArrangeRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasToppingPlaceRoute
+import com.teamyg.parfait.feature.groups.canvas.impl.solo.SoloCanvasRoute
 
 fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     entry<NavKeyCanvasMain> { navKey ->
@@ -67,6 +69,13 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
             parfaitId = navKey.parfaitId,
             initialToppingId = navKey.initialToppingId,
             initialIsText = navKey.initialIsText,
+            navigator = navigator,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+
+    entry<NavKeySoloCanvas> {
+        SoloCanvasRoute(
             navigator = navigator,
             modifier = Modifier.fillMaxSize(),
         )

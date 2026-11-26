@@ -73,7 +73,8 @@ private const val MAX_VISIBLE_MEMBER_CHIPS = 5
 internal fun CanvasMainScreen(
     canvasState: CanvasMainUiState,
     onClickBack: () -> Unit,
-    onClickDateSelect: () -> Unit,
+    /** null 이면 날짜를 고를 수 없다(혼자 공간) — 날짜 헤더가 캘린더 아이콘 없는 글자가 된다 */
+    onClickDateSelect: (() -> Unit)?,
     onClickMenu: () -> Unit,
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
@@ -425,6 +426,41 @@ private fun PreviewCanvasMainScreen(
         onEmptyIntroInteraction = {},
         onEmptyIntroAnimationFinished = {},
         onEmptyIntroDismissFinished = {},
+        onLoadStateChange = {},
+        retryKey = 0,
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+/** 혼자 공간 — 멤버 칩이 없고 날짜는 글자로만 보인다 */
+@YGPreview
+@Composable
+private fun PreviewCanvasMainScreenSolo() = PreviewBox {
+    val today = LocalDate(2026, 5, 20)
+
+    CanvasMainScreen(
+        canvasState = CanvasMainUiState(
+            groupName = "내 공간",
+            today = today,
+            selectedDate = today,
+        ),
+        onClickBack = {},
+        onClickDateSelect = null,
+        onClickMenu = {},
+        onClickCamera = {},
+        onClickGallery = {},
+        onClickTextInput = {},
+        onClickEditCanvasBG = {},
+        onClickSaveAsImage = {},
+        onClickSaveAsVideo = {},
+        onClickGoToToday = {},
+        onDismissCalendar = {},
+        onSelectYear = {},
+        onSelectMonth = {},
+        onClickDate = {},
+        onClickTopping = {},
+        onClickText = {},
+        onClickSpotlightDim = {},
         onLoadStateChange = {},
         retryKey = 0,
         modifier = Modifier.fillMaxSize(),

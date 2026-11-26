@@ -71,7 +71,8 @@ enum class YGCanvasBackgroundState { Loading, Loaded, Failed }
 fun YGCanvas(
     date: String,
     day: String,
-    onDateSelectClick: () -> Unit,
+    /** null 이면 날짜를 고를 수 없는 캔버스다 — 캘린더 아이콘 없이 날짜만 글자로 보인다 */
+    onDateSelectClick: (() -> Unit)?,
     /** 없으면(`null`) [YGCanvasMenu] 가 [editAction] 만 전체 너비로 보여준다 */
     addAction: YGCanvasMenuAction?,
     editAction: YGCanvasMenuAction,
