@@ -76,6 +76,14 @@
 - 공지 캐시는 `LogoutUseCase`와 `TokenAuthenticator` 세션 종료 분기에서 비운다. 읽은 id는 지우지 않는다 — 같은 계정으로 다시 들어오면 이어 쓰고 다른 계정은 0부터 시작하며, 탈퇴(`WithdrawUseCase`)만 그 계정의 기록을 지운다. 별칭은 Keystore HMAC(`AccountKeyAlias`)이라 Preferences 파일만으로는 `memberId`를 알 수 없다.
 - 설정 화면의 알림 설정·공지사항 진입 행은 살아 있고, 공지사항 행의 `isNew`는 `state.hasNewNotice`다(`AppSettingScreen`).
 
+## 혼자 공간
+- 상태: 기기에 하나뿐인 로컬 캔버스다. 로그인 온보딩 체리·설정 프로필 카드 5번 탭으로만 들어가고, `NavKeySoloCanvas`가 그룹 캔버스와 같은 `CanvasMainScreen`을 쓰되 그룹 전용 요소(캘린더·멤버·마감·폴링·환영 배너)를 숨긴다. ViewModel은 `Solo*ViewModel` 다섯이 따로 있고 `SoloSpaceRepository`(`filesDir/solo_space/`)만 본다. 서버를 한 번도 부르지 않으며, 햄버거는 비우기·삭제하기 메뉴를 연다. 카메라·갤러리·누끼는 그룹과 같은 화면을 지나 `ToppingDraftTarget.Solo` 초안으로 혼자 공간 배치 화면에 돌아온다.
+- 앵커: `SoloCanvasViewModel`, `SoloSpaceRepositoryImpl`, `SoloSpaceLocalDataSource`, `SoloViewModelDependencyTest`, `CanvasHomeNavKey`, `ToppingDraftTarget`, `HiddenTapCounter`, `NavKeySoloCanvas`
+- ⚠️ 그룹 캔버스와 같은 `CanvasMainUiState`를 쓰므로 `SoloCanvasVOMapper`가 `parfaitId`·`groupName`("내 공간")·`date` 같은 고정값을 채운다. 화면 표시용일 뿐 저장소 계약에는 없다
+- ⚠️ `SoloViewModelDependencyTest`의 허용 목록은 새 기기 로컬 use case를 쓸 때 손으로 고쳐야 한다
+- ⚠️ 에뮬레이터·실기기에서 확인하지 않았다 — 단위 테스트만 돈다(진입점 체리 탭·스와이프·카카오 버튼·설정 스크롤 포함)
+- 설계: [solo-space-design](superpowers/specs/2026-11-26-solo-space-design.md), [ADR-0038](adr/0038-solo-space-separate-viewmodels.md)
+
 ## 캔버스 메인 (C-001)
 - 상태: `CanvasMainViewModel`은 저장소의 오늘 캔버스 흐름을 화면이 보이는 동안만 구독하고(갱신은 폴러 몫, 지난 날을 보는 동안은 구독을 끊는다) 첫 조회 전에만 덮개를 띄우며 첫 조회 실패만 토스트로 알린다. 상단 그룹명은 그룹 목록 캐시가 정본이고 캔버스 응답의 이름은 캐시가 빌 때만 쓰며, 남의 토핑 탭은 Spotlight와 작성자 토스트로, 본인 토핑 탭은 오늘 캔버스에서만 배치 수정 화면(`NavKeyCanvasToppingArrange`)으로 이어지고, 배경·토핑 이미지 결말은 `canvasLoadState`로 접혀 첫 페인트 전까지만 로딩·재시도 덮개가 된다. 토핑이 0개이고 배경도 없는 오늘 캔버스(`CanvasMainUiState.isEmptyPlaceholderVisible`)에는 안내 문구가 뜨고(`YGCanvas`의 `emptyContent` 슬롯), 배경을 고른 캔버스에는 안내도 연출도 없다. 그 그룹·캔버스 날짜에서 아직 재생하지 않았으면 더미 이미지 3장이 500ms 간격으로 내려앉고 "함께 남기고 싶은 순간" 9글자가 150ms 간격으로 강조됐다 돌아오는 연출을 1회 재생한다. 단계(`CanvasEmptyIntroPhase`)는 `CanvasMainUiState.emptyIntroPhase`가 들어 토핑 추가 화면에서 돌아와도 유지되고 새 진입은 `Idle`에서 기록을 조회해 텍스트만 보인다. 연출 여부는 캔버스 날짜(`emptyIntroCanvasDate`)마다 그 날짜의 첫 방출에서 한 번 정한다 — 화면을 연 채 03시가 지나 날짜가 바뀌면 어제 단계를 버리고 새로 정하고, 같은 날짜에 캔버스가 중간에 비어도(토핑 삭제) 진입 때의 판단을 뒤집지 않는다. 기록은 `CanvasIntroLocalDataSourceImpl`이 계정 별칭 키에 마지막 재생 날짜를 덮어쓰며 재생을 시작하는 순간 쓴다. 애니메이션은 로딩 덮개가 걷힌 뒤에 시작한다(`YGScaffoldV2.onCoveredChange` → `CanvasMainScreen.isEmptyIntroPaused`) — 덮개는 `isLoading`이 꺼져도 최소 노출 시간 동안 남아 앞부분을 가린다. 지난 날 빈 캔버스는 재생하지 않는다. 빈 영역 탭·뒤로가기·메뉴·토핑 추가·백그라운드 복귀는 스펙의 전이표를 따른다. 빈 영역 탭은 `CanvasEmptyIntroLayer`가 포인터 입력으로 아래 토핑 레이어를 가려야 센다 — 토핑 레이어의 판정 입력이 다운을 소비해 루트의 Final 단계 판정에 안 잡힌다.
 - 앵커: `CanvasMainViewModel`, `CanvasMainUiState`, `CanvasMainRoute`, `canvasLoadState`, `pickToppingHit`, `GetTodayParfaitFlowUseCase`, `CanvasPoller`, `TodayCanvasFetchEntity`, `CanvasEmptyIntroPhase`, `CanvasEmptyIntroState`, `CanvasEmptyIntroLayer`, `CANVAS_EMPTY_INTRO_IMAGES`, `GetCanvasIntroPlayedDateUseCase`, `MarkCanvasIntroPlayedUseCase`

@@ -1,12 +1,12 @@
 ---
 id: solo-space-design
 title: 혼자 공간 — 서버 없이 기기에만 두는 캔버스 하나 (Solo Space)
-status: draft
+status: in-progress
 category: behavior-spec
 platforms: android
 verified: 2026-11-26
 related_code: Navigator.kt#popUpTo, ToppingDraft.kt#ToppingDraft, ToppingDraftEntity.kt#ToppingDraftEntity, StartToppingDraftUseCase.kt#StartToppingDraftUseCase, CanvasMainScreen.kt#CanvasMainScreen, ToppingEditRoute.kt#ToppingEditRoute, CustomGalleryPickerRoute.kt#CustomGalleryPickerRoute, OnboardingPager.kt#OnboardingPager, ProfileCard.kt#ProfileCard, NavKeyAnalyticsScreen.kt#toAnalyticsScreenOrNull, BootstrapSessionUseCase.kt#BootstrapSessionUseCase
-related_adr: ADR-0026, ADR-0029, ADR-0031
+related_adr: ADR-0026, ADR-0029, ADR-0031, ADR-0038
 related_spec:
 related_architecture: data-layer, navigation-flow, module-structure
 supersedes:

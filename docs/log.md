@@ -501,3 +501,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-24] check | 강제 업데이트 실기기 확인
 SM-A356N · 로컬 목 서버(`adb reverse` + `-PYG_BASE_URL`) · FORCE 모달 노출, BACK·바깥 탭에도 유지, [업데이트] Play 직행(d1e29b6 이후), 복귀 시 모달 유지, [종료]로 최근 앱 제거, 404·10초 지연 시 로그인 진입 확인 · 회전은 세로 고정이라 해당 없음
+
+## [2026-11-26] restructure | 혼자 공간 구현 문서 반영
+ADR-0038 신설 · navigation-flow에 진입·표식 인터페이스 복귀, data-layer에 로컬 저장소·백업 규칙 절 추가 · status.md `혼자 공간` 영역 신설 · 스펙 `in-progress`
