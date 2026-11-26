@@ -16,13 +16,9 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
-import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.jvm.extension.graphemeClusterCount
-import com.teamyg.parfait.core.util.jvm.extension.truncateToGraphemeClusters
-import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
-import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
@@ -36,16 +32,15 @@ import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_FONT_SIZE_SP
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_DEFAULT_ALIGN
-import com.teamyg.parfait.feature.groups.canvas.impl.model.nextTextToppingAlign
-import com.teamyg.parfait.feature.groups.canvas.impl.util.stepAngleGuide
-import com.teamyg.parfait.feature.groups.canvas.impl.util.stepCenterGuideDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.stepTextTransform
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withCanvasContent
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withLocalIntent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -213,77 +208,36 @@ constructor(
         ) { canvas ->
             // null 은 무시한다 — 비우면 배경이 흰색으로 튄다
             if (canvas == null) return@launchWhileSubscribed
-            updateState { withCanvas(canvas) }
+            updateState {
+                withCanvasContent(
+                    background = canvas.background,
+                    toppings = canvas.toppings,
+                    texts = canvas.texts,
+                )
+            }
         }
     }
 
-    private fun CanvasTextInputUiState.withCanvas(canvas: CanvasVO): CanvasTextInputUiState = copy(
-        backgroundColor = (canvas.background as? CanvasBackground.Color)
-            ?.value
-            ?.toColorOrNull()
-            ?: backgroundColor,
-        backgroundImageUrl = (canvas.background as? CanvasBackground.Image)?.url,
-        existingToppings = canvas.toppings.sortedBy { topping -> topping.transform.positionZ },
-        existingTexts = canvas.texts,
-    )
-
     override fun processIntent(intent: CanvasTextInputIntent) {
         when (intent) {
-            is CanvasTextInputIntent.OnContentChange -> updateState {
-                copy(content = intent.value.truncateToGraphemeClusters(TEXT_TOPPING_MAX_LENGTH))
-            }
-
-            is CanvasTextInputIntent.OnSelectColor -> updateState {
-                copy(selectedColor = intent.color)
-            }
-
-            CanvasTextInputIntent.OnToggleColorPopover -> updateState {
-                copy(isColorPopoverOpen = !isColorPopoverOpen)
-            }
-
-            CanvasTextInputIntent.OnDismissColorPopover -> updateState { copy(isColorPopoverOpen = false) }
-
-            is CanvasTextInputIntent.OnAutoFontSizeChange -> updateState {
-                copy(designFontSize = intent.designFontSize)
-            }
-
-            CanvasTextInputIntent.OnClickType -> updateState { copy(textType = textType.next()) }
-
-            CanvasTextInputIntent.OnClickAlign -> updateState { copy(align = align.nextTextToppingAlign()) }
-
-            is CanvasTextInputIntent.OnTextBoxMeasured -> {
-                updateState { copy(textBoxSize = intent.size).applyInitialPlacementIfNeeded() }
-            }
-
-            is CanvasTextInputIntent.OnCanvasMeasured -> {
-                updateState { copy(canvasSize = intent.size).applyInitialPlacementIfNeeded() }
-            }
+            is CanvasTextInputIntent.OnContentChange,
+            is CanvasTextInputIntent.OnSelectColor,
+            CanvasTextInputIntent.OnToggleColorPopover,
+            CanvasTextInputIntent.OnDismissColorPopover,
+            is CanvasTextInputIntent.OnAutoFontSizeChange,
+            CanvasTextInputIntent.OnClickType,
+            CanvasTextInputIntent.OnClickAlign,
+            is CanvasTextInputIntent.OnTextBoxMeasured,
+            is CanvasTextInputIntent.OnCanvasMeasured,
+            CanvasTextInputIntent.OnToppingTransformGestureEnd,
+            is CanvasTextInputIntent.OnDragPlacementSeed,
+            CanvasTextInputIntent.OnClickClose,
+            CanvasTextInputIntent.OnQuitDialogCancel,
+            -> updateState { withLocalIntent(intent) }
 
             is CanvasTextInputIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
-            CanvasTextInputIntent.OnToppingTransformGestureEnd -> updateState {
-                copy(
-                    isCenterGuideXVisible = false,
-                    isCenterGuideYVisible = false,
-                    isAngleGuideVisible = false,
-                    hasRotatedThisGesture = false,
-                )
-            }
-
-            is CanvasTextInputIntent.OnDragPlacementSeed -> updateState {
-                copy(
-                    offsetX = intent.offsetX,
-                    offsetY = intent.offsetY,
-                    // 사용자 드래그가 아니라 좌표를 심는 지점이라 raw 도 같이 맞춘다
-                    rawOffsetX = intent.offsetX,
-                    rawOffsetY = intent.offsetY,
-                    hasUserAdjustedPlacement = true,
-                )
-            }
-
             CanvasTextInputIntent.OnClickConfirm -> handleOnClickConfirm()
-
-            CanvasTextInputIntent.OnClickClose -> updateState { copy(showQuitDialog = true) }
 
             CanvasTextInputIntent.OnClickStack -> handleOnClickStack()
 
@@ -291,8 +245,6 @@ constructor(
                 updateState { copy(showQuitDialog = false) }
                 handleDiscardAndNavigateBack()
             }
-
-            CanvasTextInputIntent.OnQuitDialogCancel -> updateState { copy(showQuitDialog = false) }
         }
     }
 
@@ -303,84 +255,9 @@ constructor(
     }
 
     private fun handleOnToppingTransform(intent: CanvasTextInputIntent.OnToppingTransform) {
-        val current = state.value
-        val box = current.textBoxSize
-        val canvas = current.canvasSize
-        if (box == null || canvas == null) {
-            updateState {
-                copy(
-                    offsetX = offsetX + intent.pan.x,
-                    offsetY = offsetY + intent.pan.y,
-                    rawOffsetX = rawOffsetX + intent.pan.x,
-                    rawOffsetY = rawOffsetY + intent.pan.y,
-                    scale = (scale * intent.zoom).coerceAtLeast(TEXT_TOPPING_MIN_SCALE),
-                    rotationDegrees = rotationDegrees + intent.rotationDelta,
-                    rawRotationDegrees = rawRotationDegrees + intent.rotationDelta,
-                    hasRotatedThisGesture = hasRotatedThisGesture || intent.rotationDelta != 0f,
-                    hasUserAdjustedPlacement = true,
-                )
-            }
-            return
-        }
-
-        val posStep = stepCenterGuideDp(
-            oldRawOffsetX = current.rawOffsetX,
-            oldRawOffsetY = current.rawOffsetY,
-            panX = intent.pan.x,
-            panY = intent.pan.y,
-            halfWidth = box.width / 2,
-            halfHeight = box.height / 2,
-            canvasCenterXDp = (canvas.width / 2).value,
-            canvasCenterYDp = (canvas.height / 2).value,
-        )
-        val angleStep = stepAngleGuide(
-            oldRawDegrees = current.rawRotationDegrees,
-            oldHasRotated = current.hasRotatedThisGesture,
-            rotationDelta = intent.rotationDelta,
-        )
-        val justSnapped = posStep.justSnapped || angleStep.justSnapped
-
-        updateState {
-            copy(
-                offsetX = posStep.guideX.effectiveValue.dp - box.width / 2,
-                offsetY = posStep.guideY.effectiveValue.dp - box.height / 2,
-                rawOffsetX = posStep.rawOffsetX,
-                rawOffsetY = posStep.rawOffsetY,
-                isCenterGuideXVisible = posStep.guideX.isSnapped,
-                isCenterGuideYVisible = posStep.guideY.isSnapped,
-                scale = (scale * intent.zoom).coerceAtLeast(TEXT_TOPPING_MIN_SCALE),
-                rotationDegrees = angleStep.effectiveDegrees,
-                rawRotationDegrees = angleStep.rawDegrees,
-                isAngleGuideVisible = angleStep.isVisible,
-                isAngleGuideHorizontal = angleStep.isHorizontal,
-                hasRotatedThisGesture = angleStep.hasRotated,
-                hasUserAdjustedPlacement = true,
-            )
-        }
-        if (justSnapped) postSideEffect(CanvasTextInputEffect.TriggerSnapHaptic)
-    }
-
-    /**
-     * 사용자가 아직 손대지 않았다면, 키보드가 처음 내려갈 때 텍스트가 타이핑 중이던 자리
-     * (캔버스 정중앙)에 그대로 남도록 저장 좌표를 맞춘다.
-     *
-     * 측정될 때마다 다시 맞춘다 — 첫 레이아웃에서는 키보드·툴바 높이가 아직 0 이라 글자 크기가
-     * 거의 0 으로 재지고, 그 박스로 좌상단을 고정하면 박스가 제 크기로 커진 만큼 중심이 밀린다.
-     */
-    private fun CanvasTextInputUiState.applyInitialPlacementIfNeeded(): CanvasTextInputUiState {
-        if (hasUserAdjustedPlacement) return this
-        val canvas = canvasSize ?: return this
-        val box = textBoxSize ?: return this
-
-        val centeredOffsetX = canvas.width * CANVAS_CENTER_RATIO - box.width / 2
-        val centeredOffsetY = canvas.height * CANVAS_CENTER_RATIO - box.height / 2
-
-        return copy(
-            offsetX = centeredOffsetX,
-            offsetY = centeredOffsetY,
-            rawOffsetX = centeredOffsetX,
-            rawOffsetY = centeredOffsetY,
-        )
+        val step = state.value.stepTextTransform(intent.pan, intent.zoom, intent.rotationDelta)
+        updateState { step.state }
+        if (step.justSnapped) postSideEffect(CanvasTextInputEffect.TriggerSnapHaptic)
     }
 
     private fun handleOnClickStack() {
@@ -471,8 +348,6 @@ constructor(
         }
     }
 }
-
-private const val CANVAS_CENTER_RATIO = 0.5f
 
 /** 쌓기 중복 실행 키. 연타로 두 번 보내면 같은 글이 두 개 쌓인다 */
 private const val STACK_JOB_KEY = "canvas-text-input-stack"

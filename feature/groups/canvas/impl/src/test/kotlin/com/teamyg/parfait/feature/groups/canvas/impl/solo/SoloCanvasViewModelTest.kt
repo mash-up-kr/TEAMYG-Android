@@ -230,6 +230,22 @@ class SoloCanvasViewModelTest {
         coVerify(exactly = 1) { startToppingDraft(target = ToppingDraftTarget.Solo, nextPositionZ = 1) }
     }
 
+    @Test
+    fun textClick_startsSoloDraftThenOpensTextInput() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열려 있다
+        val viewModel = shownViewModel()
+
+        viewModel.effect.test {
+            // When 텍스트를 고른다
+            viewModel.processIntent(SoloCanvasIntent.ClickText)
+            advanceUntilIdle()
+
+            // Then 혼자 공간 대상으로 초안을 쓴 뒤 텍스트 입력으로 간다
+            assertIs<SoloCanvasEffect.NavigateToTextInput>(awaitItem())
+        }
+        coVerify(exactly = 1) { startToppingDraft(target = ToppingDraftTarget.Solo, nextPositionZ = 1) }
+    }
+
     private companion object {
         const val SOLO_TITLE = "내 공간"
 

@@ -58,6 +58,8 @@ sealed interface SoloCanvasIntent : UiIntent {
 
     data object ClickGallery : SoloCanvasIntent
 
+    data object ClickText : SoloCanvasIntent
+
     data object ClickSaveToGallery : SoloCanvasIntent
 
     /** 미리보기에서 저장을 확정하고 돌아왔다. 미리 보여 준 그 이미지를 화면이 다시 읽어 넘긴다 */
@@ -74,6 +76,8 @@ sealed interface SoloCanvasEffect : UiSideEffect {
     data object NavigateToCamera : SoloCanvasEffect
 
     data object NavigateToGallery : SoloCanvasEffect
+
+    data object NavigateToTextInput : SoloCanvasEffect
 
     /** 캡처와 캐시 파일 쓰기는 화면만 할 수 있어 요청만 보낸다 */
     data object RequestCanvasCaptureForPreview : SoloCanvasEffect
@@ -188,6 +192,8 @@ constructor(
             SoloCanvasIntent.ClickCamera -> startToppingFlow(SoloCanvasEffect.NavigateToCamera)
 
             SoloCanvasIntent.ClickGallery -> startToppingFlow(SoloCanvasEffect.NavigateToGallery)
+
+            SoloCanvasIntent.ClickText -> startToppingFlow(SoloCanvasEffect.NavigateToTextInput)
 
             SoloCanvasIntent.ClickSaveToGallery -> postSideEffect(SoloCanvasEffect.RequestCanvasCaptureForPreview)
 

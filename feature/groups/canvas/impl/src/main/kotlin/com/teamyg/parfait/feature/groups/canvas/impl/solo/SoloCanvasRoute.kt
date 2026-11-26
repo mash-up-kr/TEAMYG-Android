@@ -30,6 +30,7 @@ import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveType
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloBGEdit
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloTextInput
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
@@ -92,6 +93,8 @@ internal fun SoloCanvasRoute(
                 SoloCanvasEffect.NavigateToGallery -> navigator.goTo(
                     destination = NavKeyCustomGalleryPicker(recentImagePick = RecentImagePick.CUTOUT),
                 )
+
+                SoloCanvasEffect.NavigateToTextInput -> navigator.goTo(destination = NavKeySoloTextInput)
 
                 SoloCanvasEffect.RequestCanvasCaptureForPreview -> graphicsLayer.openCanvasSavePreview(
                     context = context,
@@ -164,8 +167,7 @@ internal fun SoloCanvasRoute(
                 onClickMenu = { viewModel.processIntent(SoloCanvasIntent.ClickMenu) },
                 onClickCamera = { viewModel.processIntent(SoloCanvasIntent.ClickCamera) },
                 onClickGallery = { viewModel.processIntent(SoloCanvasIntent.ClickGallery) },
-                // 텍스트·토핑 재편집은 혼자 공간 하위 화면이 생기면 잇는다
-                onClickTextInput = {},
+                onClickTextInput = { viewModel.processIntent(SoloCanvasIntent.ClickText) },
                 onClickEditCanvasBG = { navigator.goTo(destination = NavKeySoloBGEdit) },
                 onClickSaveAsImage = {
                     pendingSaveType = CanvasSaveType.IMAGE

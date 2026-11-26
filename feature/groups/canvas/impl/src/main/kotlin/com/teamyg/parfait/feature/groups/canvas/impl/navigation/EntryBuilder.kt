@@ -16,12 +16,14 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloCanvas
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloToppingPlace
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasTextInputRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasToppingArrangeRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasToppingPlaceRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.solo.SoloBGEditRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.solo.SoloCanvasRoute
+import com.teamyg.parfait.feature.groups.canvas.impl.solo.SoloTextInputRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.solo.SoloToppingPlaceRoute
 
 fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
@@ -95,6 +97,13 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
 
     entry<NavKeySoloToppingPlace> {
         SoloToppingPlaceRoute(
+            navigator = navigator,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+
+    entry<NavKeySoloTextInput> {
+        SoloTextInputRoute(
             navigator = navigator,
             modifier = Modifier.fillMaxSize(),
         )
