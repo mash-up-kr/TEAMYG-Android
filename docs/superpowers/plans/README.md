@@ -6,6 +6,7 @@ Parfait 프로젝트의 작업 계획 문서를 모읍니다.
 
 | 계획 | 내용 |
 |------|------|
+| [2026-11-26-solo-space.md](2026-11-26-solo-space.md) | **혼자 공간**(12 Task). **Task 1** 표식 인터페이스 복귀, **Task 2** 초안 `ToppingDraftTarget`, **Task 3** 도메인, **Task 4** 로컬 저장소·백업 규칙, **Task 5~9** 혼자 공간 캔버스·배경·배치·텍스트·재편집, **Task 10** 로그인·설정 진입점, **Task 11** 화면 조회 제외·의존 검사, **Task 12** 문서. |
 | [2026-11-24-force-update.md](2026-11-24-force-update.md) | **강제 업데이트**(6 Task) — 스플래시에서 서버 버전 체크가 `FORCE`면 모달로 막고 스토어로 보낸다(fail-open). 서버 `feat/#225` 미배포. 스펙: [force-update-design](../specs/2026-11-24-force-update-design.md) |
 | [2026-11-16-notice-read-per-account.md](2026-11-16-notice-read-per-account.md) | **공지 읽음 기록의 계정별 저장**(#714, 4 Task). **Task 1** `AccountKeyAlias`(Keystore HMAC), **Task 2** 계정별 읽음 저장소·Repository(구현 뒤 계정 해석은 UseCase로 이동), **Task 3** 탈퇴 시 삭제, **Task 4** 문서. |
 | [2026-09-26-docs-record-structure.md](2026-09-26-docs-record-structure.md) | **docs 기록 구조 개선**(Task 0~7, 문서만 변경). 원본 사본과 추출표로 미결·절차 노하우의 행방을 먼저 정한 뒤 `log.md`·doc-baseline·루트 `CLAUDE.md`를 이관하고, 영역별 코드 대조로 `status.md`를 쓴 다음 index를 라우팅만 남긴다. |
