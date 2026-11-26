@@ -1,7 +1,7 @@
 ---
 id: ADR-0038
 title: 혼자 공간은 화면만 함께 쓰고 ViewModel·저장소를 따로 둔다
-status: proposed
+status: accepted
 date: 2026-11-26
 deciders: Parfait 팀
 supersedes:
@@ -23,7 +23,7 @@ tags: [adr, parfait, canvas, solo-space]
 로딩에 갇힌다.
 
 ## 결정
-화면 composable·UiState는 그룹 캔버스와 함께 쓰고, ViewModel·use case·저장소는 혼자 공간 전용으로 따로 둔다.
+**B. 화면만 함께 쓰고 ViewModel·저장소를 따로 둔다.** 화면 composable·UiState는 그룹 캔버스와 함께 쓰고, ViewModel·use case·저장소는 혼자 공간 전용으로 따로 둔다.
 
 - `Solo*ViewModel` 다섯은 `domain/usecase/solo/*`, 토핑 초안 use case, 기기 로컬 use case만 의존한다.
   `AnalyticsLogger`와 서버를 부르는 저장소에 닿는 use case는 의존하지 않는다. `SoloViewModelDependencyTest`가
@@ -40,7 +40,7 @@ tags: [adr, parfait, canvas, solo-space]
   **→ 기각:** 정확성을 구조로 보장할 수 없다.
 - **C. Hilt qualifier로 화면마다 구현 바꿔 끼우기** — ViewModel 코드는 그대로다.
   그러나 ViewModel → UseCase → 저장소 사슬마다 qualifier 판이 필요하고, A와 같은 가짜 계약 문제가 남는다.
-  **→ 기각:** 보일러플레이트가 B보다 많고 이득이 없다.
+  **→ 기각:** 보일러플레이트가 결정안(B)보다 많고 이득이 없다.
 
 ## 영향
 
@@ -54,7 +54,11 @@ tags: [adr, parfait, canvas, solo-space]
 
 - 배치·정렬·텍스트·배경 편집 ViewModel 로직이 두 벌이다. 순수 계산만 공유한다.
 - `SoloCanvasViewModel`이 `SoloCanvasVO`를 `CanvasVO`로 바꿔 `parfaitId`·`groupName` 같은 고정값을 채운다.
-  화면 표시용일 뿐 저장소·use case 계약에는 들어가지 않는다.
+  변환은 `SoloCanvasVOMapper` 한 곳뿐이고, 혼자 공간 저장소·use case 시그니처에 `CanvasVO`·`ParfaitId`·`GroupId`가
+  없음을 `SoloViewModelDependencyTest`가 검사한다. `CanvasMainUiState`에 그룹 전용 필드가 늘면 고정값도 는다.
+- Solo ViewModel은 그룹의 UiState·Intent(`CanvasToppingPlaceUiState`·`CanvasToppingPlaceIntent` 등)를 그대로
+  import한다. 화면을 함께 쓰기로 한 결과라 의도된 결합이다. 그룹 쪽 Intent·State가 바뀌면 Solo ViewModel도
+  컴파일 단계에서 함께 고쳐야 한다.
 - 카메라·갤러리·누끼 화면은 그룹과 함께 쓰므로 혼자 공간에서도 분석 이벤트를 보낸다.
 
 **위험·방어**
