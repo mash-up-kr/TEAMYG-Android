@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.api
 
-import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 /**
@@ -14,4 +13,4 @@ import kotlinx.serialization.Serializable
 data class NavKeyCanvasBGEdit(
     val groupId: Long,
     val parfaitId: Long,
-) : NavKey
+) : CanvasBGEditNavKey

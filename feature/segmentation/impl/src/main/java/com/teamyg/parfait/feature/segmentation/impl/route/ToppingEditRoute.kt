@@ -18,7 +18,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasHomeNavKey
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.impl.R
@@ -79,7 +79,7 @@ internal fun ToppingEditRoute(
                     }
                 }
 
-                is ToppingEditEffect.QuitToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
+                is ToppingEditEffect.QuitToCanvas -> navigator.popUpTo<CanvasHomeNavKey>()
 
                 is ToppingEditEffect.ShowDetectionFailed -> {
                     toastPolicy.show(YGToastType.Edit(detectionFailedMessage))

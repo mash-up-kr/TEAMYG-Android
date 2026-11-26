@@ -16,7 +16,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasHomeNavKey
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasToppingPlaceScreen
 import com.teamyg.parfait.core.ui.component.modal.YGModalQuitEdit
@@ -43,7 +43,7 @@ internal fun CanvasToppingPlaceRoute(
             when (effect) {
                 CanvasToppingPlaceEffect.NavigateBack -> navigator.onBack()
 
-                CanvasToppingPlaceEffect.QuitToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
+                CanvasToppingPlaceEffect.QuitToCanvas -> navigator.popUpTo<CanvasHomeNavKey>()
 
                 // 알리고 화면엔 남는다 — 여기서 되감으면 이 Route에 매달린 toastPolicy까지 같이
                 // 폐기돼 안내가 잔상으로 끝난다. 닫기 버튼이 이미 있어 막다른 곳도 아니다
@@ -54,7 +54,7 @@ internal fun CanvasToppingPlaceRoute(
                 // 캔버스를 새로 쌓지 않고 원래 자리로 되감는다. 새로 쌓으면 방금 끝난 토핑 만들기
                 // 화면들이 그 밑에 남고, 다음 흐름이 진입하며 비우는 세그멘테이션 캐시가 그 화면들이
                 // 가리키던 PNG 를 지운다(뒤로 가면 빈 이미지만 남는다)
-                CanvasToppingPlaceEffect.PlaceSucceeded -> navigator.popUpTo<NavKeyCanvasMain>()
+                CanvasToppingPlaceEffect.PlaceSucceeded -> navigator.popUpTo<CanvasHomeNavKey>()
 
                 CanvasToppingPlaceEffect.PlaceFailed -> {
                     toastPolicy.showError(placeFailedMessage)

@@ -32,7 +32,7 @@ import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasHomeNavKey
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.gallery.impl.R
@@ -108,7 +108,7 @@ internal fun CustomGalleryPickerRoute(
 
                 is CustomGalleryPickerEffect.ShowDraftUnavailable -> toastPolicy.showError(draftUnavailableMessage)
 
-                is CustomGalleryPickerEffect.NavigateToBack -> navigator.popUpTo<NavKeyCanvasMain>()
+                is CustomGalleryPickerEffect.NavigateToBack -> navigator.popUpTo<CanvasHomeNavKey>()
             }
         }
     }

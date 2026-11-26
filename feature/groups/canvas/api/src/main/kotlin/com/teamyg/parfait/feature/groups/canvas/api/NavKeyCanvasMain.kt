@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.api
 
-import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 /**
@@ -17,4 +16,4 @@ data class NavKeyCanvasMain(
     val welcomeGroupName: String? = null,
     val welcomeInviteCode: String? = null,
     val welcomeMemberLimit: Int? = null,
-) : NavKey
+) : CanvasHomeNavKey
