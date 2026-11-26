@@ -81,7 +81,7 @@
 - 앵커: `SoloCanvasViewModel`, `SoloSpaceRepositoryImpl`, `SoloSpaceLocalDataSource`, `SoloViewModelDependencyTest`, `CanvasHomeNavKey`, `ToppingDraftTarget`, `HiddenTapCounter`, `NavKeySoloCanvas`
 - ⚠️ 그룹 캔버스와 같은 `CanvasMainUiState`를 쓰므로 `SoloCanvasVOMapper`가 `parfaitId`·`groupName`("내 공간")·`date` 같은 고정값을 채운다. 화면 표시용일 뿐 저장소 계약에는 없다
 - ⚠️ `SoloViewModelDependencyTest`의 허용 목록은 새 기기 로컬 use case를 쓸 때 손으로 고쳐야 한다
-- ⚠️ 에뮬레이터·실기기에서 확인하지 않았다 — 단위 테스트만 돈다 (OQ-P-464)
+- ⚠️ 실기기 체크리스트 일부(비행기 모드 시작, 체리 위 스와이프·카카오 버튼, 회전, 실제 저장·공유, TalkBack)를 확인하지 않았다 (OQ-P-464)
 - 설계: [solo-space-design](superpowers/specs/2026-11-26-solo-space-design.md), [ADR-0038](adr/0038-solo-space-separate-viewmodels.md)
 
 ## 캔버스 메인 (C-001)
