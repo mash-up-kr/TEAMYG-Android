@@ -70,7 +70,9 @@ internal fun SoloSpaceMenu(
                 .background(
                     color = YGAtomicColors.Gray.White,
                     shape = YGTheme.shapes.radius.medium1,
-                ),
+                )
+                // 구분선·여백 탭이 바깥 딤의 dismiss로 새지 않게 막는다.
+                .clickableYGNoRipple(onClick = {}),
         ) {
             YGActionItem(
                 text = stringResource(R.string.solo_canvas_menu_reset),
