@@ -57,6 +57,7 @@ internal fun AppSettingScreen(
     onClickWithdraw: () -> Unit,
     onConfirmWithdraw: () -> Unit,
     onDismissWithdrawDialog: () -> Unit,
+    onProfileCardFiveTaps: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     YGScreen(modifier = modifier) {
@@ -79,6 +80,7 @@ internal fun AppSettingScreen(
                 ProfileCard(
                     nickname = state.nickname,
                     loginProviderText = state.loginProvider?.toStringResource(),
+                    onFiveTaps = onProfileCardFiveTaps,
                     modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding7),
                 )
 
@@ -246,6 +248,7 @@ private fun AppSettingScreenPreview() = PreviewBox {
         onClickWithdraw = {},
         onConfirmWithdraw = {},
         onDismissWithdrawDialog = {},
+        onProfileCardFiveTaps = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

@@ -24,6 +24,7 @@ internal fun LoginScreen(
     pages: List<OnboardingPage>,
     isLoading: Boolean,
     onClickKakaoButton: () -> Unit,
+    onCherryFiveTaps: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -33,6 +34,7 @@ internal fun LoginScreen(
     ) {
         OnboardingPager(
             pages = pages,
+            onCherryFiveTaps = onCherryFiveTaps,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -62,6 +64,7 @@ private fun PreviewLoginScreen(
         pages = pages,
         isLoading = false,
         onClickKakaoButton = {},
+        onCherryFiveTaps = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

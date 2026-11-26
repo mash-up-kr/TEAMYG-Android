@@ -20,6 +20,7 @@ import com.teamyg.parfait.feature.app.notice.api.NavKeyNoticeList
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyNotificationSetting
 import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloCanvas
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
 import com.teamyg.parfait.feature.app.setting.impl.screen.AppSettingScreen
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AppSettingIntent
@@ -98,6 +99,7 @@ internal fun AppSettingRoute(
             onDismissWithdrawDialog = {
                 viewModel.processIntent(AppSettingIntent.DismissWithdrawDialog)
             },
+            onProfileCardFiveTaps = { navigator.goTo(NavKeySoloCanvas) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
