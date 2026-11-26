@@ -1,15 +1,30 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.solo
 
 import androidx.lifecycle.SavedStateHandle
+import com.teamyg.parfait.domain.model.canvas.CanvasVO
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.repository.solo.SoloSpaceRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
+import com.teamyg.parfait.domain.usecase.solo.ChangeSoloBackgroundUseCase
+import com.teamyg.parfait.domain.usecase.solo.DeleteSoloSpaceUseCase
+import com.teamyg.parfait.domain.usecase.solo.DeleteSoloTextUseCase
+import com.teamyg.parfait.domain.usecase.solo.DeleteSoloToppingUseCase
+import com.teamyg.parfait.domain.usecase.solo.GetSoloCanvasFlowUseCase
+import com.teamyg.parfait.domain.usecase.solo.PlaceSoloTextUseCase
+import com.teamyg.parfait.domain.usecase.solo.PlaceSoloToppingUseCase
+import com.teamyg.parfait.domain.usecase.solo.ResetSoloSpaceUseCase
+import com.teamyg.parfait.domain.usecase.solo.UpdateSoloToppingBorderUseCase
+import com.teamyg.parfait.domain.usecase.solo.UpdateSoloTransformsUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import javax.inject.Inject
 import kotlin.reflect.KClass
+import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -62,6 +77,41 @@ class SoloViewModelDependencyTest {
 
         // Then 서버·애널리틱스 의존은 하나도 없다
         assertTrue(violations.isEmpty(), "허용 목록 밖 의존: $violations")
+    }
+
+    /** 혼자 공간 저장소·use case. `SoloCanvasVOMapper`가 채우는 화면 표시용 고정값이 이쪽으로 새면 안 된다 */
+    private val soloDataContracts: List<KClass<*>> = listOf(
+        SoloSpaceRepository::class,
+        ChangeSoloBackgroundUseCase::class,
+        DeleteSoloSpaceUseCase::class,
+        DeleteSoloTextUseCase::class,
+        DeleteSoloToppingUseCase::class,
+        GetSoloCanvasFlowUseCase::class,
+        PlaceSoloTextUseCase::class,
+        PlaceSoloToppingUseCase::class,
+        ResetSoloSpaceUseCase::class,
+        UpdateSoloToppingBorderUseCase::class,
+        UpdateSoloTransformsUseCase::class,
+    )
+
+    /** 그룹 캔버스 계약 타입. 혼자 공간에서는 화면 어댑터(`SoloCanvasVOMapper`)에서만 만든다 */
+    private val groupCanvasTypes: Set<KClass<*>> = setOf(CanvasVO::class, ParfaitId::class, GroupId::class)
+
+    @Test
+    fun soloRepositoryAndUseCases_signatures_doNotCarryGroupCanvasTypes() {
+        // Given 혼자 공간 저장소와 use case 의 공개 함수
+        val violations = soloDataContracts.flatMap { contract ->
+            contract.declaredMemberFunctions.flatMap { function ->
+                // When 파라미터·반환 타입을 그룹 캔버스 계약 타입과 대조한다
+                (function.parameters.map { it.type } + function.returnType)
+                    .mapNotNull { it.classifier as? KClass<*> }
+                    .filter { it in groupCanvasTypes }
+                    .map { "${contract.simpleName}.${function.name} -> ${it.simpleName}" }
+            }
+        }
+
+        // Then 고정값을 실어 나를 시그니처가 없다
+        assertTrue(violations.isEmpty(), "그룹 캔버스 계약 타입이 혼자 공간 데이터 경로에 있다: $violations")
     }
 
     private companion object {
