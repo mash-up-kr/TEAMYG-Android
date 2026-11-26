@@ -65,7 +65,8 @@ internal fun SoloCanvasRoute(
     val context = LocalContext.current
     val graphicsLayer = rememberGraphicsLayer()
 
-    // 그룹 캔버스와 같은 이유로 토스트는 전부 캔버스 프레임 상단 한 큐에 띄운다(CanvasMainRoute 참고)
+    // 토스트는 전부 캔버스 프레임 상단 한 큐에 띄운다 — 실패만 따로 보내면 같은 화면에서 자리가 갈리고
+    // Toast 공통 정책의 스택(나중 것이 위로)도 성립하지 않는다
     val toastPolicy = rememberYGToastPolicy()
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)

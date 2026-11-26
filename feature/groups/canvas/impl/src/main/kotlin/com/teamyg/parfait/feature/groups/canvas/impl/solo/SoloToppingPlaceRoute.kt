@@ -22,7 +22,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasToppingPlaceScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceIntent
 
-/** 그룹 배치(`CanvasToppingPlaceRoute`)와 같은 화면이다. 되감기·토스트 규칙도 같다 */
+/** 혼자 공간 토핑 배치. 화면은 `CanvasToppingPlaceScreen`을 쓰고, 저장 경로만 `SoloToppingPlaceViewModel`이 다르다 */
 @Composable
 internal fun SoloToppingPlaceRoute(
     navigator: Navigator,
@@ -41,7 +41,9 @@ internal fun SoloToppingPlaceRoute(
             when (effect) {
                 SoloToppingPlaceEffect.NavigateBack -> navigator.onBack()
 
-                // 새로 쌓지 않고 혼자 공간 캔버스로 되감는다 — 이유는 그룹 배치 Route 의 주석과 같다
+                // 캔버스를 새로 쌓지 않고 원래 자리로 되감는다. 새로 쌓으면 방금 끝난 토핑 만들기 화면들이
+                // 그 밑에 남고, 다음 흐름이 진입하며 비우는 세그멘테이션 캐시가 그 화면들이 가리키던
+                // PNG 를 지운다(뒤로 가면 빈 이미지만 남는다)
                 SoloToppingPlaceEffect.QuitToCanvas,
                 SoloToppingPlaceEffect.PlaceSucceeded,
                 -> navigator.popUpTo<CanvasHomeNavKey>()

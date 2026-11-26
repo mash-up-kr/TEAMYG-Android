@@ -10,7 +10,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingPlaceTransformStep
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
 
-// 그룹·혼자 공간 배치 화면이 함께 부르는 순수 상태 계산. 저장 경로만 두 ViewModel 이 다르다
+// 배치 화면 상태의 순수 계산. 저장·초안 접근 없이 UI 상태만 다룬다
 
 /** 스케일링된 토핑의 짧은 변이 이보다 작아지면, 그 변을 이 크기로 맞추도록 강제 상향한다 */
 private val MIN_TOPPING_SHORT_SIDE = 48.dp

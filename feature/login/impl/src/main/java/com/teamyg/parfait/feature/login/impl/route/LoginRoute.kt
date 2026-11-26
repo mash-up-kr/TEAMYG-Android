@@ -141,8 +141,8 @@ fun LoginRoute(
             },
             // 서버 종료 후에도 로그인 없이 열려야 하므로 ViewModel 을 거치지 않는다
             onCherryFiveTaps = { navigator.goTo(NavKeySoloCanvas) },
-            // `fillMaxSize` 는 취향이 아니라 하중이다 — LoginScreen 의 Column 안에서
-            // OnboardingPager 가 weight(1f) 을 쓰므로 높이가 안 잡히면 레이아웃이 접힌다
+            // `fillMaxSize` 는 취향이 아니라 하중이다 — 안쪽 페이저가 weight(1f) 로 높이를
+            // 받으므로 여기서 높이가 안 잡히면 레이아웃이 접힌다
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
