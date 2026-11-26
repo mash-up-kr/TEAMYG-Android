@@ -5230,23 +5230,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 채우면 [c106-topping-place 스펙](../superpowers/specs/archive/2026-08-19-c106-topping-place.md)
   드리프트 ④의 "테스트 0건" 문장을 지운다. OQ-P-240이 이 항목을 남기고 닫혔다.
 
-### [2026-08-26] 빈 캔버스 안내판의 노출 조건에 "배경 미설정"이 들어갔는데 정책 근거가 없다
-
-- **ID**: OQ-P-304
-- **출처**: `YGCanvas.kt#CanvasArea`(PR #351) — 빈 안내판 조건이 `isEmpty`에서
-  **`isEmpty && background == null`**이 됐다. 배경을 고른 캔버스는 토핑이 0개여도 안내 문구가
-  뜨지 않고 고른 배경만 보인다. 같은 라운드가 안내판을 `Gray100` **판**으로 만들어 배경 자리를
-  통째로 덮게 했고(그전에는 문구만 얹혔다), 배경 미설정의 기본 그림은 **흰 바탕**으로 갈렸다.
-- **항목**: ① 배경을 고른 빈 캔버스에 안내를 아예 안 보여 주는 것이 의도인지 — 첫 토핑을 올리라는
-  안내가 필요한 시점은 오히려 배경만 고르고 비어 있을 때다. ② 안내판 바탕(`Gray100`)과 미설정
-  기본 바탕(흰색)이 갈린 것이 의도인지 — 사용자에게는 "빈 캔버스"가 두 가지 색으로 보인다.
-  ③ 안내 문구 자체가 위키에 정책 소스가 없다(코드가 먼저 확정한 문구 목록에 하나 더 붙는다).
-- **상태**: 미해결 (정책 소스 수집이 선행 — 위키 [[캔버스-반응형-레이아웃]]에 빈 상태 조항이 없다)
-- **해소 메모**: 정해지면
-  [c001-canvas-today-detail 스펙](../superpowers/specs/archive/2026-08-17-c001-canvas-today-detail.md)의
-  `isEmpty` 파생 서술과 [architecture/design-system](../architecture/design-system.md) 캔버스 절을
-  함께 고친다.
-
 ### [2026-08-26] 서명 키 부재 안내가 태스크 이름 일치에 걸려 있고 실제로 발화하는지 확인되지 않았다
 
 - **ID**: OQ-P-305
@@ -6006,9 +5989,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   (PR #414) — 저장이 지난 캔버스 전용 메뉴 액션에서 **날짜바 오른쪽 아이콘**으로 옮겨 가면서
   ① **오늘 캔버스에서도 저장할 수 있게 됐다.** 지난 캔버스에서만 저장하게 두었던 이전 라운드의 근거
   (편집이 막힌 자리를 저장이 대신한다)가 사라진 셈인데, 넓힌 근거는 커밋에 없다. ② 노출 조건은
-  `(isCanvasEmpty && canvasBackground == null).not()`이라 **빈 안내판 조건(OQ-P-304)의 정확한 부정**을
-  두 번째 자리에서 다시 적는다 — 안내판 조건이 바뀌면 저장 아이콘이 말없이 따라 바뀌고, 그 결합은
-  주석 한 줄로만 유지된다. ③ 저장 아이콘의 유무가 날짜바의 **끝 패딩 분기**까지 정한다(없으면
+  `(isCanvasEmpty && canvasBackground == null).not()`이라 **`YGCanvas`가 빈 캔버스에 회색 면을 까는
+  조건의 정확한 부정**이다 — 뷰모델에서는 `isEmptyPlaceholderVisible`로 이름이 붙어 안내 연출 판단과 같은 조건을
+  쓰지만, `YGCanvas`의 `isEmpty && background == null`과는 따로 적혀 있어 어느 한쪽이 바뀌면 말없이 어긋난다. ③ 저장 아이콘의 유무가 날짜바의 **끝 패딩 분기**까지 정한다(없으면
   텍스트가 잘린 모서리에 붙지 않게 패딩을 대신 넣는다).
 - **항목**: ① 오늘 캔버스 저장이 의도인지 기획 확인. ② 안내판·저장의 공통 조건을 이름 있는 하나로
   묶을지(둘 다 "그릴 것이 없다"를 말한다). ③ 저장할 것이 없을 때 아이콘을 감추는 대신 비활성으로
@@ -6016,7 +5999,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (**동작 영향 있음** — 오늘 캔버스 저장은 새 기능이고 검증 기록이 없다)
 - **해소 메모**: 정하면 [c001-canvas-gallery-save 스펙](../superpowers/specs/archive/2026-08-23-c001-canvas-gallery-save.md)
   목표·범위 절과 [designsystem-canvas-components 스펙](../superpowers/specs/archive/2026-07-31-designsystem-canvas-components.md)
-  `YGCanvasDateSelectButton` 치수표에 적고, ②는 OQ-P-304와 함께 닫는다.
+  `YGCanvasDateSelectButton` 치수표에 적고, ②는 회색 면 조건과 함께 정한다.
 
 ### [2026-09-02] FCM을 걷어낸 근거가 서버 delta로 사라졌다 — 되살릴지 정해야 한다
 
@@ -7910,4 +7893,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
 - **해소 메모**: 기획이 읽음 정책을 확정하면 `GetNoticeItemsUseCase`의 상수 한 곳만 바꾼다. 푸시 진입이 생기면 `NavKeyNoticeDetail`의 id 전용 진입과 갱신 실패 문구를 점검한다.
 
-<!-- oq-next: 464 -->
+### [2026-11-23] C-001 빈 캔버스 안내 애니메이션을 에뮬레이터·실기기로 확인한 기록이 없고 일부 값이 가정이다
+
+- **ID**: OQ-P-464
+- **출처**: `CanvasEmptyIntroPhase`·`CanvasEmptyIntroState`·`CanvasEmptyIntroLayer`·`CanvasEmptyIntroImage`(이슈 #726) × [c001-empty-intro-animation 스펙](../superpowers/specs/2026-11-23-c001-empty-intro-animation-design.md) — 단계 전이와 타임라인 수치는 JVM 테스트로 고정했지만 화면 연출은 렌더 결과를 확인한 기록이 없다. 정책 원본은 이슈 본문이고 `wiki/raw`에는 없다.
+- **항목**: ① 이미지 등장·글자 강조·디졸브는 Pixel_9 에뮬레이터(API 36)로 흐름을 확인했지만 프레임 단위 타이밍 계측은 없고, TalkBack과 실기기는 본 적이 없다. ② 더미 이미지 크기를 PNG 픽셀 수 = dp로 해석한 것과 배치 비율이 이미지 **중심** 기준이라는 해석은 Figma 대조 전이다. 회전각은 받지 못해 0도다.
+- **상태**: 미해결 (확인 안 함 — 구현은 잠정)
+- **해소 메모**: ①은 TalkBack·실기기를 본 뒤 지운다. ②는 Figma와 다르면 `CanvasEmptyIntroImage` 목록 한 곳을 고친다.
+
+<!-- oq-next: 465 -->

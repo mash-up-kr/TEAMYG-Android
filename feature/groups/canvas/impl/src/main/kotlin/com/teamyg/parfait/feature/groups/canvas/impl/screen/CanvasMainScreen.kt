@@ -10,9 +10,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
@@ -26,9 +31,12 @@ import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackgroundState
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroTimeline.highlightCharCount
+import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberCanvasEmptyIntroState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasEmptyIntroLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
 import com.teamyg.parfait.core.designsystem.component.ygalert.YGAlertHost
@@ -37,6 +45,7 @@ import com.teamyg.parfait.core.designsystem.component.ygalert.rememberYGAlertPol
 import com.teamyg.parfait.core.designsystem.component.ygbackgrounddotgrid.ygBackgroundDotGrid
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasEmptyMessage
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuItem
 import com.teamyg.parfait.core.designsystem.component.ygmenuitem.YGMenuItem
@@ -81,6 +90,11 @@ internal fun CanvasMainScreen(
     onClickText: (CanvasTextToppingVO) -> Unit,
     onClickSpotlightDim: () -> Unit,
     onLoadStateChange: (CanvasLoadState) -> Unit,
+    isEmptyIntroPaused: Boolean,
+    onEmptyIntroTap: () -> Unit,
+    onEmptyIntroInteraction: () -> Unit,
+    onEmptyIntroAnimationFinished: () -> Unit,
+    onEmptyIntroDismissFinished: () -> Unit,
     retryKey: Int,
     modifier: Modifier = Modifier,
     graphicsLayer: GraphicsLayer = rememberGraphicsLayer(),
@@ -90,7 +104,20 @@ internal fun CanvasMainScreen(
     alertPolicy: YGAlertPolicy = rememberYGAlertPolicy(),
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
-    val openMenu = { isMenuExpanded = true }
+    val openMenu = {
+        onEmptyIntroInteraction()
+        isMenuExpanded = true
+    }
+
+    val emptyHighlight = stringResource(R.string.canvas_main_empty_highlight)
+    val emptyIntroState = rememberCanvasEmptyIntroState(
+        highlightCharCount = highlightCharCount(emptyHighlight),
+        phase = canvasState.emptyIntroPhase,
+        isPaused = isEmptyIntroPaused,
+        onAnimationFinished = onEmptyIntroAnimationFinished,
+        onDismissFinished = onEmptyIntroDismissFinished,
+    )
+    val currentOnEmptyIntroTap by rememberUpdatedState(onEmptyIntroTap)
 
     var isSaveMenuExpanded by remember { mutableStateOf(false) }
 
@@ -98,12 +125,31 @@ internal fun CanvasMainScreen(
         modifier = modifier
             .fillMaxSize()
             .background(YGAtomicColors.Gray.White)
-            .ygBackgroundDotGrid(),
+            .ygBackgroundDotGrid()
+            .then(
+                if (canvasState.isEmptyIntroVisible) {
+                    // 버튼은 다운을 소비하므로 Final 단계에서 소비되지 않은 다운만 빈 영역 터치로 센다
+                    Modifier.pointerInput(Unit) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Final)
+                            if (down.isConsumed.not()) currentOnEmptyIntroTap()
+                        }
+                    }
+                } else {
+                    Modifier
+                },
+            ),
     ) {
         YGTopBarCanvas(
             title = canvasState.groupName,
-            onBackClick = onClickBack,
-            onMenuClick = onClickMenu,
+            onBackClick = {
+                onEmptyIntroInteraction()
+                onClickBack()
+            },
+            onMenuClick = {
+                onEmptyIntroInteraction()
+                onClickMenu()
+            },
             memberContent = {
                 Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
                     canvasState.memberChips.take(MAX_VISIBLE_MEMBER_CHIPS).forEach { member ->
@@ -196,7 +242,14 @@ internal fun CanvasMainScreen(
                 )
             },
             isEmpty = canvasState.isCanvasEmpty,
-            emptyMessage = stringResource(R.string.canvas_main_empty_message),
+            emptyContent = {
+                val message = stringResource(R.string.canvas_main_empty_message, emptyHighlight)
+                if (canvasState.isEmptyIntroVisible) {
+                    CanvasEmptyIntroLayer(state = emptyIntroState, message = message, highlight = emptyHighlight)
+                } else {
+                    YGCanvasEmptyMessage(text = message)
+                }
+            },
             // 메뉴·캘린더·저장 메뉴 모두 캔버스를 가린 채 뜬다 — 어느 쪽이든 바깥을 누르면 닫힌다
             isDimmed = isMenuExpanded || canvasState.isCalendarVisible || isSaveMenuExpanded,
             onDimClick = {
@@ -367,6 +420,11 @@ private fun PreviewCanvasMainScreen(
         onClickTopping = {},
         onClickText = {},
         onClickSpotlightDim = {},
+        isEmptyIntroPaused = false,
+        onEmptyIntroTap = {},
+        onEmptyIntroInteraction = {},
+        onEmptyIntroAnimationFinished = {},
+        onEmptyIntroDismissFinished = {},
         onLoadStateChange = {},
         retryKey = 0,
         modifier = Modifier.fillMaxSize(),
@@ -406,6 +464,11 @@ private fun PreviewCanvasMainScreenWithGallerySaveToast() = PreviewBox {
         onClickTopping = {},
         onClickText = {},
         onClickSpotlightDim = {},
+        isEmptyIntroPaused = false,
+        onEmptyIntroTap = {},
+        onEmptyIntroInteraction = {},
+        onEmptyIntroAnimationFinished = {},
+        onEmptyIntroDismissFinished = {},
         onLoadStateChange = {},
         retryKey = 0,
         toastPolicy = toastPolicy,
@@ -449,6 +512,11 @@ private fun PreviewCanvasMainScreenWithClosedCanvasAlert() = PreviewBox {
         onClickTopping = {},
         onClickText = {},
         onClickSpotlightDim = {},
+        isEmptyIntroPaused = false,
+        onEmptyIntroTap = {},
+        onEmptyIntroInteraction = {},
+        onEmptyIntroAnimationFinished = {},
+        onEmptyIntroDismissFinished = {},
         onLoadStateChange = {},
         retryKey = 0,
         alertPolicy = alertPolicy,

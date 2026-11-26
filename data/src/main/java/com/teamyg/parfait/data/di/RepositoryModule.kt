@@ -12,6 +12,7 @@ import com.teamyg.parfait.data.repository.member.MemberRepositoryImpl
 import com.teamyg.parfait.data.repository.notification.NotificationRepositoryImpl
 import com.teamyg.parfait.data.repository.notice.NoticeRepositoryImpl
 import com.teamyg.parfait.data.repository.notification.NotificationSettingRepositoryImpl
+import com.teamyg.parfait.data.repository.parfait.CanvasIntroRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.ParfaitRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.PastCanvasAlertRepositoryImpl
 import com.teamyg.parfait.data.repository.policy.PolicyRepositoryImpl
@@ -31,6 +32,7 @@ import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.repository.notification.NotificationRepository
 import com.teamyg.parfait.domain.repository.notice.NoticeRepository
 import com.teamyg.parfait.domain.repository.notification.NotificationSettingRepository
+import com.teamyg.parfait.domain.repository.parfait.CanvasIntroRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.repository.policy.PolicyRepository
@@ -90,6 +92,10 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindParfaitRepository(parfaitRepositoryImpl: ParfaitRepositoryImpl): ParfaitRepository
+
+    @Binds
+    @Singleton
+    fun bindCanvasIntroRepository(canvasIntroRepositoryImpl: CanvasIntroRepositoryImpl): CanvasIntroRepository
 
     @Binds
     @Singleton
