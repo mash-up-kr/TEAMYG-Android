@@ -16,6 +16,8 @@ import com.teamyg.parfait.domain.model.SubjectCoverage
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
+import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
@@ -29,6 +31,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -95,7 +98,8 @@ sealed interface ToppingEditEffect : UiSideEffect {
      */
     data object SubjectTooSmall : ToppingEditEffect
 
-    data object GoToPlace : ToppingEditEffect
+    /** @param target 흐름을 시작한 공간. 이것으로 그룹·혼자 공간 배치 화면을 고른다 */
+    data class GoToPlace(val target: ToppingDraftTarget) : ToppingEditEffect
 
     /** 초안 흐름이 닫혀 기록하지 못했다. 재시도로 풀리지 않아 [SaveFailed] 와 나눈다 */
     data object DraftUnavailable : ToppingEditEffect
@@ -115,6 +119,7 @@ class ToppingEditViewModel
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
     private val recordToppingDraft: RecordToppingDraftUseCase,
+    private val getToppingDraftFlow: GetToppingDraftFlowUseCase,
     private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(ToppingEditState()) {
     private var isQuitConfirmed = false
@@ -263,12 +268,11 @@ class ToppingEditViewModel
         }
     }
 
-    private suspend fun completionEffect(result: ToppingEditResult): ToppingEditEffect =
-        if (recordToppingDraft.recordEditResult(result)) {
-            ToppingEditEffect.GoToPlace
-        } else {
-            ToppingEditEffect.DraftUnavailable
-        }
+    private suspend fun completionEffect(result: ToppingEditResult): ToppingEditEffect {
+        if (!recordToppingDraft.recordEditResult(result)) return ToppingEditEffect.DraftUnavailable
+        val target = getToppingDraftFlow().first()?.target ?: return ToppingEditEffect.DraftUnavailable
+        return ToppingEditEffect.GoToPlace(target)
+    }
 
     /**
      * 저장과 기록 사이에서 내리면 그 틈의 완료 탭이 한 번 더 저장하므로 끝난 뒤 한 번만 내린다.

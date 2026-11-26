@@ -34,12 +34,15 @@ import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasHomeNavKey
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloToppingPlace
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.gallery.impl.R
 import com.teamyg.parfait.feature.gallery.impl.screen.CustomGalleryPickerScreen
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerEffect
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerIntent
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerViewModel
+import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 
 @Composable
 internal fun CustomGalleryPickerRoute(
@@ -102,7 +105,7 @@ internal fun CustomGalleryPickerRoute(
                 is CustomGalleryPickerEffect.NavigateToToppingPlace -> {
                     // 초안을 맞추는 사이 사용자가 뒤로 갔을 수 있어 맨 위가 아직 이 화면일 때만 간다
                     if (navigator.backStack.lastOrNull() is NavKeyCustomGalleryPicker) {
-                        navigator.goTo(NavKeyCanvasToppingPlace)
+                        navigator.goTo(effect.target.toppingPlaceNavKey())
                     }
                 }
 
@@ -151,4 +154,10 @@ internal fun CustomGalleryPickerRoute(
             modifier = modifier.padding(innerPadding),
         )
     }
+}
+
+/** 흐름을 시작한 공간의 배치 화면 */
+private fun ToppingDraftTarget.toppingPlaceNavKey(): NavKey = when (this) {
+    is ToppingDraftTarget.Group -> NavKeyCanvasToppingPlace
+    ToppingDraftTarget.Solo -> NavKeySoloToppingPlace
 }

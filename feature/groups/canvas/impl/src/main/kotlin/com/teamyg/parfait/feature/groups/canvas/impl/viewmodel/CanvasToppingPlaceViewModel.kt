@@ -14,9 +14,7 @@ import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.analytics.AnalyticsEvent
 import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
-import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
-import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
@@ -34,30 +32,27 @@ import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
-import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
-import com.teamyg.parfait.feature.groups.canvas.impl.util.stepAngleGuide
-import com.teamyg.parfait.feature.groups.canvas.impl.util.stepCenterGuideDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPanelBackAction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.nextToppingPositionZ
+import com.teamyg.parfait.feature.groups.canvas.impl.util.stepToppingTransform
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withCanvasContent
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withInitialPlacementIfNeeded
 import com.teamyg.parfait.feature.groups.canvas.impl.util.withPanelWidth
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withTransformGestureEnded
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import javax.inject.Inject
-
-/** 스케일링된 토핑의 짧은 변이 이보다 작아지면, 그 변을 이 크기로 맞추도록 강제 상향한다 */
-private val MIN_TOPPING_SHORT_SIDE = 48.dp
 
 data class CanvasToppingPlaceUiState(
     /** 올릴 알맹이의 파일 시스템 절대경로. `file://` uri 가 아니다 */
@@ -258,16 +253,9 @@ class CanvasToppingPlaceViewModel
         }
     }
 
-    private fun CanvasToppingPlaceUiState.withCanvas(canvas: CanvasVO): CanvasToppingPlaceUiState = copy(
-        backgroundColor = (canvas.background as? CanvasBackground.Color)
-            ?.value
-            ?.toColorOrNull()
-            ?: backgroundColor,
-        backgroundImageUrl = (canvas.background as? CanvasBackground.Image)?.url,
-        existingToppings = canvas.toppings.sortedBy { topping -> topping.transform.positionZ },
-        existingTexts = canvas.texts,
-        observedParfaitId = canvas.parfaitId,
-    )
+    private fun CanvasToppingPlaceUiState.withCanvas(canvas: CanvasVO): CanvasToppingPlaceUiState =
+        withCanvasContent(background = canvas.background, toppings = canvas.toppings, texts = canvas.texts)
+            .copy(observedParfaitId = canvas.parfaitId)
 
     /**
      * 흐름 진입 때 초안에 못 박은 값은 카메라·누끼를 거치는 사이 남이 토핑을 올리면 낡는다.
@@ -282,10 +270,7 @@ class CanvasToppingPlaceViewModel
      */
     private fun CanvasToppingPlaceUiState.resolvedPositionZ(): Int? {
         if (observedParfaitId == null || observedParfaitId != parfaitId) return nextPositionZ
-        // 이미지와 텍스트가 한 z 축을 쓴다 — 이미지만 세면 텍스트와 같은 z 가 돼 그 밑에 깔린다
-        val maxZ = (existingToppings.map { it.transform.positionZ } + existingTexts.map { it.transform.positionZ })
-            .maxOrNull()
-        return (maxZ ?: 0) + 1
+        return nextToppingPositionZ(existingToppings, existingTexts)
     }
 
     override fun processIntent(intent: CanvasToppingPlaceIntent) {
@@ -326,21 +311,14 @@ class CanvasToppingPlaceViewModel
 
             is CanvasToppingPlaceIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
-            CanvasToppingPlaceIntent.OnToppingTransformGestureEnd -> updateState {
-                copy(
-                    isCenterGuideXVisible = false,
-                    isCenterGuideYVisible = false,
-                    isAngleGuideVisible = false,
-                    hasRotatedThisGesture = false,
-                )
-            }
+            CanvasToppingPlaceIntent.OnToppingTransformGestureEnd -> updateState { withTransformGestureEnded() }
 
             is CanvasToppingPlaceIntent.OnCanvasMeasured -> {
-                updateState { copy(canvasSize = intent.canvasSize).applyInitialPlacementIfNeeded() }
+                updateState { copy(canvasSize = intent.canvasSize).withInitialPlacementIfNeeded() }
             }
 
             is CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured -> {
-                updateState { copy(toppingBaseSize = intent.baseSize).applyInitialPlacementIfNeeded() }
+                updateState { copy(toppingBaseSize = intent.baseSize).withInitialPlacementIfNeeded() }
             }
 
             is CanvasToppingPlaceIntent.OnToppingImageReadyChanged -> {
@@ -360,89 +338,9 @@ class CanvasToppingPlaceViewModel
     }
 
     private fun handleOnToppingTransform(intent: CanvasToppingPlaceIntent.OnToppingTransform) {
-        val current = state.value
-        if (ignoresToppingTransform(current.isBorderPanelOpen)) return
-
-        // 실측 전에 hasUserAdjustedPlacement 가 굳으면 초기 배치가 영영 안 걸린다
-        val canvasSize = current.canvasSize ?: return
-        val baseSize = current.toppingBaseSize ?: return
-
-        val posStep = stepCenterGuideDp(
-            oldRawOffsetX = current.rawOffsetX,
-            oldRawOffsetY = current.rawOffsetY,
-            panX = intent.pan.x,
-            panY = intent.pan.y,
-            halfWidth = baseSize.width / 2,
-            halfHeight = baseSize.height / 2,
-            canvasCenterXDp = (canvasSize.width / 2).value,
-            canvasCenterYDp = (canvasSize.height / 2).value,
-        )
-        val angleStep = stepAngleGuide(
-            oldRawDegrees = current.rawRotationDegrees,
-            oldHasRotated = current.hasRotatedThisGesture,
-            rotationDelta = intent.rotationDelta,
-        )
-        val justSnapped = posStep.justSnapped || angleStep.justSnapped
-
-        updateState {
-            copy(
-                offsetX = posStep.guideX.effectiveValue.dp - baseSize.width / 2,
-                offsetY = posStep.guideY.effectiveValue.dp - baseSize.height / 2,
-                rawOffsetX = posStep.rawOffsetX,
-                rawOffsetY = posStep.rawOffsetY,
-                isCenterGuideXVisible = posStep.guideX.isSnapped,
-                isCenterGuideYVisible = posStep.guideY.isSnapped,
-                scale = (scale * intent.zoom).coerceAtLeast(minScale(canvasSize, baseSize)),
-                rotationDegrees = angleStep.effectiveDegrees,
-                rawRotationDegrees = angleStep.rawDegrees,
-                isAngleGuideVisible = angleStep.isVisible,
-                isAngleGuideHorizontal = angleStep.isHorizontal,
-                hasRotatedThisGesture = angleStep.hasRotated,
-                hasUserAdjustedPlacement = true,
-            )
-        }
-        if (justSnapped) postSideEffect(effect = CanvasToppingPlaceEffect.TriggerSnapHaptic)
-    }
-
-    /**
-     * C-106: 사용자가 아직 손대지 않았다면, 캔버스 정중앙에 토핑의 긴 변이
-     * 캔버스 너비의 [TOPPING_BASE_LONG_SIDE_RATIO] 가 되도록 자동으로 놓는다.
-     *
-     * 캔버스 실측 크기와 토핑 원본 크기를 둘 다 알아야 계산되고, 이 둘은 서로 다른 시점에
-     * 비동기로 들어오므로 어느 쪽이 먼저 도착하든 매번 다시 시도한다.
-     */
-    private fun CanvasToppingPlaceUiState.applyInitialPlacementIfNeeded(): CanvasToppingPlaceUiState {
-        if (hasUserAdjustedPlacement) return this
-        val canvasSize = canvasSize ?: return this
-        val baseSize = toppingBaseSize ?: return this
-
-        val longerBaseSide = maxOf(baseSize.width, baseSize.height)
-        val shorterBaseSide = minOf(baseSize.width, baseSize.height)
-
-        val longSideScale = (canvasSize.width * TOPPING_BASE_LONG_SIDE_RATIO) / longerBaseSide
-        // 위 배율대로 두면 짧은 변이 최소 터치 영역보다 작아질 수 있어, 그 경우 짧은 변 기준으로 다시 키운다
-        val minTouchScale = MIN_TOPPING_SHORT_SIDE / shorterBaseSide
-        val newScale = maxOf(longSideScale, minTouchScale)
-
-        val centeredOffsetX = (canvasSize.width - baseSize.width) / 2
-        val centeredOffsetY = (canvasSize.height - baseSize.height) / 2
-
-        return copy(
-            scale = newScale,
-            offsetX = centeredOffsetX,
-            offsetY = centeredOffsetY,
-            rawOffsetX = centeredOffsetX,
-            rawOffsetY = centeredOffsetY,
-        )
-    }
-
-    /** [TOPPING_MIN_SCALE] 을 이 화면 배율로 환산한다. [toToppingTransform] 의 역산이다 */
-    private fun minScale(
-        canvasSize: DpSize,
-        baseSize: DpSize,
-    ): Float {
-        val longerBaseSide = maxOf(baseSize.width, baseSize.height)
-        return canvasSize.width * (TOPPING_MIN_SCALE * TOPPING_BASE_LONG_SIDE_RATIO) / longerBaseSide
+        val step = state.value.stepToppingTransform(intent.pan, intent.zoom, intent.rotationDelta) ?: return
+        updateState { step.state }
+        if (step.justSnapped) postSideEffect(effect = CanvasToppingPlaceEffect.TriggerSnapHaptic)
     }
 
     /**

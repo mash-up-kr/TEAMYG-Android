@@ -16,11 +16,13 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloCanvas
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloToppingPlace
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasTextInputRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasToppingArrangeRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasToppingPlaceRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.solo.SoloBGEditRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.solo.SoloCanvasRoute
+import com.teamyg.parfait.feature.groups.canvas.impl.solo.SoloToppingPlaceRoute
 
 fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     entry<NavKeyCanvasMain> { navKey ->
@@ -86,6 +88,13 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     // 그룹 배경 편집과 같은 이유로 바깥 Scaffold 를 씌우지 않는다
     entry<NavKeySoloBGEdit> {
         SoloBGEditRoute(
+            navigator = navigator,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+
+    entry<NavKeySoloToppingPlace> {
+        SoloToppingPlaceRoute(
             navigator = navigator,
             modifier = Modifier.fillMaxSize(),
         )

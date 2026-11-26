@@ -109,4 +109,5 @@
     <string name="solo_canvas_reset_failure">캔버스를 비우지 못했어요, 잠시 후 다시 시도해 주세요</string>
     <string name="solo_bg_edit_save_failure">배경을 바꾸지 못했어요, 잠시 후 다시 시도해 주세요</string>
     <string name="solo_canvas_delete_failure">내 공간을 삭제하지 못했어요, 잠시 후 다시 시도해 주세요</string>
+    <string name="solo_topping_place_failure">사진을 올리지 못했어요, 잠시 후 다시 시도해 주세요</string>
 </resources>

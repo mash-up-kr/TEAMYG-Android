@@ -20,12 +20,15 @@ import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasHomeNavKey
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloToppingPlace
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.screen.ToppingEditScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditEffect
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditIntent
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditViewModel
+import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 
 @Composable
 internal fun ToppingEditRoute(
@@ -75,7 +78,7 @@ internal fun ToppingEditRoute(
                 is ToppingEditEffect.GoToPlace -> {
                     // 저장 중 표시가 이동 전에 내려가 그 틈의 탭이 한 번 더 온다. 맨 위일 때만 이동한다
                     if (navigator.backStack.lastOrNull() == key) {
-                        navigator.goTo(NavKeyCanvasToppingPlace)
+                        navigator.goTo(effect.target.toppingPlaceNavKey())
                     }
                 }
 
@@ -110,4 +113,10 @@ internal fun ToppingEditRoute(
             onDismiss = { viewModel.processIntent(ToppingEditIntent.DismissQuit) },
         )
     }
+}
+
+/** 흐름을 시작한 공간의 배치 화면 */
+private fun ToppingDraftTarget.toppingPlaceNavKey(): NavKey = when (this) {
+    is ToppingDraftTarget.Group -> NavKeyCanvasToppingPlace
+    ToppingDraftTarget.Solo -> NavKeySoloToppingPlace
 }
