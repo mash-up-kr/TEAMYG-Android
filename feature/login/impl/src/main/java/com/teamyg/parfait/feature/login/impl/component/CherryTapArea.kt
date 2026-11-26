@@ -15,6 +15,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.Constraints
 import com.teamyg.parfait.core.ui.gesture.HiddenTapCounter
+import com.teamyg.parfait.feature.login.impl.model.CherryRect
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -69,13 +70,6 @@ internal fun CherryTapArea(
         }
     }
 }
-
-internal data class CherryRect(
-    val left: Float,
-    val top: Float,
-    val width: Float,
-    val height: Float,
-)
 
 /** [container] 안에 `Fit`으로 그려진 이미지 경계 위의 체리 영역 */
 internal fun cherryRect(
