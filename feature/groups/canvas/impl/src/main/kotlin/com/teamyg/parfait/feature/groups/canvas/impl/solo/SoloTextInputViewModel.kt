@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.solo
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.usecase.solo.GetSoloCanvasFlowUseCase
@@ -149,7 +150,9 @@ constructor(
                 result.onSuccess {
                     // 되감기를 먼저 알린다 — 초안을 비우면 구독이 초안을 null 로 되돌린다
                     postSideEffect(SoloTextInputEffect.NavigateBack)
-                    clearToppingDraft()
+                    // 저장은 끝났다 — 초안 정리 실패를 저장 실패로 알리면 안 된다
+                    runSuspendCatching { clearToppingDraft() }
+                        .onFailure { throwable -> viewModelLogger.w(throwable) { "토핑 초안을 비우지 못했다" } }
                 }
                 result.onFailure { throwable -> failToPlace(throwable) }
             } finally {

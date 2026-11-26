@@ -102,6 +102,22 @@ class SoloTextInputViewModelTest {
     }
 
     @Test
+    fun confirmWithContent_whenClearDraftFails_doesNotEmitPlaceFailed() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { clearToppingDraft() } throws IllegalStateException("clear failed")
+        val viewModel = shownViewModel(soloDraft())
+        viewModel.typeAndMeasure("hi")
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+            advanceUntilIdle()
+
+            assertEquals(SoloTextInputEffect.NavigateBack, awaitItem())
+            expectNoEvents()
+        }
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
     fun blankContent_stackDoesNotPlace() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = shownViewModel(soloDraft())
         viewModel.typeAndMeasure("  \n ")

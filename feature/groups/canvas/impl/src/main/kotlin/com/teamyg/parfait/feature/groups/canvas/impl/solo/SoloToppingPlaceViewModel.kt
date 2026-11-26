@@ -228,7 +228,9 @@ constructor(
 
                     // 되감기를 먼저 알린다 — 초안을 비우면 구독이 알맹이를 null 로 되돌린다
                     postSideEffect(SoloToppingPlaceEffect.PlaceSucceeded)
-                    clearToppingDraft()
+                    // 저장은 끝났다 — 초안 정리 실패를 저장 실패로 알리면 안 된다
+                    runSuspendCatching { clearToppingDraft() }
+                        .onFailure { throwable -> viewModelLogger.w(throwable) { "토핑 초안을 비우지 못했다" } }
                 }.onFailure { throwable ->
                     viewModelLogger.e(throwable) { "혼자 공간 토핑을 저장하지 못했다" }
                     postSideEffect(SoloToppingPlaceEffect.PlaceFailed)

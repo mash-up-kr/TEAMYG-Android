@@ -32,6 +32,7 @@ import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 private const val SUBJECT_PATH = "/cache/segmentation/subject.png"
 
@@ -118,6 +119,25 @@ class SoloToppingPlaceViewModelTest {
             coVerify(exactly = 1) { addRecentImage(source = SUBJECT_PATH, kind = RecentImageKind.CUTOUT) }
             coVerify(exactly = 1) { clearToppingDraft() }
         }
+
+    @Test
+    fun soloDraft_confirm_whenClearDraftFails_doesNotEmitPlaceFailed() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 저장은 되지만 초안을 비우다 던진다
+        coEvery { clearToppingDraft() } throws IllegalStateException("clear failed")
+        val viewModel = shownViewModel(soloDraft())
+        viewModel.measureAndReady()
+
+        viewModel.effect.test {
+            // When 확인을 누른다
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // Then 성공 알림만 나가고 실패 토스트는 없다
+            assertEquals(SoloToppingPlaceEffect.PlaceSucceeded, awaitItem())
+            expectNoEvents()
+        }
+        assertFalse(viewModel.state.value.isLoading)
+    }
 
     @Test
     fun groupDraft_quitsToCanvasWithoutPlacing() = runTest(mainDispatcherRule.dispatcher) {
