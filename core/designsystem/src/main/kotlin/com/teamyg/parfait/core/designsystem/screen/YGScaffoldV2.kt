@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +63,8 @@ const val YG_LOADING_MINIMUM_VISIBLE_MILLIS = 500L
  *   접근성 트리에서 지운다. 터치만 막고 TalkBack 은 통과시키는 비대칭을 막기 위해서다 —
  *   `hideFromAccessibility` 는 그 노드 하나만 감추고 자식은 트리에 남아 이 일을 못 한다.
  *   켠 뒤 [YG_LOADING_MINIMUM_VISIBLE_MILLIS] 안에 꺼도 그때까지는 덮여 있다
+ * @param onCoveredChange 덮개가 실제로 그려지는지의 변화. [isLoading] 이 꺼져도 최소 노출 시간 동안은 덮여
+ *   있으므로, 덮개 아래에서 시작하면 안 되는 연출이 이 값을 따라 기다린다
  * @param toastPolicy 토스트 큐. 화면이 실패를 알리려면 이 정책을 직접 만들어 넘기고
  *   `showError` 로 띄운다. 넘기지 않으면 스캐폴드가 자기 것을 만들어 쓴다
  */
@@ -73,12 +76,16 @@ fun YGScaffoldV2(
     isLoading: Boolean = false,
     loadingOverlay: @Composable () -> Unit = { YGLoadingOverlay() },
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
+    onCoveredChange: (Boolean) -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val isCovered = rememberMinimumVisible(
         visible = isLoading,
         minimumMillis = YG_LOADING_MINIMUM_VISIBLE_MILLIS,
     )
+    val currentOnCoveredChange by rememberUpdatedState(onCoveredChange)
+
+    LaunchedEffect(isCovered) { currentOnCoveredChange(isCovered) }
 
     Scaffold(
         modifier = modifier,

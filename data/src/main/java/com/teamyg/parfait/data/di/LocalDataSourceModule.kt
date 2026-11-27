@@ -18,6 +18,8 @@ import com.teamyg.parfait.data.source.notice.local.NoticeLocalDataSource
 import com.teamyg.parfait.data.source.notice.local.NoticeLocalDataSourceImpl
 import com.teamyg.parfait.data.source.notice.local.NoticeReadLocalDataSource
 import com.teamyg.parfait.data.source.notice.local.NoticeReadLocalDataSourceImpl
+import com.teamyg.parfait.data.source.parfait.local.CanvasIntroLocalDataSource
+import com.teamyg.parfait.data.source.parfait.local.CanvasIntroLocalDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.local.PastCanvasAlertLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.PastCanvasAlertLocalDataSourceImpl
 import com.teamyg.parfait.data.source.review.local.ReviewPromptLocalDataSource
@@ -84,6 +86,12 @@ interface LocalDataSourceModule {
     @Binds
     @Singleton
     fun bindCanvasLocalDataSource(canvasLocalDataSourceImpl: CanvasLocalDataSourceImpl): CanvasLocalDataSource
+
+    @Binds
+    @Singleton
+    fun bindCanvasIntroLocalDataSource(
+        canvasIntroLocalDataSourceImpl: CanvasIntroLocalDataSourceImpl,
+    ): CanvasIntroLocalDataSource
 
     @Binds
     @Singleton

@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasEmptyMessage
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuItem
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
@@ -66,12 +67,14 @@ internal fun YGCanvasPreviewScreen(
                         addAction = PreviewAddAction,
                         editAction = PreviewEditAction,
                         isEmpty = true,
-                        emptyMessage = "아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요",
+                        emptyContent = {
+                            YGCanvasEmptyMessage("아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요")
+                        },
                     )
                 }
             }
             item {
-                PreviewSection("Status=Empty + 배경 지정 (안내 문구 없음)") {
+                PreviewSection("Status=Empty + 배경 지정 (배경 위에 안내 문구)") {
                     YGCanvas(
                         date = "May 20",
                         day = "(Wed)",
@@ -80,7 +83,9 @@ internal fun YGCanvasPreviewScreen(
                         editAction = PreviewEditAction,
                         background = YGCanvasBackground.Solid(Color(0xFFC2E4FC)),
                         isEmpty = true,
-                        emptyMessage = "아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요",
+                        emptyContent = {
+                            YGCanvasEmptyMessage("아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요")
+                        },
                     )
                 }
             }

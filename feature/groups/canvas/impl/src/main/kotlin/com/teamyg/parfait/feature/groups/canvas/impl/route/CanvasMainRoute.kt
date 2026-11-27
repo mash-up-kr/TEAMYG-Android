@@ -347,9 +347,12 @@ internal fun CanvasMainRoute(
         }
     }
 
+    var isCovered by remember { mutableStateOf(true) }
+
     YGScaffoldV2(
         modifier = modifier,
         isLoading = canvasState.isInitialLoading || (firstPaintDone.not() && loadState != CanvasLoadState.Loaded),
+        onCoveredChange = { isCovered = it },
         loadingOverlay = {
             if (loadState == CanvasLoadState.Failed) {
                 CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })
@@ -383,6 +386,11 @@ internal fun CanvasMainRoute(
             onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
             onClickText = { viewModel.processIntent(CanvasMainIntent.OnClickText(it)) },
             onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
+            isEmptyIntroPaused = isCovered,
+            onEmptyIntroTap = { viewModel.processIntent(CanvasMainIntent.OnEmptyIntroTap) },
+            onEmptyIntroInteraction = { viewModel.processIntent(CanvasMainIntent.OnEmptyIntroInteraction) },
+            onEmptyIntroAnimationFinished = { viewModel.processIntent(CanvasMainIntent.OnEmptyIntroAnimationFinished) },
+            onEmptyIntroDismissFinished = { viewModel.processIntent(CanvasMainIntent.OnEmptyIntroDismissFinished) },
             onLoadStateChange = { loadState = it },
             retryKey = retryKey,
             toastPolicy = toastPolicy,
