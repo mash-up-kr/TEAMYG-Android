@@ -1,6 +1,6 @@
 package com.teamyg.parfait.feature.login.impl.model
 
-internal data class CherryRect(
+internal data class GlassesRect(
     val left: Float,
     val top: Float,
     val width: Float,

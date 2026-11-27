@@ -37,7 +37,7 @@ import com.teamyg.parfait.feature.login.impl.model.OnboardingPagesPreviewParamet
 @Composable
 internal fun OnboardingPager(
     pages: List<OnboardingPage>,
-    onCherryFiveTaps: () -> Unit,
+    onGlassesFiveTaps: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val pagerState = rememberPagerState(pageCount = { pages.size })
@@ -58,8 +58,8 @@ internal fun OnboardingPager(
         ) { index ->
             OnboardingPageContent(
                 page = pages[index],
-                // 숨은 진입점은 마지막 페이지(체리 이미지)에만 둔다
-                onCherryFiveTaps = if (index == pages.lastIndex) onCherryFiveTaps else null,
+                // 숨은 진입점은 첫 페이지(안경 이미지)에만 둔다
+                onGlassesFiveTaps = if (index == 0) onGlassesFiveTaps else null,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -69,7 +69,7 @@ internal fun OnboardingPager(
 @Composable
 private fun OnboardingPageContent(
     page: OnboardingPage,
-    onCherryFiveTaps: (() -> Unit)?,
+    onGlassesFiveTaps: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -84,10 +84,10 @@ private fun OnboardingPageContent(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
             )
-            if (onCherryFiveTaps != null) {
-                CherryTapArea(
+            if (onGlassesFiveTaps != null) {
+                GlassesTapArea(
                     imageIntrinsicSize = painter.intrinsicSize,
-                    onFiveTaps = onCherryFiveTaps,
+                    onFiveTaps = onGlassesFiveTaps,
                     modifier = Modifier.matchParentSize(),
                 )
             }
@@ -140,7 +140,7 @@ private fun PreviewOnboardingPager(
 ) = PreviewBox {
     OnboardingPager(
         pages = pages,
-        onCherryFiveTaps = {},
+        onGlassesFiveTaps = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
