@@ -19,6 +19,11 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloBGEdit
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloCanvas
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloTextInput
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloToppingArrange
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloToppingPlace
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupNickName
@@ -114,6 +119,15 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
     is NavKeyGroupSetting -> AnalyticsScreen(AnalyticsScreenType.GROUP_SETTING)
 
     is NavKeyWebView -> AnalyticsScreen(AnalyticsScreenType.WEB_VIEW)
+
+    // 혼자 공간은 서버·애널리틱스에 닿지 않는 오프라인 기능이라 화면 조회를 남기지 않는다.
+    // 매핑을 빠뜨린 것과 구분되도록 `else` 에 맡기지 않고 명시한다.
+    is NavKeySoloCanvas,
+    is NavKeySoloBGEdit,
+    is NavKeySoloToppingPlace,
+    is NavKeySoloTextInput,
+    is NavKeySoloToppingArrange,
+    -> null
 
     else -> null
 }

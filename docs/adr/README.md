@@ -45,6 +45,7 @@
 | [0035](0035-canvas-video-onscreen-capture-encoding.md) | 캔버스 동영상은 컴포지션을 프레임마다 캡처해 MediaCodec으로 인코딩한다 | proposed | 2026-09-27 | 외부 의존성 없음. 인코더는 `core/util/android/video/`. 녹화 레이어는 저장 미리보기에 붙고 재료는 `CanvasVideoSourceHolder`로 건넨다. 실기기 미확인(OQ-P-429) |
 | [0036](0036-ignore-system-font-scale.md) | 앱 텍스트는 시스템 글자 크기를 무시하고 피그마 수치로 그린다 | proposed | 2026-11-05 | `YGCustomTheme`이 `ProvideFixedFontScale`로 `LocalDensity`의 `fontScale`을 1로 덮어쓴다. ⚠️ `Dialog`·`Popup` content는 새 창이 기기 값으로 되돌리므로 다시 감싼다. 캔버스 화면 단위 덮어쓰기는 유지. 상한 없음 — 접근성 대가 확정. 기각: 텍스트 래퍼 변환(같은 확인 부담에 코드·이중 변환 함정, 범위 선택이 덜 유연) · Activity `Configuration` 덮어쓰기(범위 선택 불가) · 상한만 두기 |
 | [0037](0037-pr-screenshot-diff-in-job-base-render.md) | PR 스크린샷 비교는 PR 잡 안에서 base를 함께 렌더한다 | proposed | 2026-11-04 | 같은 잡에서 merge ref의 첫 부모(base)와 merge ref를 Roborazzi로 렌더해 바뀐·신규·삭제 프리뷰를 PR 코멘트로 단다. 골든 아티팩트·골든 커밋은 쓰지 않는다. 이미지 브랜치는 닫힌 지 30일 뒤 정리, 바뀐 화면 0건이면 새 코멘트 없음 |
+| [0038](0038-solo-space-separate-viewmodels.md) | 혼자 공간은 화면만 함께 쓰고 ViewModel·저장소를 따로 둔다 | accepted | 2026-11-26 | 화면 composable·UiState는 그룹 캔버스와 공유하고 `Solo*ViewModel`·use case·저장소는 로컬 전용으로 분리해 서버 호출 경로를 구조로 없앤다. `SoloViewModelDependencyTest`가 허용 목록 밖 의존을 막는다. 복귀는 표식 인터페이스 + `popUpTo` `isInstance`, 공간은 `ToppingDraftTarget`. 기각: 특수 `GroupId` 분기(가짜 id가 서버로 샌다) · Hilt qualifier 바꿔 끼우기(가짜 계약 + 보일러플레이트) |
 
 ## 작성 가이드
 

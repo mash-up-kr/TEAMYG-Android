@@ -22,11 +22,13 @@ import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableText
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.util.seededFrom
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTexts
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableToppingsInDrawOrder
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -110,6 +112,7 @@ constructor(
     private val refreshTodayParfaitDetailUseCase: RefreshTodayParfaitDetailUseCase,
     private val uploadImageUseCase: UploadImageUseCase,
     private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
+    private val recordReviewPromptUploadUseCase: RecordReviewPromptUploadUseCase,
 ) : BaseViewModel<CanvasBGEditUiState, CanvasBGEditIntent, CanvasBGEditEffect>(
     initialState = CanvasBGEditUiState(),
 ) {
@@ -153,10 +156,8 @@ constructor(
                 parfaitId = canvas.parfaitId
             }
 
-            val incoming = canvas.toppings
-                .sortedBy { topping -> topping.transform.positionZ }
-                .map { topping -> topping.toEditableTopping() }
-            val incomingTexts = canvas.texts.map { text -> text.toEditableText() }
+            val incoming = canvas.toppings.toEditableToppingsInDrawOrder()
+            val incomingTexts = canvas.texts.toEditableTexts()
 
             updateState { withCanvas(canvas).copy(toppings = incoming, texts = incomingTexts) }
             hasSeededFromCanvas = true
@@ -173,14 +174,7 @@ constructor(
     private fun CanvasBGEditUiState.withCanvas(canvas: CanvasVO): CanvasBGEditUiState {
         if (hasSeededFromCanvas) return this
 
-        return copy(
-            selectedColor = (canvas.background as? CanvasBackground.Color)
-                ?.value
-                ?.toColorOrNull()
-                ?: selectedColor,
-            selectedImageUri = (canvas.background as? CanvasBackground.Image)?.url,
-            selectedImageSource = null,
-        )
+        return seededFrom(canvas.background)
     }
 
     override fun processIntent(intent: CanvasBGEditIntent) {
@@ -273,6 +267,8 @@ constructor(
                 // 되감기 전에 기다린다 — ConfirmBackground 를 먼저 쏘면 라우트가 되감기며
                 // viewModelScope 가 취소돼 launch 로 건 갱신이 끊긴다
                 refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+
+                recordReviewPromptUploadUseCase()
 
                 // 이미지 배경의 URL 은 이 응답으로만 알 수 있다. 그것마저 없으면
                 // 고른 값으로 그린다 — 저장은 끝났으니 화면을 막을 이유는 없다

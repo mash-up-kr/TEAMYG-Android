@@ -27,11 +27,13 @@ import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
+import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
@@ -89,8 +91,7 @@ class CanvasToppingPlaceViewModelTest {
         parfaitId: ParfaitId = PARFAIT_ID,
         nextPositionZ: Int = 3,
     ) = ToppingDraft(
-        groupId = GroupId(1L),
-        parfaitId = parfaitId,
+        target = ToppingDraftTarget.Group(GroupId(1L), parfaitId),
         nextPositionZ = nextPositionZ,
         subjectImagePath = subjectImagePath,
         cutoutImagePath = "/cache/segmentation/cutout.png",
@@ -103,6 +104,8 @@ class CanvasToppingPlaceViewModelTest {
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase = mockk()
 
     private val requestTodayParfaitRefreshUseCase: RequestTodayParfaitRefreshUseCase = mockk(relaxed = true)
+
+    private val recordReviewPromptUploadUseCase: RecordReviewPromptUploadUseCase = mockk(relaxed = true)
 
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
@@ -127,6 +130,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            recordReviewPromptUploadUseCase = recordReviewPromptUploadUseCase,
             analyticsLogger = analyticsLogger,
         ).also { viewModel ->
             backgroundScope.launch { viewModel.state.collect { } }
@@ -441,6 +445,7 @@ class CanvasToppingPlaceViewModelTest {
         }
         // 성공한 흐름의 초안이 남으면 다음 진입까지 낡은 알맹이를 들고 있다
         coVerify(exactly = 1) { clearToppingDraft() }
+        coVerify(exactly = 1) { recordReviewPromptUploadUseCase() }
     }
 
     @Test
@@ -607,6 +612,7 @@ class CanvasToppingPlaceViewModelTest {
         }
         // 실패한 흐름의 초안은 남아야 한다 — 비우면 막 만든 토핑을 통째로 잃는다
         coVerify(exactly = 0) { clearToppingDraft() }
+        coVerify(exactly = 0) { recordReviewPromptUploadUseCase() }
     }
 
     @Test
@@ -674,6 +680,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            recordReviewPromptUploadUseCase = recordReviewPromptUploadUseCase,
             analyticsLogger = analyticsLogger,
         )
         advanceUntilIdle()
@@ -718,6 +725,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            recordReviewPromptUploadUseCase = recordReviewPromptUploadUseCase,
             analyticsLogger = analyticsLogger,
         )
 
@@ -1094,6 +1102,19 @@ class CanvasToppingPlaceViewModelTest {
         val state = viewModel.state.value
         assertTrue(state.isBorderPanelOpen)
         assertFalse(state.showQuitDialog)
+    }
+
+    @Test
+    fun soloDraft_quitsToCanvasWithoutPlacing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 혼자 공간 초안 — 이 화면이 다룰 대상이 아니다
+        val viewModel = viewModel(draft().copy(target = ToppingDraftTarget.Solo))
+
+        // Then 배치 상태를 채우지 않고 캔버스로 돌아간다
+        viewModel.effect.test {
+            assertEquals(CanvasToppingPlaceEffect.QuitToCanvas, awaitItem())
+        }
+        assertNull(viewModel.state.value.groupId)
+        assertNull(viewModel.state.value.toppingImagePath)
     }
 
     @Test

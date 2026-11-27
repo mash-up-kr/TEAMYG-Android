@@ -18,8 +18,16 @@ import com.teamyg.parfait.data.source.notice.local.NoticeLocalDataSource
 import com.teamyg.parfait.data.source.notice.local.NoticeLocalDataSourceImpl
 import com.teamyg.parfait.data.source.notice.local.NoticeReadLocalDataSource
 import com.teamyg.parfait.data.source.notice.local.NoticeReadLocalDataSourceImpl
+import com.teamyg.parfait.data.source.parfait.local.CanvasIntroLocalDataSource
+import com.teamyg.parfait.data.source.parfait.local.CanvasIntroLocalDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.local.PastCanvasAlertLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.PastCanvasAlertLocalDataSourceImpl
+import com.teamyg.parfait.data.source.review.local.ReviewPromptLocalDataSource
+import com.teamyg.parfait.data.source.review.local.ReviewPromptLocalDataSourceImpl
+import com.teamyg.parfait.data.source.solo.local.SoloIntroLocalDataSource
+import com.teamyg.parfait.data.source.solo.local.SoloIntroLocalDataSourceImpl
+import com.teamyg.parfait.data.source.solo.local.SoloSpaceLocalDataSource
+import com.teamyg.parfait.data.source.solo.local.SoloSpaceLocalDataSourceImpl
 import com.teamyg.parfait.data.source.token.local.TokenLocalDataSource
 import com.teamyg.parfait.data.source.token.local.TokenLocalDataSourceImpl
 import com.teamyg.parfait.data.source.topping.local.ToppingDraftLocalDataSource
@@ -85,6 +93,12 @@ interface LocalDataSourceModule {
 
     @Binds
     @Singleton
+    fun bindCanvasIntroLocalDataSource(
+        canvasIntroLocalDataSourceImpl: CanvasIntroLocalDataSourceImpl,
+    ): CanvasIntroLocalDataSource
+
+    @Binds
+    @Singleton
     fun bindPastCanvasAlertLocalDataSource(
         pastCanvasAlertLocalDataSourceImpl: PastCanvasAlertLocalDataSourceImpl,
     ): PastCanvasAlertLocalDataSource
@@ -94,4 +108,22 @@ interface LocalDataSourceModule {
     fun bindToppingDraftLocalDataSource(
         toppingDraftLocalDataSourceImpl: ToppingDraftLocalDataSourceImpl,
     ): ToppingDraftLocalDataSource
+
+    @Binds
+    @Singleton
+    fun bindReviewPromptLocalDataSource(
+        reviewPromptLocalDataSourceImpl: ReviewPromptLocalDataSourceImpl,
+    ): ReviewPromptLocalDataSource
+
+    @Binds
+    @Singleton
+    fun bindSoloSpaceLocalDataSource(
+        soloSpaceLocalDataSourceImpl: SoloSpaceLocalDataSourceImpl,
+    ): SoloSpaceLocalDataSource
+
+    @Binds
+    @Singleton
+    fun bindSoloIntroLocalDataSource(
+        soloIntroLocalDataSourceImpl: SoloIntroLocalDataSourceImpl,
+    ): SoloIntroLocalDataSource
 }

@@ -11,9 +11,6 @@ import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.analytics.AnalyticsEvent
 import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
-import com.teamyg.parfait.core.util.android.extension.toColorOrNull
-import com.teamyg.parfait.domain.model.canvas.CanvasBackground
-import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -21,7 +18,6 @@ import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
-import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteTextToppingUseCase
@@ -29,25 +25,31 @@ import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
-import com.teamyg.parfait.feature.groups.canvas.impl.model.CenterGuideStep
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingSaveFailures
 import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
-import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
-import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
-import com.teamyg.parfait.feature.groups.canvas.impl.util.resolveCenterGuideAxisRatio
-import com.teamyg.parfait.feature.groups.canvas.impl.util.stepAngleGuide
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPanelBackAction
-import com.teamyg.parfait.feature.groups.canvas.impl.util.withPanelWidth
+import com.teamyg.parfait.feature.groups.canvas.impl.util.dirtyChanges
+import com.teamyg.parfait.feature.groups.canvas.impl.util.focusedCenterGuideStep
+import com.teamyg.parfait.feature.groups.canvas.impl.util.mergeTexts
+import com.teamyg.parfait.feature.groups.canvas.impl.util.mergeToppings
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toTransformUpdate
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withBorderColorSelected
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withBorderWidthChanged
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withCanvasBackground
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withDeleteFocusedClicked
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withEmptyCanvasClicked
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withFocus
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withFocusedTransform
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withInitialFocusIfNeeded
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withTransformGestureEnded
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -55,7 +57,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlin.math.abs
 
 data class CanvasToppingArrangeUiState(
     /** [backgroundImageUrl] 이 있으면 그쪽이 우선이고, 이 색은 이미지가 없을 때만 그려진다 */
@@ -235,15 +236,6 @@ constructor(
         observeCanvas()
     }
 
-    private fun Float.isNear(other: Float): Boolean = abs(this - other) <= TEXT_TRANSFORM_TOLERANCE
-
-    private fun CanvasToppingArrangeUiState.markTextDeleted(textId: Long): CanvasToppingArrangeUiState = copy(
-        texts = texts.filterNot { it.parfaitTextId == textId },
-        pendingDeleteTextIds = pendingDeleteTextIds + textId,
-        dirtyTextIds = dirtyTextIds - textId,
-        focusedKey = if (focusedKey == CanvasToppingKey.Text(textId)) null else focusedKey,
-    )
-
     /**
      * 화면이 보이는 동안만 오늘 캔버스를 구독한다. 갱신은 구독 시작 즉시, 이후 주기마다
      * 폴러가 맡는다(`adr/0029-canvas-today-ssot-polling.md`) — 여기서 따로 조회를 걸지 않는다.
@@ -268,80 +260,14 @@ constructor(
 
             serverToppings = incoming
             serverTexts = incomingTexts
-            updateState { withCanvas(canvas).mergeToppings(incoming).mergeTexts(incomingTexts) }
+            updateState {
+                withCanvasBackground(canvas.background)
+                    .withInitialFocusIfNeeded(hasSeededFromCanvas, initialToppingId, initialIsText)
+                    .mergeToppings(incoming)
+                    .mergeTexts(incomingTexts)
+            }
             hasSeededFromCanvas = true
         }
-    }
-
-    /** 이 화면은 배경을 고르지 않으므로 방출마다 서버 값을 따른다. 포커스만 최초 방출에 시딩한다. */
-    private fun CanvasToppingArrangeUiState.withCanvas(canvas: CanvasVO): CanvasToppingArrangeUiState = copy(
-        backgroundColor = (canvas.background as? CanvasBackground.Color)
-            ?.value
-            ?.toColorOrNull()
-            ?: backgroundColor,
-        backgroundImageUrl = (canvas.background as? CanvasBackground.Image)?.url,
-        focusedKey = when {
-            hasSeededFromCanvas -> focusedKey
-            initialIsText -> CanvasToppingKey.Text(initialToppingId)
-            else -> CanvasToppingKey.Image(initialToppingId)
-        },
-    )
-
-    /**
-     * 최초 방출도 예외가 아니다 — 그때는 두 집합이 비어 있어 결과가 통째 대입과 같아진다.
-     * 화면은 그 방출이 폴링에서 왔는지 강제 갱신에서 왔는지 구분하지 않는다.
-     */
-    private fun CanvasToppingArrangeUiState.mergeToppings(
-        incoming: List<EditableTopping>,
-    ): CanvasToppingArrangeUiState {
-        val incomingIds = incoming.mapTo(mutableSetOf()) { it.parfaitImageId }
-        val localById = toppings.associateBy { it.parfaitImageId }
-
-        val removedIds = pendingDeleteToppingIds + deletedToppingIds
-
-        val merged = incoming
-            .filterNot { it.parfaitImageId in removedIds }
-            .map { server ->
-                if (server.parfaitImageId in dirtyToppingIds) localById[server.parfaitImageId] ?: server else server
-            }
-        val focusedId = (focusedKey as? CanvasToppingKey.Image)?.id
-        val loseFocus = focusedId != null && (focusedId !in incomingIds || focusedId in removedIds)
-
-        return copy(
-            toppings = merged,
-            // 서버 목록에서 사라진 것은 세 집합에서도 뺀다 — 없는 토핑에 PATCH·DELETE 를 보낼 수 없고,
-            // 툼스톤도 제 역할을 다했다
-            dirtyToppingIds = dirtyToppingIds intersect incomingIds,
-            pendingDeleteToppingIds = pendingDeleteToppingIds intersect incomingIds,
-            deletedToppingIds = deletedToppingIds intersect incomingIds,
-            focusedKey = if (loseFocus) null else focusedKey,
-            // 패널은 포커스된 토핑의 것이라 포커스와 함께 닫힌다
-            isBorderPanelOpen = isBorderPanelOpen && !loseFocus,
-        )
-    }
-
-    /** [mergeToppings] 와 같은 규칙을 텍스트 쪽 집합에 쓴다 */
-    private fun CanvasToppingArrangeUiState.mergeTexts(incoming: List<EditableText>): CanvasToppingArrangeUiState {
-        val incomingIds = incoming.mapTo(mutableSetOf()) { it.parfaitTextId }
-        val localById = texts.associateBy { it.parfaitTextId }
-
-        val removedIds = pendingDeleteTextIds + deletedTextIds
-
-        val merged = incoming
-            .filterNot { it.parfaitTextId in removedIds }
-            .map { server ->
-                if (server.parfaitTextId in dirtyTextIds) localById[server.parfaitTextId] ?: server else server
-            }
-        val focusedId = (focusedKey as? CanvasToppingKey.Text)?.id
-        val loseFocus = focusedId != null && (focusedId !in incomingIds || focusedId in removedIds)
-
-        return copy(
-            texts = merged,
-            dirtyTextIds = dirtyTextIds intersect incomingIds,
-            pendingDeleteTextIds = pendingDeleteTextIds intersect incomingIds,
-            deletedTextIds = deletedTextIds intersect incomingIds,
-            focusedKey = if (loseFocus) null else focusedKey,
-        )
     }
 
     override fun processIntent(intent: CanvasToppingArrangeIntent) {
@@ -362,14 +288,7 @@ constructor(
 
             is CanvasToppingArrangeIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
-            CanvasToppingArrangeIntent.OnToppingTransformGestureEnd -> updateState {
-                copy(
-                    isCenterGuideXVisible = false,
-                    isCenterGuideYVisible = false,
-                    isAngleGuideVisible = false,
-                    hasFocusedRotated = false,
-                )
-            }
+            CanvasToppingArrangeIntent.OnToppingTransformGestureEnd -> updateState { withTransformGestureEnded() }
 
             CanvasToppingArrangeIntent.OnClickDeleteToppingButton -> handleOnClickDeleteToppingButton()
 
@@ -404,18 +323,7 @@ constructor(
             current.focusedKey == CanvasToppingKey.Image(topping.parfaitImageId) ->
                 updateState { copy(isBorderPanelOpen = true) }
 
-            else -> updateState {
-                copy(
-                    focusedKey = CanvasToppingKey.Image(topping.parfaitImageId),
-                    rawFocusedPositionX = null,
-                    rawFocusedPositionY = null,
-                    isCenterGuideXVisible = false,
-                    isCenterGuideYVisible = false,
-                    rawFocusedRotationDegrees = null,
-                    hasFocusedRotated = false,
-                    isAngleGuideVisible = false,
-                )
-            }
+            else -> updateState { withFocus(CanvasToppingKey.Image(topping.parfaitImageId)) }
         }
     }
 
@@ -426,53 +334,18 @@ constructor(
 
         when {
             current.isBorderPanelOpen -> updateState { copy(isBorderPanelOpen = false) }
-
             !text.isMine -> postSideEffect(effect = CanvasToppingArrangeEffect.ShowOthersToppingNotEditable)
-
             current.focusedKey == CanvasToppingKey.Text(text.parfaitTextId) -> Unit
-
-            else -> updateState {
-                copy(
-                    focusedKey = CanvasToppingKey.Text(text.parfaitTextId),
-                    rawFocusedPositionX = null,
-                    rawFocusedPositionY = null,
-                    isCenterGuideXVisible = false,
-                    isCenterGuideYVisible = false,
-                    rawFocusedRotationDegrees = null,
-                    hasFocusedRotated = false,
-                    isAngleGuideVisible = false,
-                )
-            }
+            else -> updateState { withFocus(CanvasToppingKey.Text(text.parfaitTextId)) }
         }
     }
 
     private fun handleOnClickEmptyCanvas() {
-        updateState {
-            if (isBorderPanelOpen) copy(isBorderPanelOpen = false) else copy(focusedKey = null)
-        }
+        updateState { withEmptyCanvasClicked() }
     }
 
     private fun handleOnClickDeleteToppingButton() {
-        updateState {
-            val focused = focusedKey
-
-            when {
-                isBorderPanelOpen -> copy(isBorderPanelOpen = false)
-
-                focused == null -> this
-
-                focused is CanvasToppingKey.Image -> copy(
-                    toppings = toppings.filterNot { it.parfaitImageId == focused.id },
-                    pendingDeleteToppingIds = pendingDeleteToppingIds + focused.id,
-                    dirtyToppingIds = dirtyToppingIds - focused.id,
-                    focusedKey = null,
-                )
-
-                focused is CanvasToppingKey.Text -> markTextDeleted(focused.id)
-
-                else -> this
-            }
-        }
+        updateState { withDeleteFocusedClicked() }
     }
 
     /** 닫혀 있다가 열릴 때만 "탭"으로 센다 — 토글이라 닫는 쪽까지 세면 과다 집계된다 */
@@ -523,42 +396,11 @@ constructor(
     }
 
     private fun handleOnSelectBorderColor(intent: CanvasToppingArrangeIntent.OnSelectBorderColor) {
-        updateState {
-            val focusedId = focusedTopping?.parfaitImageId ?: return@updateState this
-            val border = panelBorderForColor(intent.colorArgb, panelBorderWidthDp)
-
-            copy(
-                toppings = toppings.map { topping ->
-                    if (topping.parfaitImageId == focusedId) topping.copy(border = border) else topping
-                },
-            ).markDirty(focusedId)
-        }
+        updateState { withBorderColorSelected(intent.colorArgb) }
     }
 
-    /**
-     * 테두리가 없는 토핑은 굵기를 [CanvasToppingArrangeUiState.pendingBorderWidthDp] 에만 담는다 —
-     * 바뀐 값이 없는 토핑을 dirty 로 만들면 확인이 서버에 같은 "테두리 없음"을 보낸다.
-     */
     private fun handleOnChangeBorderWidth(intent: CanvasToppingArrangeIntent.OnChangeBorderWidth) {
-        updateState {
-            val focusedId = focusedTopping?.parfaitImageId ?: return@updateState this
-            val widthDp = clampPanelBorderWidthDp(intent.widthDp)
-
-            if (focusedTopping?.border == null) {
-                copy(pendingBorderWidthDp = widthDp)
-            } else {
-                copy(
-                    pendingBorderWidthDp = widthDp,
-                    toppings = toppings.map { topping ->
-                        if (topping.parfaitImageId == focusedId) {
-                            topping.copy(border = topping.border.withPanelWidth(widthDp))
-                        } else {
-                            topping
-                        }
-                    },
-                ).markDirty(focusedId)
-            }
-        }
+        updateState { withBorderWidthChanged(intent.widthDp) }
     }
 
     /**
@@ -575,116 +417,11 @@ constructor(
     private fun handleOnToppingTransform(intent: CanvasToppingArrangeIntent.OnToppingTransform) {
         val current = state.value
         if (ignoresToppingTransform(current.isBorderPanelOpen)) return
+        val step = current.focusedCenterGuideStep(intent) ?: return
 
-        when (val focused = current.focusedKey) {
-            null -> Unit
-
-            is CanvasToppingKey.Image -> {
-                val topping = current.toppings.firstOrNull { it.parfaitImageId == focused.id } ?: return
-                val step = current.stepCenterGuide(
-                    currentPositionX = topping.positionX,
-                    currentPositionY = topping.positionY,
-                    currentRotationDegrees = topping.rotationDegrees,
-                    intent = intent,
-                )
-
-                updateState {
-                    applyToppingTransform(focused.id) { t ->
-                        t.copy(
-                            positionX = step.guideX.effectiveValue,
-                            positionY = step.guideY.effectiveValue,
-                            scale = (t.scale * intent.zoom).coerceAtLeast(TOPPING_MIN_SCALE),
-                            rotationDegrees = step.angle.effectiveDegrees,
-                        )
-                    }.withCenterGuideStep(step)
-                }
-                if (step.justSnapped) postSideEffect(effect = CanvasToppingArrangeEffect.TriggerSnapHaptic)
-            }
-
-            is CanvasToppingKey.Text -> {
-                val text = current.texts.firstOrNull { it.parfaitTextId == focused.id } ?: return
-                val step = current.stepCenterGuide(text.positionX, text.positionY, text.rotationDegrees, intent)
-
-                updateState {
-                    copy(
-                        texts = texts.map { t ->
-                            if (t.parfaitTextId != focused.id) {
-                                t
-                            } else {
-                                t.copy(
-                                    positionX = step.guideX.effectiveValue,
-                                    positionY = step.guideY.effectiveValue,
-                                    scale = (t.scale * intent.zoom).coerceAtLeast(TEXT_TOPPING_MIN_SCALE),
-                                    rotationDegrees = step.angle.effectiveDegrees,
-                                )
-                            }
-                        },
-                        dirtyTextIds = dirtyTextIds + focused.id,
-                    ).withCenterGuideStep(step)
-                }
-                if (step.justSnapped) postSideEffect(effect = CanvasToppingArrangeEffect.TriggerSnapHaptic)
-            }
-        }
+        updateState { withFocusedTransform(step, intent.zoom) }
+        if (step.justSnapped) postSideEffect(effect = CanvasToppingArrangeEffect.TriggerSnapHaptic)
     }
-
-    /**
-     * 포커스된 토핑/텍스트의 이번 프레임 중앙 가이드 판정. `rawFocusedPositionX/Y` 가 아직
-     * 없으면(막 포커스가 바뀐 첫 프레임) 지금 보이는 위치에서 시작한다.
-     */
-    private fun CanvasToppingArrangeUiState.stepCenterGuide(
-        currentPositionX: Float,
-        currentPositionY: Float,
-        currentRotationDegrees: Float,
-        intent: CanvasToppingArrangeIntent.OnToppingTransform,
-    ): CenterGuideStep {
-        val oldRawX = rawFocusedPositionX ?: currentPositionX
-        val oldRawY = rawFocusedPositionY ?: currentPositionY
-        val oldRawRotation = rawFocusedRotationDegrees ?: currentRotationDegrees
-
-        val wasSnappedX = resolveCenterGuideAxisRatio(oldRawX, intent.thresholdRatioX).isSnapped
-        val wasSnappedY = resolveCenterGuideAxisRatio(oldRawY, intent.thresholdRatioY).isSnapped
-
-        val rawX = oldRawX + intent.panX
-        val rawY = oldRawY + intent.panY
-        val guideX = resolveCenterGuideAxisRatio(rawX, intent.thresholdRatioX)
-        val guideY = resolveCenterGuideAxisRatio(rawY, intent.thresholdRatioY)
-        val angle = stepAngleGuide(
-            oldRawDegrees = oldRawRotation,
-            oldHasRotated = hasFocusedRotated,
-            rotationDelta = intent.rotationDelta,
-        )
-        val justSnapped = (guideX.isSnapped && !wasSnappedX) ||
-            (guideY.isSnapped && !wasSnappedY) ||
-            angle.justSnapped
-        return CenterGuideStep(rawX, rawY, guideX, guideY, angle, justSnapped)
-    }
-
-    private fun CanvasToppingArrangeUiState.withCenterGuideStep(step: CenterGuideStep): CanvasToppingArrangeUiState =
-        copy(
-            rawFocusedPositionX = step.rawX,
-            rawFocusedPositionY = step.rawY,
-            isCenterGuideXVisible = step.guideX.isSnapped,
-            isCenterGuideYVisible = step.guideY.isSnapped,
-            rawFocusedRotationDegrees = step.angle.rawDegrees,
-            hasFocusedRotated = step.angle.hasRotated,
-            isAngleGuideVisible = step.angle.isVisible,
-            isAngleGuideHorizontal = step.angle.isHorizontal,
-        )
-
-    /**
-     * 캔버스 밖으로 나가는 부분은 화면에서 클립되어 안 보이므로 여기서 위치를 되돌리지 않는다.
-     */
-    private fun CanvasToppingArrangeUiState.applyToppingTransform(
-        toppingId: Long,
-        transform: (EditableTopping) -> EditableTopping,
-    ): CanvasToppingArrangeUiState = copy(
-        toppings = toppings.map { topping ->
-            if (topping.parfaitImageId != toppingId) topping else transform(topping)
-        },
-    ).markDirty(toppingId)
-
-    private fun CanvasToppingArrangeUiState.markDirty(toppingId: Long): CanvasToppingArrangeUiState =
-        copy(dirtyToppingIds = dirtyToppingIds + toppingId)
 
     /**
      * 저장이 끝나고 갱신까지 마친 뒤에야 화면을 넘긴다 — 먼저 나가면 캔버스 메인이 저장되지 않은
@@ -732,20 +469,10 @@ constructor(
         )
     }
 
-    /**
-     * PATCH 대상은 지금 목록에 있으면서 손댄 토핑뿐이다. 대조를 dirty 안에서만 하는 것이 요점이다:
-     * 목록 전체를 스냅샷과 견주면 갱신이 들여온 남의 새 토핑이 "스냅샷에 없음 = 바뀜"으로 잡힌다.
-     *
-     * 축으로 가르는 것은 서버 API 가 갈라져 있어서다 — 변형만 한 요청에 접힌다.
-     */
+    /** 축으로 가르는 것은 서버 API 가 갈라져 있어서다 — 변형만 한 요청에 접힌다. */
     private suspend fun updateDirtyToppings(): ToppingSaveFailures = coroutineScope {
-        val current = state.value
-        val dirty = current.toppings.filter { it.parfaitImageId in current.dirtyToppingIds }
-        val dirtyTexts = current.texts.filter { it.parfaitTextId in current.dirtyTextIds }
-
-        val transformChanged = dirty.filter { it.hasTransformChange() }
-        val textUpdates = dirtyTexts.mapNotNull { it.toTransformUpdateOrNull() }
-        val borderChanged = dirty.filter { it.hasBorderChange() }
+        val (transformChanged, textUpdates, borderChanged) =
+            state.value.dirtyChanges(storedToppings = serverToppings, storedTexts = serverTexts)
 
         val transformFailures = saveTransforms(transformChanged, textUpdates)
         val borderFailures = borderChanged
@@ -848,53 +575,6 @@ constructor(
         viewModelLogger.e(throwable) { "토핑 테두리를 저장하지 못했다 - ${topping.parfaitImageId}" }
     }.isSuccess
 
-    /** 스냅샷에 없는 토핑을 바뀐 것으로 봐도 안전하다 — 갱신이 들여온 토핑은 dirty 에 안 들어온다. */
-    private fun EditableTopping.hasTransformChange(): Boolean {
-        val original = serverToppings.find { it.parfaitImageId == parfaitImageId } ?: return true
-        return positionX != original.positionX ||
-            positionY != original.positionY ||
-            scale != original.scale ||
-            rotationDegrees != original.rotationDegrees
-    }
-
-    private fun EditableTopping.hasBorderChange(): Boolean {
-        val original = serverToppings.find { it.parfaitImageId == parfaitImageId } ?: return true
-        return border != original.border
-    }
-
-    /** 겹침 순서는 안 보낸다 — 앱에 z 조작 경로가 없어 서버 값을 그대로 둔다. */
-    private fun EditableTopping.toTransformUpdate(): ToppingTransformUpdate = ToppingTransformUpdate(
-        parfaitImageId = ParfaitImageId(parfaitImageId),
-        positionX = positionX.toDouble(),
-        positionY = positionY.toDouble(),
-        scale = scale.toDouble(),
-        rotation = rotationDegrees.toDouble(),
-    )
-
-    /**
-     * 바뀐 축만 싣는다 — null 인 축은 서버가 유지한다. 스냅샷에 없으면 네 축을 모두 싣는다.
-     *
-     * @return 바뀐 축이 없으면 null.
-     */
-    private fun EditableText.toTransformUpdateOrNull(): TextToppingTransformUpdate? {
-        val original = serverTexts.find { it.parfaitTextId == parfaitTextId }
-
-        fun changed(
-            value: Float,
-            originalValue: Float?,
-        ): Double? = value.takeIf { originalValue == null || !it.isNear(originalValue) }?.toDouble()
-
-        val update = TextToppingTransformUpdate(
-            parfaitTextId = ParfaitTextId(parfaitTextId),
-            positionX = changed(positionX, original?.positionX),
-            positionY = changed(positionY, original?.positionY),
-            scale = changed(scale, original?.scale),
-            rotation = changed(rotationDegrees, original?.rotationDegrees),
-        )
-        val hasChange = listOf(update.positionX, update.positionY, update.scale, update.rotation).any { it != null }
-        return update.takeIf { hasChange }
-    }
-
     /**
      * @param unknown 갈래를 가리지 못했을 때 쓸 값. 무엇을 하다 실패했는지는 부르는 쪽만 안다.
      */
@@ -916,8 +596,5 @@ constructor(
 
     private companion object {
         const val CONFIRM_KEY = "confirm"
-
-        /** 손대지 않은 축이 float 오차만으로 바뀐 것으로 잡히지 않을 만큼만 둔다 */
-        const val TEXT_TRANSFORM_TOLERANCE = 1e-4f
     }
 }

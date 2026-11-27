@@ -5,8 +5,8 @@ targetSdk = "36"
 minSdk = "26"
 
 # App Version Setting
-appVersionCode = "19"
-appVersionName = "1.4.0"
+appVersionCode = "20"
+appVersionName = "1.4.1"
 previewVersionCode = "1"
 previewVersionName = "1.0.0"
 
@@ -71,6 +71,9 @@ mlkitSubjectSegmentation = "16.0.0-beta1"
 
 #Install Referrer (deferred App Links 복원)
 googlePlayInstallReferrer = "2.2"
+
+#In-App Review
+googlePlayReview = "2.0.2"
 
 #java
 javaxInject = "1"
@@ -172,6 +175,9 @@ google-mlkit-subject-segmentation = { group = "com.google.android.gms", name = "
 #Install Referrer
 google-play-install-referrer = { group = "com.android.installreferrer", name = "installreferrer", version.ref = "googlePlayInstallReferrer" }
 
+#In-App Review
+google-play-review = { group = "com.google.android.play", name = "review", version.ref = "googlePlayReview" }
+
 # Logger
 kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
 
@@ -186,6 +192,7 @@ firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
 kotlin-test-junit = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit", version.ref = "kotlin" }
+kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }

@@ -1,7 +1,6 @@
 package com.teamyg.parfait.domain.usecase.topping
 
-import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import javax.inject.Inject
 
@@ -10,12 +9,10 @@ class StartToppingDraftUseCase @Inject constructor(
     private val toppingDraftRepository: ToppingDraftRepository,
 ) {
     suspend operator fun invoke(
-        groupId: GroupId,
-        parfaitId: ParfaitId,
+        target: ToppingDraftTarget,
         nextPositionZ: Int,
     ) = toppingDraftRepository.start(
-        groupId = groupId,
-        parfaitId = parfaitId,
+        target = target,
         nextPositionZ = nextPositionZ,
     )
 }

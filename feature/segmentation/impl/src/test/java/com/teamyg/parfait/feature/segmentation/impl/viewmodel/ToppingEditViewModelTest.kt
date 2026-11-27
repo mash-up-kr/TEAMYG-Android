@@ -9,6 +9,11 @@ import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
+import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.feature.segmentation.impl.editor.SubjectMeasure
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
@@ -23,6 +28,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -41,6 +47,8 @@ private const val CUTOUT_PATH = "/cache/edited_cutout.png"
 private const val TRIMMED_PATH = "/cache/edited_trimmed.png"
 private const val CUTOUT_SIDE = 1000
 
+private val GROUP_TARGET = ToppingDraftTarget.Group(GroupId(1L), ParfaitId(2L))
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class ToppingEditViewModelTest {
     @get:Rule
@@ -49,6 +57,10 @@ class ToppingEditViewModelTest {
     private val decodeImage: DecodeImageUseCase = mockk()
     private val saveBitmap: SaveBitmapUseCase = mockk()
     private val recordToppingDraft: RecordToppingDraftUseCase = mockk()
+    private val getToppingDraftFlow: GetToppingDraftFlowUseCase = mockk()
+
+    /** 기록이 끝난 뒤의 초안. 배치 화면을 고르는 근거는 그 [ToppingDraft.target] 이다 */
+    private val draft = MutableStateFlow<ToppingDraft?>(ToppingDraft(target = GROUP_TARGET, nextPositionZ = 1))
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private val sourceBitmap: Bitmap = mockk(relaxed = true)
@@ -84,6 +96,7 @@ class ToppingEditViewModelTest {
         coEvery { saveBitmap(cutout.toAndroidBitmap()) } returns Result.success(CUTOUT_PATH)
         coEvery { saveBitmap(trimmedCutout.toAndroidBitmap()) } returns Result.success(TRIMMED_PATH)
         coEvery { recordToppingDraft(any(), any(), any()) } returns true
+        every { getToppingDraftFlow() } returns draft
     }
 
     /** `mockkStatic` 은 JVM 전역 상태라 다음 테스트로 새지 않도록 매번 걷어 낸다 */
@@ -105,6 +118,7 @@ class ToppingEditViewModelTest {
         decodeImageUseCase = decodeImage,
         saveBitmapUseCase = saveBitmap,
         recordToppingDraft = recordToppingDraft,
+        getToppingDraftFlow = getToppingDraftFlow,
         analyticsLogger = analyticsLogger,
     )
 
@@ -206,7 +220,7 @@ class ToppingEditViewModelTest {
         viewModel.effect.test {
             viewModel.processIntent(ToppingEditIntent.ClickDone)
 
-            assertEquals(ToppingEditEffect.GoToPlace, awaitItem())
+            assertEquals(ToppingEditEffect.GoToPlace(GROUP_TARGET), awaitItem())
             assertFalse(viewModel.state.value.isSaving)
         }
 
@@ -216,6 +230,34 @@ class ToppingEditViewModelTest {
                 cutoutImagePath = CUTOUT_PATH,
                 sourceLongSide = SourceLongSide(CUTOUT_SIDE),
             )
+        }
+    }
+
+    @Test
+    fun clickDone_soloDraft_goesToSoloPlace() = runTest {
+        // Given 혼자 공간에서 시작한 흐름이다
+        draft.value = ToppingDraft(target = ToppingDraftTarget.Solo, nextPositionZ = 1)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
+
+            // Then 혼자 공간 배치로 간다
+            assertEquals(ToppingEditEffect.GoToPlace(ToppingDraftTarget.Solo), awaitItem())
+        }
+    }
+
+    @Test
+    fun clickDone_draftGoneAfterRecord_showsDraftUnavailable() = runTest {
+        draft.value = null
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
+
+            assertEquals(ToppingEditEffect.DraftUnavailable, awaitItem())
         }
     }
 
@@ -304,7 +346,7 @@ class ToppingEditViewModelTest {
             releaseRecord.complete(Unit)
 
             // Then 저장도 기록도 한 번뿐이다
-            assertEquals(ToppingEditEffect.GoToPlace, awaitItem())
+            assertEquals(ToppingEditEffect.GoToPlace(GROUP_TARGET), awaitItem())
             advanceUntilIdle()
             expectNoEvents()
         }
@@ -320,10 +362,10 @@ class ToppingEditViewModelTest {
 
         viewModel.effect.test {
             viewModel.processIntent(ToppingEditIntent.ClickDone)
-            assertEquals(ToppingEditEffect.GoToPlace, awaitItem())
+            assertEquals(ToppingEditEffect.GoToPlace(GROUP_TARGET), awaitItem())
 
             viewModel.processIntent(ToppingEditIntent.ClickDone)
-            assertEquals(ToppingEditEffect.GoToPlace, awaitItem())
+            assertEquals(ToppingEditEffect.GoToPlace(GROUP_TARGET), awaitItem())
         }
 
         coVerify(exactly = 2) { recordToppingDraft(any(), any(), any()) }

@@ -495,3 +495,18 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-17] change | 지난 캔버스 알럿 확인 기록을 계정·그룹별 별칭 키로 저장 (OQ-P-397 해소)
 `past_canvas_alert_seen_group_<id>` → `past_canvas_alert_seen_<alias>`(`AccountKeyAlias.alias("past-canvas-alert:<groupId>", memberId)`로 계정·그룹 id 비노출) · `PastCanvasAlertRepository`는 `memberId`를 인자로 받고 `GetLastSeenClosedDateUseCase`·`MarkPastCanvasAlertSeenUseCase`가 `myAccount`로 현재 계정을 풀어 넘김 · 옛 키(1.1.2+ 배포분)는 읽을 때 처음 읽는 계정의 새 키로 옮기고 지움 · 탈퇴 때 지우지 않음
+
+## [2026-11-23] change | C-001 빈 캔버스 안내 애니메이션 추가 (OQ-P-304 해소)
+더미 이미지 3장·글자별 강조 연출을 그룹·캔버스 날짜당 1회 재생(`CanvasEmptyIntroPhase`를 `CanvasMainUiState`가 보유, 기록은 `canvas_intro_played_<alias>`에 마지막 재생 날짜) · `YGCanvas`의 `emptyMessage: String`을 `emptyContent` 슬롯으로 교체하고 안내 문구는 배경과 무관하게 표시, 회색 면은 배경이 없을 때만 · 확인 못 한 부분은 OQ-P-464
+
+## [2026-11-24] check | 강제 업데이트 실기기 확인
+SM-A356N · 로컬 목 서버(`adb reverse` + `-PYG_BASE_URL`) · FORCE 모달 노출, BACK·바깥 탭에도 유지, [업데이트] Play 직행(d1e29b6 이후), 복귀 시 모달 유지, [종료]로 최근 앱 제거, 404·10초 지연 시 로그인 진입 확인 · 회전은 세로 고정이라 해당 없음
+
+## [2026-11-26] restructure | 혼자 공간 구현 문서 반영
+ADR-0038 신설 · navigation-flow에 진입·표식 인터페이스 복귀, data-layer에 로컬 저장소·백업 규칙 절 추가 · status.md `혼자 공간` 영역 신설 · 스펙 `in-progress`
+
+## [2026-11-27] change | 혼자 공간을 iOS 최신(`45faec0`)에 맞춤
+로그인 진입점을 온보딩 마지막 페이지 체리 → 첫 페이지 안경(`GlassesTapArea`, 너비 0.3·높이 0.13·중심 (0.79, 0.155))으로 옮김 · 햄버거 메뉴 문구 "캔버스 비우기"·"내 공간 삭제하기"(확인 팝업 버튼은 그대로) · develop에 들어온 C-001 빈 캔버스 연출을 혼자 공간에도 붙이고 문구를 "마음속에 간직하고 싶은 순간"으로, 재생 기록은 계정 무관 `SoloIntroRepository`(`solo_space_intro_played`) · develop과 겹친 미결 번호를 OQ-P-465로 옮김
+
+## [2026-11-28] restructure | 혼자 공간 미결 번호 재정리
+develop에 들어온 강제 업데이트 미결이 OQ-P-465를 써서 혼자 공간 실기기 미확인 항목을 OQ-P-466으로 옮김 · `status.md` 「혼자 공간」 참조 갱신

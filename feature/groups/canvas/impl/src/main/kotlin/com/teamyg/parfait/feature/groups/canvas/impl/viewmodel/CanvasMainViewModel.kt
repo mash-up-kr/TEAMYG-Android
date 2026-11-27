@@ -37,12 +37,19 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetCanvasIntroPlayedDateUseCase
+import com.teamyg.parfait.domain.usecase.parfait.MarkCanvasIntroPlayedUseCase
 import com.teamyg.parfait.domain.usecase.parfait.MarkPastCanvasAlertSeenUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
+import com.teamyg.parfait.domain.usecase.review.CheckReviewPromptTriggerUseCase
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.util.isEmptyForIntro
+import com.teamyg.parfait.feature.groups.canvas.impl.util.nextToppingPositionZ
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
@@ -122,6 +129,10 @@ data class CanvasMainUiState(
     val spotlightedKey: CanvasToppingKey? = null,
     /** 아직 오늘 캔버스를 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
     val isInitialLoading: Boolean = false,
+    /** 토핑이 없는 오늘 캔버스의 안내 연출 단계. 지난 날을 보는 동안은 `Idle` 로 남는다 */
+    val emptyIntroPhase: CanvasEmptyIntroPhase = CanvasEmptyIntroPhase.Idle,
+    /** [emptyIntroPhase] 가 어느 캔버스 날짜에 대해 정해졌는지. 날짜가 바뀌면 그 날짜의 판단을 새로 한다 */
+    val emptyIntroCanvasDate: LocalDate? = null,
 ) : UiState {
     /** 지난 날 상세를 기다리는 동안에는 직전에 보던 것을 그대로 둔다 */
     val displayedCanvas: CanvasVO?
@@ -180,16 +191,21 @@ data class CanvasMainUiState(
     val isCanvasEmpty: Boolean
         get() = toppings.isEmpty() && texts.isEmpty()
 
+    /** 지난 날은 재생하지 않으므로 오늘을 볼 때만 더미와 강조를 그린다 */
+    val isEmptyIntroVisible: Boolean
+        get() = isViewingToday && emptyIntroPhase.isPlaying
+
     /** 영상 저장은 토핑이 하나라도 쌓여야 성립한다 — [isCanvasEmpty] 와 반대지만 뜻이 달라 따로 둔다 */
     val isVideoSaveEnabled: Boolean
         get() = isCanvasEmpty.not()
 
-    /**
-     * [YGCanvas] 의 빈 캔버스 안내판과 정확히 반대 조건이다 — 안내판이 덮고 있을 때는
-     * 저장할 배경도 토핑도 없으므로 저장 아이콘도 함께 감춘다.
-     */
+    /** [YGCanvas] 가 안내판을 까는 조건 — 토핑도 배경도 없다. 배경을 고른 캔버스에는 안내도 연출도 없다 */
+    val isEmptyPlaceholderVisible: Boolean
+        get() = isCanvasEmpty && canvasBackground == null
+
+    /** 안내판이 덮는 캔버스에는 저장할 것이 없으므로 저장 아이콘도 함께 감춘다 */
     val isCanvasSaveVisible: Boolean
-        get() = (isCanvasEmpty && canvasBackground == null).not()
+        get() = isEmptyPlaceholderVisible.not()
 }
 
 sealed interface CanvasMainEffect : UiSideEffect {
@@ -251,6 +267,13 @@ sealed interface CanvasMainEffect : UiSideEffect {
         val date: LocalDate,
         val contributorCount: Int,
     ) : CanvasMainEffect
+
+    /**
+     * 업로드 3회 이상 + 로그인 유지 3일 이상 조건을 충족해 Google Play 인앱 리뷰 플로우를
+     * 띄워 달라는 요청. 조건 판정과 재시도 주기 관리는 ViewModel이 끝낸 뒤에만 온다 —
+     * 라우트는 `context.requestInAppReview()` 호출만 한다.
+     */
+    data object RequestInAppReview : CanvasMainEffect
 }
 
 sealed interface CanvasMainIntent : UiIntent {
@@ -313,8 +336,18 @@ sealed interface CanvasMainIntent : UiIntent {
     /** Spotlight 상태에서 강조된 토핑 밖(Dim 영역)을 탭했다 */
     data object OnClickSpotlightDim : CanvasMainIntent
 
-    /** 앱이 백그라운드로 이동했다가 복귀했다. Spotlight 를 해제한다 */
+    /** 앱이 백그라운드로 이동했다가 복귀했다. Spotlight 를 해제하고 안내 연출을 끝 상태로 건너뛴다 */
     data object OnAppReturnedFromBackground : CanvasMainIntent
+
+    data object OnEmptyIntroAnimationFinished : CanvasMainIntent
+
+    data object OnEmptyIntroTap : CanvasMainIntent
+
+    /** 뒤로가기·메뉴·토핑 추가처럼 정상 동작하는 버튼을 눌렀다 */
+    data object OnEmptyIntroInteraction : CanvasMainIntent
+
+    /** 닫히는 디졸브가 끝나 더미와 강조가 화면에서 완전히 사라졌다 */
+    data object OnEmptyIntroDismissFinished : CanvasMainIntent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -339,6 +372,9 @@ constructor(
     private val startToppingDraft: StartToppingDraftUseCase,
     private val getLastSeenClosedDate: GetLastSeenClosedDateUseCase,
     private val markPastCanvasAlertSeen: MarkPastCanvasAlertSeenUseCase,
+    private val checkReviewPromptTriggerUseCase: CheckReviewPromptTriggerUseCase,
+    private val getCanvasIntroPlayedDate: GetCanvasIntroPlayedDateUseCase,
+    private val markCanvasIntroPlayed: MarkCanvasIntroPlayedUseCase,
     private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
@@ -411,7 +447,60 @@ constructor(
                 )
             }
             canvas?.let(::checkShowPastCanvasAlert)
+            checkTriggerReviewPrompt()
+            canvas?.let(::syncEmptyIntro)
         }
+    }
+
+    /**
+     * 연출 여부는 캔버스 날짜마다 첫 방출에서 한 번만 정한다. 03시가 지나 날짜가 바뀌면 어제의 단계를
+     * 버리고 다시 정하고, 같은 날짜 안에서 캔버스가 중간에 비어도 뒤집지 않는다. 시작하는 순간 기록하므로
+     * 재생 도중 나가도 같은 날 다시 재생하지 않는다.
+     */
+    private fun syncEmptyIntro(canvas: CanvasVO) {
+        val isEmpty = canvas.isEmptyForIntro()
+
+        if (state.value.emptyIntroCanvasDate != canvas.date) {
+            updateState {
+                copy(
+                    emptyIntroCanvasDate = canvas.date,
+                    emptyIntroPhase = if (isEmpty) CanvasEmptyIntroPhase.Idle else CanvasEmptyIntroPhase.Dismissed,
+                )
+            }
+            // 키를 날짜별로 둔다 — 앞 날짜 판정이 기록을 읽는 사이 날짜가 바뀌어도 새 날짜 판정이 버려지지 않는다.
+            // 앞 날짜 작업은 startEmptyIntroIfUnplayed 의 날짜 가드에서 끝난다
+            if (isEmpty) launch(key = EMPTY_INTRO_KEY to canvas.date) { startEmptyIntroIfUnplayed(canvas) }
+        } else if (isEmpty.not()) {
+            updateState {
+                when (emptyIntroPhase) {
+                    CanvasEmptyIntroPhase.Entering, CanvasEmptyIntroPhase.Shown ->
+                        copy(emptyIntroPhase = CanvasEmptyIntroPhase.Dismissed)
+
+                    else -> this
+                }
+            }
+        }
+    }
+
+    private suspend fun startEmptyIntroIfUnplayed(canvas: CanvasVO) {
+        val alreadyPlayed = getCanvasIntroPlayedDate(groupId) == canvas.date
+
+        // 기록을 읽는 사이 토핑이 올라왔거나 날짜·단계가 바뀌었으면 시작하지 않는다
+        val current = state.value
+        val isStillThisDecision = current.emptyIntroCanvasDate == canvas.date &&
+            current.emptyIntroPhase == CanvasEmptyIntroPhase.Idle
+        if (isStillThisDecision.not() || current.isEmptyPlaceholderVisible.not()) return
+
+        if (alreadyPlayed) {
+            updateState { copy(emptyIntroPhase = CanvasEmptyIntroPhase.Dismissed) }
+        } else {
+            updateState { copy(emptyIntroPhase = CanvasEmptyIntroPhase.Entering) }
+            markCanvasIntroPlayed(groupId, canvas.date)
+        }
+    }
+
+    private fun updateEmptyIntroPhase(transform: (CanvasEmptyIntroPhase) -> CanvasEmptyIntroPhase) {
+        updateState { copy(emptyIntroPhase = transform(emptyIntroPhase)) }
     }
 
     /**
@@ -449,6 +538,24 @@ constructor(
                     contributorCount = contributorCount,
                 ),
             )
+        }
+    }
+
+    /**
+     * 로그인 상태를 처음 감지한 시점을 기준선으로 세우고(없을 때만), 업로드 3회 이상 + 그
+     * 기준선으로부터 3일 이상 지났으면 인앱 리뷰를 요청한다.
+     * [CheckReviewPromptTriggerUseCase] 가 이 둘을 한 트랜잭션으로 묶어서 호출부는 순서를
+     * 신경 쓸 필요가 없다.
+     *
+     * [observeTodayCanvas] 가 오늘 캔버스를 받을 때마다 부른다 — 업로드 화면에서 캔버스 메인으로
+     * 돌아오면 그 캔버스 갱신이 이 콜백을 다시 태운다. 이 ViewModel 은 백스택 재진입에 새로
+     * 만들어지지 않으므로([init] 의 welcome 배너 주석 참고) `init` 에서 한 번만 부르면 업로드가
+     * 쌓여도 다시 확인할 기회가 없다.
+     */
+    private fun checkTriggerReviewPrompt() {
+        launch(key = REVIEW_PROMPT_KEY) {
+            if (!checkReviewPromptTriggerUseCase()) return@launch
+            postSideEffect(CanvasMainEffect.RequestInAppReview)
         }
     }
 
@@ -652,7 +759,21 @@ constructor(
 
             is CanvasMainIntent.OnClickSpotlightDim -> resetSpotlight()
 
-            is CanvasMainIntent.OnAppReturnedFromBackground -> resetSpotlight()
+            is CanvasMainIntent.OnAppReturnedFromBackground -> {
+                resetSpotlight()
+                updateEmptyIntroPhase(CanvasEmptyIntroPhase::onStop)
+            }
+
+            is CanvasMainIntent.OnEmptyIntroAnimationFinished ->
+                updateEmptyIntroPhase(CanvasEmptyIntroPhase::onAnimationFinished)
+
+            is CanvasMainIntent.OnEmptyIntroTap -> updateEmptyIntroPhase(CanvasEmptyIntroPhase::onTap)
+
+            is CanvasMainIntent.OnEmptyIntroInteraction ->
+                updateEmptyIntroPhase(CanvasEmptyIntroPhase::onInteraction)
+
+            is CanvasMainIntent.OnEmptyIntroDismissFinished ->
+                updateEmptyIntroPhase(CanvasEmptyIntroPhase::onDismissFinished)
         }
     }
 
@@ -1021,8 +1142,7 @@ constructor(
             },
         ) {
             startToppingDraft(
-                groupId = groupId,
-                parfaitId = canvas.parfaitId,
+                target = ToppingDraftTarget.Group(groupId = groupId, parfaitId = canvas.parfaitId),
                 nextPositionZ = canvas.nextPositionZ(),
             )
             postSideEffect(effect)
@@ -1034,14 +1154,7 @@ constructor(
         is CanvasToppingKey.Text -> texts.any { it.parfaitTextId.value == key.id }
     }
 
-    /**
-     * 새 토핑은 언제나 맨 위다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 z 가 겹친다.
-     * 이미지와 텍스트가 한 z 축을 쓰므로 둘을 합쳐 센다.
-     */
-    private fun CanvasVO.nextPositionZ(): Int {
-        val maxZ = (toppings.map { it.transform.positionZ } + texts.map { it.transform.positionZ }).maxOrNull()
-        return (maxZ ?: 0) + 1
-    }
+    private fun CanvasVO.nextPositionZ(): Int = nextToppingPositionZ(toppings = toppings, texts = texts)
 
     /**
      * 오늘 캔버스를 아직 못 받았으면 열지 않는다 — 편집 화면은 대상 캔버스의 id 위에서만
@@ -1095,5 +1208,9 @@ constructor(
         const val START_TOPPING_FLOW_KEY = "startToppingFlow"
 
         const val PAST_CANVAS_ALERT_KEY = "pastCanvasAlert"
+
+        const val REVIEW_PROMPT_KEY = "reviewPrompt"
+
+        const val EMPTY_INTRO_KEY = "emptyIntro"
     }
 }

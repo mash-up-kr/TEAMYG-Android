@@ -489,6 +489,34 @@ suspend 호출이 있으면 **취소가 실패로 둔갑한다** — 화면을 �
 타입별로 분류해 `ApiException`을 만들어야 해서, `Result`에 raw `Throwable`을 담는 이 유틸로는
 그 분류가 사라진다.
 
+## 혼자 공간 로컬 저장소
+
+스펙: [solo-space-design](../superpowers/specs/2026-11-26-solo-space-design.md), 결정: [ADR-0038](../adr/0038-solo-space-separate-viewmodels.md).
+
+`SoloSpaceRepositoryImpl`과 `SoloSpaceLocalDataSource`(`@Singleton`)는 remote 데이터소스에 의존하지 않는다. 서버
+저장소와 같은 인터페이스를 쓰지 않고 `SoloSpaceRepository`를 따로 둔다.
+
+- **위치**: `filesDir/solo_space/canvas.json`(`@LocalJson`, 필드 `nextId`·`background`·`toppings`·`texts`)과
+  `solo_space/images/`. 계정 구분이 없고 로그아웃·탈퇴가 건드리지 않는다. 이미지는 파일명만 저장하고 읽을 때
+  `file://` 절대 URI를 붙인다.
+- **메모리 SSoT**: 처음 구독할 때 파일을 한 번 읽어 `MutableStateFlow`에 둔다. 쓰기는 `Mutex` 하나로 줄 세우고
+  임시 파일 + rename으로 원자적으로 저장한다.
+- **순서 규칙**: 새 이미지는 먼저 `images/`에 복사하고 기록 저장이 실패하면 사본을 지운다. 버려진 이미지(교체된
+  배경, 지운 토핑)는 기록을 저장한 **뒤에** 지운다. 비우기는 빈 기록을 먼저 저장하고 `images/`를 비운다. 저장 실패 시
+  메모리 상태를 되돌린다.
+- ⚠️ **읽기 실패는 파일을 덮지 않는다.** 파일이 없을 때만 빈 캔버스다. 손상된 파일은 `canvas`가 실패로 흘리고,
+  복구는 `reset()`(메뉴 "비우기")뿐이다. `reset()`은 손상된 파일을 읽지 않고 빈 기록으로 덮는다.
+- ⚠️ `nextId`는 비운 뒤에도 이어 쓴다(화면이 들고 있던 옛 id와 겹치지 않게). 손상돼 읽을 수 없으면 1부터다.
+- **백업**: `solo_space/`를 `data_extraction_rules.xml`의 `cloud-backup`과 `backup_rules.xml`(API 30 이하)에서는
+  뺀다. 사진이 쌓이면 앱 클라우드 백업 한도(25MB)를 넘겨 그 앱의 백업 전체가 멈춘다. `device-transfer`에는 남긴다 —
+  서버가 닫힌 뒤 기기를 바꾸는 사용자에게 넘길 유일한 길이다. 새 로컬 디렉터리를 추가할 때 이 규칙 파일 둘을 함께
+  본다.
+- **빈 캔버스 연출 기록**: `SoloIntroLocalDataSourceImpl`이 공용 Preferences DataStore의 고정 키
+  `solo_space_intro_played`에 마지막 재생 날짜를 덮어쓴다. 그룹 기록(`canvas_intro_played_<alias>`)과 달리 계정 별칭이
+  없다 — 혼자 공간은 로그인 없이 들어온다. `solo_space/` 밖이라 비우기·삭제가 지우지 않는다.
+- **토핑 초안**: `ToppingDraftEntity`는 `isSolo: Boolean = false`를 두고 `groupId`·`parfaitId`가 nullable이다.
+  `isSolo`가 없는 기존 JSON은 그룹 초안으로 읽힌다.
+
 ## 신규 데이터 추가 체크리스트
 1. **domain**: Repository 인터페이스 + 필요한 도메인 모델 정의.
 2. **data**: 구현 클래스 + DataSource(파일/DataStore/원격) 작성. 원격은 `source.<도메인>.remote`

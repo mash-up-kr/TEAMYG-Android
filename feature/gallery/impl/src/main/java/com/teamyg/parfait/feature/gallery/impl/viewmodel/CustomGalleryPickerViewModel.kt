@@ -17,13 +17,16 @@ import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.usecase.gallery.LoadGalleryImageGroupsUseCase
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
+import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Immutable
@@ -46,7 +49,10 @@ sealed class CustomGalleryPickerEffect private constructor() : UiSideEffect {
         val uri: String,
     ) : CustomGalleryPickerEffect()
 
-    data object NavigateToToppingPlace : CustomGalleryPickerEffect()
+    /** @param target 흐름을 시작한 공간. 이것으로 그룹·혼자 공간 배치 화면을 고른다 */
+    data class NavigateToToppingPlace(
+        val target: ToppingDraftTarget,
+    ) : CustomGalleryPickerEffect()
 
     data object ShowDraftUnavailable : CustomGalleryPickerEffect()
 
@@ -81,6 +87,7 @@ class CustomGalleryPickerViewModel
     private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
     private val loadGalleryImageGroupsUseCase: LoadGalleryImageGroupsUseCase,
     private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase,
+    private val getToppingDraftFlow: GetToppingDraftFlowUseCase,
     private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
@@ -180,10 +187,11 @@ class CustomGalleryPickerViewModel
             onError = { postSideEffect(CustomGalleryPickerEffect.ShowDraftUnavailable) },
         ) {
             val isAligned = ensureDraftSubjectRecorded(intent.recentImage.filePath)
+            val target = if (isAligned) getToppingDraftFlow().first()?.target else null
 
             postSideEffect(
-                if (isAligned) {
-                    CustomGalleryPickerEffect.NavigateToToppingPlace
+                if (target != null) {
+                    CustomGalleryPickerEffect.NavigateToToppingPlace(target)
                 } else {
                     CustomGalleryPickerEffect.ShowDraftUnavailable
                 },

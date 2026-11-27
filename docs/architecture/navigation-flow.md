@@ -666,6 +666,30 @@ C-001 캔버스 메인
   [구성 요소](#구성-요소)). 그래서 "프로세스 사망 뒤 경로만 살아 돌아온다"를 전제한 서술은 이
   흐름에도 해당되지 않는다 → [open-questions](../synthesis/open-questions.md) OQ-P-364 ① 정정.
 
+## 혼자 공간 진입과 표식 인터페이스 복귀
+
+스펙: [solo-space-design](../superpowers/specs/2026-11-26-solo-space-design.md), 결정: [ADR-0038](../adr/0038-solo-space-separate-viewmodels.md).
+
+- **진입점은 둘, 둘 다 5번 탭이다.** 로그인 온보딩 첫 페이지의 안경 위 투명 영역(`GlassesTapArea`)과 설정 프로필 카드가
+  `HiddenTapCounter`(`core/ui`)로 센다. 5번째 탭에 `NavKeySoloCanvas`로 가고 횟수를 0으로 되돌린다. 횟수는
+  화면 상태에만 있고 저장하지 않는다. 안경 영역은 그려진 이미지 경계 대비 비율(너비 0.3, 높이 0.13, 중심
+  (0.79, 0.155), iOS와 같은 값)이라 이미지 크기가 바뀌어도 따라간다. 서버가 닫힌 뒤에는 로그인 안경만 닿는다(스플래시가 연결 실패를
+  로그인으로 보낸다).
+- **혼자 공간 키 다섯**: `NavKeySoloCanvas`·`NavKeySoloBGEdit`·`NavKeySoloToppingPlace`·
+  `NavKeySoloToppingArrange`·`NavKeySoloTextInput`. 이미지 저장 미리보기는 그룹의 `NavKeyCanvasImageSave`를 그대로
+  쓴다.
+- **복귀는 클래스가 아니라 표식 인터페이스로 찾는다.** `Navigator.popUpTo`는 `type.isInstance(it)`로 비교한다.
+  `CanvasHomeNavKey`(`NavKeyCanvasMain`·`NavKeySoloCanvas`)와 `CanvasBGEditNavKey`(`NavKeyCanvasBGEdit`·
+  `NavKeySoloBGEdit`)로 카메라·갤러리·누끼·배치 화면이 `popUpTo`한다. 백스택에서 가장 위의 것을 찾으므로 시작한
+  쪽으로 돌아간다.
+  - ⚠️ 새 흐름이 `popUpTo<NavKeyCanvasMain>()`처럼 구체 키를 쓰면 혼자 공간에서 조용히 `false`가 되고 아무 일도
+    일어나지 않는다. 그룹·혼자 공간이 함께 지나는 화면은 표식 인터페이스를 쓴다.
+- **어느 공간의 배치 화면으로 갈지는 초안이 정한다.** 누끼 편집과 갤러리는 `ToppingDraft.target`
+  (`ToppingDraftTarget.Group`/`Solo`)을 보고 `NavKeyCanvasToppingPlace` 또는 `NavKeySoloToppingPlace`로 간다.
+  그룹 배치·텍스트 ViewModel은 `Group` 초안만, 혼자 공간 판은 `Solo` 초안만 받고 다른 쪽이면 캔버스로 돌아간다.
+- 삭제 성공 시 `SoloCanvasViewModel`이 닫기 Effect를 한 번 내 들어온 화면(로그인 또는 설정)으로 돌아간다.
+- 화면 조회 분석(`NavKeyAnalyticsScreen`)은 혼자 공간 키 다섯을 `null`로 둔다.
+
 ## 신규 목적지 등록 체크리스트
 1. `feature/xxx/api`에 `@Serializable NavKeyXxx : NavKey` 추가.
 2. `feature/xxx/impl`에 `featureXxxEntryBuilder()` 작성: `entry<NavKeyXxx> { XxxRoute(navigator = navigator, modifier = Modifier.fillMaxSize()) }`.

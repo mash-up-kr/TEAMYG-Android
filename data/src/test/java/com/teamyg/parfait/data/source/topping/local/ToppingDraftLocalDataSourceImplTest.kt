@@ -5,6 +5,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -21,8 +22,7 @@ class ToppingDraftLocalDataSourceImplTest {
     )
 
     private val filledDraft = ToppingDraft(
-        groupId = GroupId(1L),
-        parfaitId = ParfaitId(2L),
+        target = ToppingDraftTarget.Group(GroupId(1L), ParfaitId(2L)),
         nextPositionZ = 4,
         subjectImagePath = "/data/user/0/com.teamyg.parfait/cache/segmentation/subject.png",
         cutoutImagePath = "/data/user/0/com.teamyg.parfait/cache/segmentation/cutout.png",
@@ -48,8 +48,7 @@ class ToppingDraftLocalDataSourceImplTest {
 
         // When 캔버스 식별값만 든 새 초안을 얹는다
         val fresh = ToppingDraft(
-            groupId = GroupId(9L),
-            parfaitId = ParfaitId(8L),
+            target = ToppingDraftTarget.Group(GroupId(9L), ParfaitId(8L)),
             nextPositionZ = 1,
         )
         dataSource.save(fresh)
@@ -114,8 +113,7 @@ class ToppingDraftLocalDataSourceImplTest {
         val restored = dataSource.draft.first()
 
         // Then 모르는 키에 디코드가 깨지지 않고 나머지 필드가 산다
-        assertEquals(GroupId(1L), restored?.groupId)
-        assertEquals(ParfaitId(2L), restored?.parfaitId)
+        assertEquals(ToppingDraftTarget.Group(GroupId(1L), ParfaitId(2L)), restored?.target)
         assertEquals(3, restored?.nextPositionZ)
         assertEquals("/s.png", restored?.subjectImagePath)
     }

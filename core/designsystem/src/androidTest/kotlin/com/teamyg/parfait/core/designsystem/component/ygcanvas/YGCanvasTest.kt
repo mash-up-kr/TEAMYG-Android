@@ -208,7 +208,7 @@ private fun EmptyYGCanvas(
         ),
         background = background,
         isEmpty = true,
-        emptyMessage = EMPTY_MESSAGE,
+        emptyContent = { YGCanvasEmptyMessage(EMPTY_MESSAGE) },
         reloadKey = reloadKey,
         onBackgroundStateChange = onBackgroundStateChange,
     )

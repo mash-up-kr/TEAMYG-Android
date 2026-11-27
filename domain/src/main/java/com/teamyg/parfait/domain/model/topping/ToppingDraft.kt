@@ -1,7 +1,5 @@
 package com.teamyg.parfait.domain.model.topping
 
-import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 
 /**
@@ -12,8 +10,7 @@ import com.teamyg.parfait.domain.model.image.SourceLongSide
  * @param cutoutImagePath 재편집 시작 마스크. 좌표계를 지켜야 해 트리밍하지 않는다.
  */
 data class ToppingDraft(
-    val groupId: GroupId,
-    val parfaitId: ParfaitId,
+    val target: ToppingDraftTarget,
     val nextPositionZ: Int,
     val subjectImagePath: String? = null,
     val cutoutImagePath: String? = null,

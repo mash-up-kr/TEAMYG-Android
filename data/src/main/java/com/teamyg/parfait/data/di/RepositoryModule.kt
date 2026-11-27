@@ -10,11 +10,16 @@ import com.teamyg.parfait.data.repository.image.ImageUploadRepositoryImpl
 import com.teamyg.parfait.data.repository.image.RecentImageRepositoryImpl
 import com.teamyg.parfait.data.repository.member.MemberRepositoryImpl
 import com.teamyg.parfait.data.repository.notification.NotificationRepositoryImpl
+import com.teamyg.parfait.data.repository.appversion.AppVersionRepositoryImpl
 import com.teamyg.parfait.data.repository.notice.NoticeRepositoryImpl
 import com.teamyg.parfait.data.repository.notification.NotificationSettingRepositoryImpl
+import com.teamyg.parfait.data.repository.parfait.CanvasIntroRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.ParfaitRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.PastCanvasAlertRepositoryImpl
 import com.teamyg.parfait.data.repository.policy.PolicyRepositoryImpl
+import com.teamyg.parfait.data.repository.review.ReviewPromptRepositoryImpl
+import com.teamyg.parfait.data.repository.solo.SoloIntroRepositoryImpl
+import com.teamyg.parfait.data.repository.solo.SoloSpaceRepositoryImpl
 import com.teamyg.parfait.data.repository.topping.TextToppingRepositoryImpl
 import com.teamyg.parfait.data.repository.topping.ToppingDraftRepositoryImpl
 import com.teamyg.parfait.data.repository.topping.ToppingRepositoryImpl
@@ -29,11 +34,16 @@ import com.teamyg.parfait.domain.repository.image.ImageUploadRepository
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.repository.notification.NotificationRepository
+import com.teamyg.parfait.domain.repository.appversion.AppVersionRepository
 import com.teamyg.parfait.domain.repository.notice.NoticeRepository
 import com.teamyg.parfait.domain.repository.notification.NotificationSettingRepository
+import com.teamyg.parfait.domain.repository.parfait.CanvasIntroRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.repository.policy.PolicyRepository
+import com.teamyg.parfait.domain.repository.review.ReviewPromptRepository
+import com.teamyg.parfait.domain.repository.solo.SoloIntroRepository
+import com.teamyg.parfait.domain.repository.solo.SoloSpaceRepository
 import com.teamyg.parfait.domain.repository.topping.TextToppingRepository
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.repository.topping.ToppingRepository
@@ -93,6 +103,10 @@ interface RepositoryModule {
 
     @Binds
     @Singleton
+    fun bindCanvasIntroRepository(canvasIntroRepositoryImpl: CanvasIntroRepositoryImpl): CanvasIntroRepository
+
+    @Binds
+    @Singleton
     fun bindPastCanvasAlertRepository(
         pastCanvasAlertRepositoryImpl: PastCanvasAlertRepositoryImpl,
     ): PastCanvasAlertRepository
@@ -130,4 +144,20 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindNoticeRepository(noticeRepositoryImpl: NoticeRepositoryImpl): NoticeRepository
+
+    @Binds
+    @Singleton
+    fun bindReviewPromptRepository(reviewPromptRepositoryImpl: ReviewPromptRepositoryImpl): ReviewPromptRepository
+
+    @Binds
+    @Singleton
+    fun bindAppVersionRepository(appVersionRepositoryImpl: AppVersionRepositoryImpl): AppVersionRepository
+
+    @Binds
+    @Singleton
+    fun bindSoloSpaceRepository(soloSpaceRepositoryImpl: SoloSpaceRepositoryImpl): SoloSpaceRepository
+
+    @Binds
+    @Singleton
+    fun bindSoloIntroRepository(soloIntroRepositoryImpl: SoloIntroRepositoryImpl): SoloIntroRepository
 }

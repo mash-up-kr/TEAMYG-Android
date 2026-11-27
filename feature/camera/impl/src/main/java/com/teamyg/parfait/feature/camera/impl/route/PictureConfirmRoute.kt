@@ -18,8 +18,8 @@ import com.teamyg.parfait.feature.camera.impl.screen.PictureConfirmScreen
 import com.teamyg.parfait.feature.camera.impl.viewmodel.PictureConfirmEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.PictureConfirmIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.PictureConfirmViewModel
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasBGEditNavKey
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasHomeNavKey
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
 @Composable
@@ -45,7 +45,7 @@ internal fun PictureConfirmRoute(
                     resultEventBus.sendResult(PictureConfirmResult(uri = effect.uri, source = effect.source))
                     // 사이에 낀 촬영·선택 화면을 몇 장이든 걷고 부른 화면으로 되감는다.
                     // 뒤로가기를 세어 돌아가면 그 경로에 화면이 하나 끼는 날 조용히 어긋난다
-                    navigator.popUpTo<NavKeyCanvasBGEdit>()
+                    navigator.popUpTo<CanvasBGEditNavKey>()
                 }
 
                 is PictureConfirmEffect.NavigateToSegmentation ->
@@ -55,7 +55,7 @@ internal fun PictureConfirmRoute(
                         destination = NavKeySegmentation(sourceImageUri = effect.uri),
                     )
 
-                PictureConfirmEffect.QuitToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
+                PictureConfirmEffect.QuitToCanvas -> navigator.popUpTo<CanvasHomeNavKey>()
             }
         }
     }
