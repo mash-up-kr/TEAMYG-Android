@@ -511,6 +511,9 @@ suspend 호출이 있으면 **취소가 실패로 둔갑한다** — 화면을 �
   뺀다. 사진이 쌓이면 앱 클라우드 백업 한도(25MB)를 넘겨 그 앱의 백업 전체가 멈춘다. `device-transfer`에는 남긴다 —
   서버가 닫힌 뒤 기기를 바꾸는 사용자에게 넘길 유일한 길이다. 새 로컬 디렉터리를 추가할 때 이 규칙 파일 둘을 함께
   본다.
+- **빈 캔버스 연출 기록**: `SoloIntroLocalDataSourceImpl`이 공용 Preferences DataStore의 고정 키
+  `solo_space_intro_played`에 마지막 재생 날짜를 덮어쓴다. 그룹 기록(`canvas_intro_played_<alias>`)과 달리 계정 별칭이
+  없다 — 혼자 공간은 로그인 없이 들어온다. `solo_space/` 밖이라 비우기·삭제가 지우지 않는다.
 - **토핑 초안**: `ToppingDraftEntity`는 `isSolo: Boolean = false`를 두고 `groupId`·`parfaitId`가 nullable이다.
   `isSolo`가 없는 기존 JSON은 그룹 초안으로 읽힌다.
 

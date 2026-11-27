@@ -77,11 +77,11 @@
 - 설정 화면의 알림 설정·공지사항 진입 행은 살아 있고, 공지사항 행의 `isNew`는 `state.hasNewNotice`다(`AppSettingScreen`).
 
 ## 혼자 공간
-- 상태: 기기에 하나뿐인 로컬 캔버스다. 로그인 온보딩 체리·설정 프로필 카드 5번 탭으로만 들어가고, `NavKeySoloCanvas`가 그룹 캔버스와 같은 `CanvasMainScreen`을 쓰되 그룹 전용 요소(캘린더·멤버·마감·폴링·환영 배너)를 숨긴다. ViewModel은 `Solo*ViewModel` 다섯이 따로 있고 `SoloSpaceRepository`(`filesDir/solo_space/`)만 본다. 서버를 한 번도 부르지 않으며, 햄버거는 비우기·삭제하기 메뉴를 연다. 카메라·갤러리·누끼는 그룹과 같은 화면을 지나 `ToppingDraftTarget.Solo` 초안으로 혼자 공간 배치 화면에 돌아온다.
-- 앵커: `SoloCanvasViewModel`, `SoloSpaceRepositoryImpl`, `SoloSpaceLocalDataSource`, `SoloViewModelDependencyTest`, `CanvasHomeNavKey`, `ToppingDraftTarget`, `HiddenTapCounter`, `NavKeySoloCanvas`
+- 상태: 기기에 하나뿐인 로컬 캔버스다. 로그인 온보딩 첫 페이지 안경·설정 프로필 카드 5번 탭으로만 들어가고, `NavKeySoloCanvas`가 그룹 캔버스와 같은 `CanvasMainScreen`을 쓰되 그룹 전용 요소(캘린더·멤버·마감·폴링·환영 배너)를 숨긴다. ViewModel은 `Solo*ViewModel` 다섯이 따로 있고 `SoloSpaceRepository`(`filesDir/solo_space/`)만 본다. 서버를 한 번도 부르지 않으며, 햄버거는 "캔버스 비우기"·"내 공간 삭제하기" 메뉴를 연다. 빈 캔버스 안내 연출은 그룹 C-001과 같고 문구("마음속에 간직하고 싶은 순간")와 재생 기록(`SoloIntroRepository`, 계정 무관 기기당 하나)만 다르다. 카메라·갤러리·누끼는 그룹과 같은 화면을 지나 `ToppingDraftTarget.Solo` 초안으로 혼자 공간 배치 화면에 돌아온다.
+- 앵커: `SoloCanvasViewModel`, `SoloSpaceRepositoryImpl`, `SoloSpaceLocalDataSource`, `SoloViewModelDependencyTest`, `CanvasHomeNavKey`, `ToppingDraftTarget`, `HiddenTapCounter`, `GlassesTapArea`, `SoloIntroRepository`, `NavKeySoloCanvas`
 - ⚠️ 그룹 캔버스와 같은 `CanvasMainUiState`를 쓰므로 `SoloCanvasVOMapper`가 `parfaitId`·`groupName`("내 공간")·`date` 같은 고정값을 채운다. 화면 표시용일 뿐 저장소 계약에는 없다
 - ⚠️ `SoloViewModelDependencyTest`의 허용 목록은 새 기기 로컬 use case를 쓸 때 손으로 고쳐야 한다
-- ⚠️ 실기기 체크리스트 일부(비행기 모드 시작, 체리 위 스와이프·카카오 버튼, 회전, 실제 저장·공유, TalkBack)를 확인하지 않았다 (OQ-P-464)
+- ⚠️ 실기기 체크리스트 일부(비행기 모드 시작, 안경 진입과 그 위 스와이프·카카오 버튼, 혼자 공간 빈 캔버스 연출, 회전, 실제 저장·공유, TalkBack)를 확인하지 않았다 (OQ-P-465)
 - 설계: [solo-space-design](superpowers/specs/2026-11-26-solo-space-design.md), [ADR-0038](adr/0038-solo-space-separate-viewmodels.md)
 
 ## 캔버스 메인 (C-001)

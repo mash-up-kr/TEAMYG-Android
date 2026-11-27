@@ -504,3 +504,6 @@ SM-A356N · 로컬 목 서버(`adb reverse` + `-PYG_BASE_URL`) · FORCE 모달 �
 
 ## [2026-11-26] restructure | 혼자 공간 구현 문서 반영
 ADR-0038 신설 · navigation-flow에 진입·표식 인터페이스 복귀, data-layer에 로컬 저장소·백업 규칙 절 추가 · status.md `혼자 공간` 영역 신설 · 스펙 `in-progress`
+
+## [2026-11-27] change | 혼자 공간을 iOS 최신(`45faec0`)에 맞춤
+로그인 진입점을 온보딩 마지막 페이지 체리 → 첫 페이지 안경(`GlassesTapArea`, 너비 0.3·높이 0.13·중심 (0.79, 0.155))으로 옮김 · 햄버거 메뉴 문구 "캔버스 비우기"·"내 공간 삭제하기"(확인 팝업 버튼은 그대로) · develop에 들어온 C-001 빈 캔버스 연출을 혼자 공간에도 붙이고 문구를 "마음속에 간직하고 싶은 순간"으로, 재생 기록은 계정 무관 `SoloIntroRepository`(`solo_space_intro_played`) · develop과 겹친 미결 번호를 OQ-P-465로 옮김

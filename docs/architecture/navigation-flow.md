@@ -670,10 +670,10 @@ C-001 캔버스 메인
 
 스펙: [solo-space-design](../superpowers/specs/2026-11-26-solo-space-design.md), 결정: [ADR-0038](../adr/0038-solo-space-separate-viewmodels.md).
 
-- **진입점은 둘, 둘 다 5번 탭이다.** 로그인 온보딩 마지막 페이지의 체리 위 투명 영역과 설정 프로필 카드가
+- **진입점은 둘, 둘 다 5번 탭이다.** 로그인 온보딩 첫 페이지의 안경 위 투명 영역(`GlassesTapArea`)과 설정 프로필 카드가
   `HiddenTapCounter`(`core/ui`)로 센다. 5번째 탭에 `NavKeySoloCanvas`로 가고 횟수를 0으로 되돌린다. 횟수는
-  화면 상태에만 있고 저장하지 않는다. 체리 영역은 그려진 이미지 경계 대비 비율(너비 0.24, 높이 0.28, 중심
-  (0.5, 0.19))이라 이미지 크기가 바뀌어도 따라간다. 서버가 닫힌 뒤에는 로그인 체리만 닿는다(스플래시가 연결 실패를
+  화면 상태에만 있고 저장하지 않는다. 안경 영역은 그려진 이미지 경계 대비 비율(너비 0.3, 높이 0.13, 중심
+  (0.79, 0.155), iOS와 같은 값)이라 이미지 크기가 바뀌어도 따라간다. 서버가 닫힌 뒤에는 로그인 안경만 닿는다(스플래시가 연결 실패를
   로그인으로 보낸다).
 - **혼자 공간 키 다섯**: `NavKeySoloCanvas`·`NavKeySoloBGEdit`·`NavKeySoloToppingPlace`·
   `NavKeySoloToppingArrange`·`NavKeySoloTextInput`. 이미지 저장 미리보기는 그룹의 `NavKeyCanvasImageSave`를 그대로
