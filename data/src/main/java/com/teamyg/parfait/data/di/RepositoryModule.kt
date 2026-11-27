@@ -10,6 +10,7 @@ import com.teamyg.parfait.data.repository.image.ImageUploadRepositoryImpl
 import com.teamyg.parfait.data.repository.image.RecentImageRepositoryImpl
 import com.teamyg.parfait.data.repository.member.MemberRepositoryImpl
 import com.teamyg.parfait.data.repository.notification.NotificationRepositoryImpl
+import com.teamyg.parfait.data.repository.appversion.AppVersionRepositoryImpl
 import com.teamyg.parfait.data.repository.notice.NoticeRepositoryImpl
 import com.teamyg.parfait.data.repository.notification.NotificationSettingRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.CanvasIntroRepositoryImpl
@@ -31,6 +32,7 @@ import com.teamyg.parfait.domain.repository.image.ImageUploadRepository
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.repository.notification.NotificationRepository
+import com.teamyg.parfait.domain.repository.appversion.AppVersionRepository
 import com.teamyg.parfait.domain.repository.notice.NoticeRepository
 import com.teamyg.parfait.domain.repository.notification.NotificationSettingRepository
 import com.teamyg.parfait.domain.repository.parfait.CanvasIntroRepository
@@ -142,4 +144,8 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindReviewPromptRepository(reviewPromptRepositoryImpl: ReviewPromptRepositoryImpl): ReviewPromptRepository
+
+    @Binds
+    @Singleton
+    fun bindAppVersionRepository(appVersionRepositoryImpl: AppVersionRepositoryImpl): AppVersionRepository
 }

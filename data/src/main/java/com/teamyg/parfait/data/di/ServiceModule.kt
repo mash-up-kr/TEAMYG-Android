@@ -10,6 +10,7 @@ import com.teamyg.parfait.data.service.ParfaitGroupService
 import com.teamyg.parfait.data.service.ParfaitImageService
 import com.teamyg.parfait.data.service.ParfaitService
 import com.teamyg.parfait.data.service.ParfaitTextService
+import com.teamyg.parfait.data.service.AppVersionService
 import com.teamyg.parfait.data.service.NoticeService
 import com.teamyg.parfait.data.service.PolicyService
 import dagger.Module
@@ -40,6 +41,10 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideNoticeService(retrofit: Retrofit): NoticeService = retrofit.create(NoticeService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideAppVersionService(retrofit: Retrofit): AppVersionService = retrofit.create(AppVersionService::class.java)
 
     @Provides
     @Singleton

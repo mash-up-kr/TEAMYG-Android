@@ -18,6 +18,8 @@ import com.teamyg.parfait.data.source.notification.remote.NotificationSettingRem
 import com.teamyg.parfait.data.source.notification.remote.NotificationSettingRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.appversion.remote.AppVersionRemoteDataSource
+import com.teamyg.parfait.data.source.appversion.remote.AppVersionRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.notice.remote.NoticeRemoteDataSource
 import com.teamyg.parfait.data.source.notice.remote.NoticeRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.policy.remote.PolicyRemoteDataSource
@@ -42,6 +44,12 @@ interface RemoteDataSourceModule {
     @Binds
     @Singleton
     fun bindNoticeRemoteDataSource(noticeRemoteDataSourceImpl: NoticeRemoteDataSourceImpl): NoticeRemoteDataSource
+
+    @Binds
+    @Singleton
+    fun bindAppVersionRemoteDataSource(
+        appVersionRemoteDataSourceImpl: AppVersionRemoteDataSourceImpl,
+    ): AppVersionRemoteDataSource
 
     @Binds
     @Singleton
