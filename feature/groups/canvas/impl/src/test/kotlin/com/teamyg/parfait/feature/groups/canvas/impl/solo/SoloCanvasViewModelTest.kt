@@ -32,6 +32,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.minus
 import org.junit.Before
 import org.junit.Rule
 import java.io.IOException
@@ -131,6 +133,19 @@ class SoloCanvasViewModelTest {
         // Then 연출 없이 문구만 보이고 다시 기록하지 않는다
         assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.canvas.emptyIntroPhase)
         coVerify(exactly = 0) { markSoloIntroPlayed(any()) }
+    }
+
+    @Test
+    fun emptyCanvasPlayedYesterday_startsIntroAgainAndRecordsToday() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 어제 연출을 재생했다
+        coEvery { getSoloIntroPlayedDate() } returns today.minus(1, DateTimeUnit.DAY)
+
+        // When 빈 혼자 공간이 열린다
+        val viewModel = shownViewModel()
+
+        // Then 오늘 다시 재생하고 오늘 날짜로 기록한다
+        assertEquals(CanvasEmptyIntroPhase.Entering, viewModel.state.value.canvas.emptyIntroPhase)
+        coVerify(exactly = 1) { markSoloIntroPlayed(today) }
     }
 
     @Test

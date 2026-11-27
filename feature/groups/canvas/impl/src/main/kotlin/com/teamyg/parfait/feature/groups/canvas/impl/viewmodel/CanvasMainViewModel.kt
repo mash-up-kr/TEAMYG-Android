@@ -48,6 +48,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.util.isEmptyForIntro
 import com.teamyg.parfait.feature.groups.canvas.impl.util.nextToppingPositionZ
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
@@ -457,7 +458,7 @@ constructor(
      * 재생 도중 나가도 같은 날 다시 재생하지 않는다.
      */
     private fun syncEmptyIntro(canvas: CanvasVO) {
-        val isEmpty = canvas.toppings.isEmpty() && canvas.texts.isEmpty() && canvas.background == null
+        val isEmpty = canvas.isEmptyForIntro()
 
         if (state.value.emptyIntroCanvasDate != canvas.date) {
             updateState {
@@ -466,7 +467,9 @@ constructor(
                     emptyIntroPhase = if (isEmpty) CanvasEmptyIntroPhase.Idle else CanvasEmptyIntroPhase.Dismissed,
                 )
             }
-            if (isEmpty) launch(key = EMPTY_INTRO_KEY) { startEmptyIntroIfUnplayed(canvas) }
+            // 키를 날짜별로 둔다 — 앞 날짜 판정이 기록을 읽는 사이 날짜가 바뀌어도 새 날짜 판정이 버려지지 않는다.
+            // 앞 날짜 작업은 startEmptyIntroIfUnplayed 의 날짜 가드에서 끝난다
+            if (isEmpty) launch(key = EMPTY_INTRO_KEY to canvas.date) { startEmptyIntroIfUnplayed(canvas) }
         } else if (isEmpty.not()) {
             updateState {
                 when (emptyIntroPhase) {

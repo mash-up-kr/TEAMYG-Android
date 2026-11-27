@@ -22,6 +22,7 @@ import com.teamyg.parfait.domain.usecase.solo.ResetSoloSpaceUseCase
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.SoloDialog
+import com.teamyg.parfait.feature.groups.canvas.impl.util.isEmptyForIntro
 import com.teamyg.parfait.feature.groups.canvas.impl.util.nextToppingPositionZ
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainUiState
 import dagger.assisted.Assisted
@@ -177,7 +178,7 @@ constructor(
      * 기록만 계정과 무관한 혼자 공간 전용이다.
      */
     private fun syncEmptyIntro(canvas: CanvasVO) {
-        val isEmpty = canvas.toppings.isEmpty() && canvas.texts.isEmpty() && canvas.background == null
+        val isEmpty = canvas.isEmptyForIntro()
 
         if (state.value.canvas.emptyIntroCanvasDate != canvas.date) {
             updateCanvas {
@@ -186,7 +187,9 @@ constructor(
                     emptyIntroPhase = if (isEmpty) CanvasEmptyIntroPhase.Idle else CanvasEmptyIntroPhase.Dismissed,
                 )
             }
-            if (isEmpty) launch(key = EMPTY_INTRO_KEY) { startEmptyIntroIfUnplayed(canvas.date) }
+            // 키를 날짜별로 둔다 — 앞 날짜 판정이 기록을 읽는 사이 날짜가 바뀌어도 새 날짜 판정이 버려지지 않는다.
+            // 앞 날짜 작업은 startEmptyIntroIfUnplayed 의 날짜 가드에서 끝난다
+            if (isEmpty) launch(key = EMPTY_INTRO_KEY to canvas.date) { startEmptyIntroIfUnplayed(canvas.date) }
         } else if (isEmpty.not()) {
             updateCanvas {
                 when (emptyIntroPhase) {
