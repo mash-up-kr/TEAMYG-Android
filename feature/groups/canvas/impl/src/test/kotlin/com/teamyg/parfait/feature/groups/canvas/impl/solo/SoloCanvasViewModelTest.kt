@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.solo
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfaitToday
@@ -12,8 +13,11 @@ import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.solo.DeleteSoloSpaceUseCase
 import com.teamyg.parfait.domain.usecase.solo.GetSoloCanvasFlowUseCase
+import com.teamyg.parfait.domain.usecase.solo.GetSoloIntroPlayedDateUseCase
+import com.teamyg.parfait.domain.usecase.solo.MarkSoloIntroPlayedUseCase
 import com.teamyg.parfait.domain.usecase.solo.ResetSoloSpaceUseCase
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.SoloDialog
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -44,6 +48,8 @@ class SoloCanvasViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getSoloCanvasFlow: GetSoloCanvasFlowUseCase = mockk()
+    private val getSoloIntroPlayedDate: GetSoloIntroPlayedDateUseCase = mockk()
+    private val markSoloIntroPlayed: MarkSoloIntroPlayedUseCase = mockk(relaxUnitFun = true)
     private val resetSoloSpace: ResetSoloSpaceUseCase = mockk()
     private val deleteSoloSpace: DeleteSoloSpaceUseCase = mockk()
     private val startToppingDraft: StartToppingDraftUseCase = mockk(relaxUnitFun = true)
@@ -62,11 +68,14 @@ class SoloCanvasViewModelTest {
         every { observeParfaitDayBoundary(any()) } returns flowOf(today)
         coEvery { resetSoloSpace() } returns Result.success(Unit)
         coEvery { deleteSoloSpace() } returns Result.success(Unit)
+        coEvery { getSoloIntroPlayedDate() } returns null
     }
 
     private fun viewModel() = SoloCanvasViewModel(
         title = SOLO_TITLE,
         getSoloCanvasFlow = getSoloCanvasFlow,
+        getSoloIntroPlayedDate = getSoloIntroPlayedDate,
+        markSoloIntroPlayed = markSoloIntroPlayed,
         resetSoloSpace = resetSoloSpace,
         deleteSoloSpace = deleteSoloSpace,
         startToppingDraft = startToppingDraft,
@@ -98,6 +107,57 @@ class SoloCanvasViewModelTest {
         assertNull(todayCanvas?.lastClosedDate)
         assertTrue(todayCanvas?.members.orEmpty().isEmpty())
         assertTrue(canvasState.isViewingToday)
+    }
+
+    @Test
+    fun emptyCanvasNotPlayedToday_startsIntroAndRecordsToday() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 아직 연출을 재생하지 않았다
+        // When 빈 혼자 공간이 열린다
+        val viewModel = shownViewModel()
+
+        // Then 연출을 시작하고 오늘 날짜로 기록한다
+        assertEquals(CanvasEmptyIntroPhase.Entering, viewModel.state.value.canvas.emptyIntroPhase)
+        coVerify(exactly = 1) { markSoloIntroPlayed(today) }
+    }
+
+    @Test
+    fun emptyCanvasAlreadyPlayedToday_skipsIntro() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 이미 연출을 재생했다
+        coEvery { getSoloIntroPlayedDate() } returns today
+
+        // When 빈 혼자 공간이 열린다
+        val viewModel = shownViewModel()
+
+        // Then 연출 없이 문구만 보이고 다시 기록하지 않는다
+        assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.canvas.emptyIntroPhase)
+        coVerify(exactly = 0) { markSoloIntroPlayed(any()) }
+    }
+
+    @Test
+    fun filledCanvas_doesNotStartIntro() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 배경색을 고른 혼자 공간
+        soloCanvases.value = Result.success(EMPTY_CANVAS.copy(background = CanvasBackground.Color("#FFFFFF")))
+
+        // When 화면이 열린다
+        val viewModel = shownViewModel()
+
+        // Then 연출을 시작하지도 기록하지도 않는다
+        assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.canvas.emptyIntroPhase)
+        coVerify(exactly = 0) { markSoloIntroPlayed(any()) }
+    }
+
+    @Test
+    fun emptyIntroTap_dismissesIntro() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 연출이 재생 중이다
+        val viewModel = shownViewModel()
+
+        // When 빈 영역을 탭하고 사라지는 연출이 끝난다
+        viewModel.processIntent(SoloCanvasIntent.EmptyIntroTap)
+        assertEquals(CanvasEmptyIntroPhase.Dismissing, viewModel.state.value.canvas.emptyIntroPhase)
+        viewModel.processIntent(SoloCanvasIntent.EmptyIntroDismissFinished)
+
+        // Then 연출이 닫힌다
+        assertEquals(CanvasEmptyIntroPhase.Dismissed, viewModel.state.value.canvas.emptyIntroPhase)
     }
 
     @Test

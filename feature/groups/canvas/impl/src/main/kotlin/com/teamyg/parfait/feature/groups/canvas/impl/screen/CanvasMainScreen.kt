@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -103,6 +104,9 @@ internal fun CanvasMainScreen(
     onCanvasAreaSizeChange: (width: Dp, height: Dp) -> Unit = { _, _ -> },
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
     alertPolicy: YGAlertPolicy = rememberYGAlertPolicy(),
+    /** 빈 캔버스 안내 문구. `%1$s` 자리에 [emptyHighlightRes] 가 들어가고 연출은 그 글자를 강조한다 */
+    @StringRes emptyMessageRes: Int = R.string.canvas_main_empty_message,
+    @StringRes emptyHighlightRes: Int = R.string.canvas_main_empty_highlight,
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     val openMenu = {
@@ -110,7 +114,7 @@ internal fun CanvasMainScreen(
         isMenuExpanded = true
     }
 
-    val emptyHighlight = stringResource(R.string.canvas_main_empty_highlight)
+    val emptyHighlight = stringResource(emptyHighlightRes)
     val emptyIntroState = rememberCanvasEmptyIntroState(
         highlightCharCount = highlightCharCount(emptyHighlight),
         phase = canvasState.emptyIntroPhase,
@@ -244,7 +248,7 @@ internal fun CanvasMainScreen(
             },
             isEmpty = canvasState.isCanvasEmpty,
             emptyContent = {
-                val message = stringResource(R.string.canvas_main_empty_message, emptyHighlight)
+                val message = stringResource(emptyMessageRes, emptyHighlight)
                 if (canvasState.isEmptyIntroVisible) {
                     CanvasEmptyIntroLayer(state = emptyIntroState, message = message, highlight = emptyHighlight)
                 } else {
@@ -461,6 +465,13 @@ private fun PreviewCanvasMainScreenSolo() = PreviewBox {
         onClickTopping = {},
         onClickText = {},
         onClickSpotlightDim = {},
+        isEmptyIntroPaused = false,
+        onEmptyIntroTap = {},
+        onEmptyIntroInteraction = {},
+        onEmptyIntroAnimationFinished = {},
+        onEmptyIntroDismissFinished = {},
+        emptyMessageRes = R.string.solo_canvas_empty_message,
+        emptyHighlightRes = R.string.solo_canvas_empty_highlight,
         onLoadStateChange = {},
         retryKey = 0,
         modifier = Modifier.fillMaxSize(),

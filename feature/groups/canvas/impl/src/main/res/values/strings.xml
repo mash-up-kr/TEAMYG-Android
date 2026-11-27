@@ -98,14 +98,18 @@
 
     <!-- 혼자 공간 캔버스 -->
     <string name="solo_canvas_title">내 공간</string>
-    <string name="solo_canvas_menu_reset">비우기</string>
-    <string name="solo_canvas_menu_delete">삭제하기</string>
+    <string name="solo_canvas_menu_reset">캔버스 비우기</string>
+    <string name="solo_canvas_menu_delete">내 공간 삭제하기</string>
+    <string name="solo_canvas_empty_highlight">간직하고 싶은 순간</string>
+    <string name="solo_canvas_empty_message">아직 캔버스가 비어 있어요\n마음속에 %1$s을 캔버스에 쌓아 주세요</string>
     <string name="solo_canvas_menu_close">메뉴 닫기</string>
     <string name="solo_canvas_dialog_cancel">그만두기</string>
     <string name="solo_canvas_reset_dialog_title">캔버스를 비울까요?</string>
     <string name="solo_canvas_reset_dialog_body">올린 사진·글·배경이 모두 지워지고\n되돌릴 수 없어요</string>
+    <string name="solo_canvas_reset_dialog_confirm">비우기</string>
     <string name="solo_canvas_delete_dialog_title">내 공간을 삭제할까요?</string>
     <string name="solo_canvas_delete_dialog_body">캔버스와 올린 사진이 모두 사라지고\n되돌릴 수 없어요</string>
+    <string name="solo_canvas_delete_dialog_confirm">삭제하기</string>
     <string name="solo_canvas_reset_failure">캔버스를 비우지 못했어요, 잠시 후 다시 시도해 주세요</string>
     <string name="solo_bg_edit_save_failure">배경을 바꾸지 못했어요, 잠시 후 다시 시도해 주세요</string>
     <string name="solo_canvas_delete_failure">내 공간을 삭제하지 못했어요, 잠시 후 다시 시도해 주세요</string>

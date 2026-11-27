@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
@@ -150,10 +151,20 @@ internal fun SoloCanvasRoute(
         }
     }
 
+    // 연출은 로딩 덮개가 걷힌 뒤에 시작한다(그룹 캔버스와 같다)
+    var isCovered by remember { mutableStateOf(true) }
+
+    // 백그라운드에서 돌아오면 재생 중이던 빈 캔버스 연출을 정리한다
+    LifecycleStartEffect(viewModel) {
+        viewModel.processIntent(SoloCanvasIntent.AppStarted)
+        onStopOrDispose { }
+    }
+
     Box(modifier = modifier) {
         YGScaffoldV2(
             modifier = Modifier.fillMaxSize(),
             isLoading = canvasState.isInitialLoading || (firstPaintDone.not() && loadState != CanvasLoadState.Loaded),
+            onCoveredChange = { isCovered = it },
             loadingOverlay = {
                 if (loadState == CanvasLoadState.Failed) {
                     CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })
@@ -203,6 +214,15 @@ internal fun SoloCanvasRoute(
                 onSelectMonth = {},
                 onClickDate = {},
                 onClickSpotlightDim = {},
+                isEmptyIntroPaused = isCovered,
+                onEmptyIntroTap = { viewModel.processIntent(SoloCanvasIntent.EmptyIntroTap) },
+                onEmptyIntroInteraction = { viewModel.processIntent(SoloCanvasIntent.EmptyIntroInteraction) },
+                onEmptyIntroAnimationFinished = {
+                    viewModel.processIntent(SoloCanvasIntent.EmptyIntroAnimationFinished)
+                },
+                onEmptyIntroDismissFinished = { viewModel.processIntent(SoloCanvasIntent.EmptyIntroDismissFinished) },
+                emptyMessageRes = R.string.solo_canvas_empty_message,
+                emptyHighlightRes = R.string.solo_canvas_empty_highlight,
                 onLoadStateChange = { loadState = it },
                 retryKey = retryKey,
                 toastPolicy = toastPolicy,
@@ -252,7 +272,7 @@ private fun SoloDialogs(
             iconRes = DesignSystemR.drawable.ic_warning_round,
             secondaryText = stringResource(R.string.solo_canvas_dialog_cancel),
             onSecondaryClick = dismiss,
-            primaryText = stringResource(R.string.solo_canvas_menu_reset),
+            primaryText = stringResource(R.string.solo_canvas_reset_dialog_confirm),
             onPrimaryClick = { onIntent(SoloCanvasIntent.ConfirmReset) },
             onDismissRequest = dismiss,
         )
@@ -263,7 +283,7 @@ private fun SoloDialogs(
             iconRes = DesignSystemR.drawable.ic_warning_round,
             secondaryText = stringResource(R.string.solo_canvas_dialog_cancel),
             onSecondaryClick = dismiss,
-            primaryText = stringResource(R.string.solo_canvas_menu_delete),
+            primaryText = stringResource(R.string.solo_canvas_delete_dialog_confirm),
             onPrimaryClick = { onIntent(SoloCanvasIntent.ConfirmDelete) },
             onDismissRequest = dismiss,
         )

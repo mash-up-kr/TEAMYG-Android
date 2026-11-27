@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.repository.solo.SoloIntroRepository
 import com.teamyg.parfait.domain.repository.solo.SoloSpaceRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
@@ -14,6 +15,8 @@ import com.teamyg.parfait.domain.usecase.solo.DeleteSoloSpaceUseCase
 import com.teamyg.parfait.domain.usecase.solo.DeleteSoloTextUseCase
 import com.teamyg.parfait.domain.usecase.solo.DeleteSoloToppingUseCase
 import com.teamyg.parfait.domain.usecase.solo.GetSoloCanvasFlowUseCase
+import com.teamyg.parfait.domain.usecase.solo.GetSoloIntroPlayedDateUseCase
+import com.teamyg.parfait.domain.usecase.solo.MarkSoloIntroPlayedUseCase
 import com.teamyg.parfait.domain.usecase.solo.PlaceSoloTextUseCase
 import com.teamyg.parfait.domain.usecase.solo.PlaceSoloToppingUseCase
 import com.teamyg.parfait.domain.usecase.solo.ResetSoloSpaceUseCase
@@ -82,11 +85,14 @@ class SoloViewModelDependencyTest {
     /** 혼자 공간 저장소·use case. `SoloCanvasVOMapper`가 채우는 화면 표시용 고정값이 이쪽으로 새면 안 된다 */
     private val soloDataContracts: List<KClass<*>> = listOf(
         SoloSpaceRepository::class,
+        SoloIntroRepository::class,
         ChangeSoloBackgroundUseCase::class,
         DeleteSoloSpaceUseCase::class,
         DeleteSoloTextUseCase::class,
         DeleteSoloToppingUseCase::class,
         GetSoloCanvasFlowUseCase::class,
+        GetSoloIntroPlayedDateUseCase::class,
+        MarkSoloIntroPlayedUseCase::class,
         PlaceSoloTextUseCase::class,
         PlaceSoloToppingUseCase::class,
         ResetSoloSpaceUseCase::class,

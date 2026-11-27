@@ -8,6 +8,7 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.jvm.extension.toFirstDayOfMonth
+import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.solo.SoloCanvasVO
 import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
@@ -15,8 +16,11 @@ import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.solo.DeleteSoloSpaceUseCase
 import com.teamyg.parfait.domain.usecase.solo.GetSoloCanvasFlowUseCase
+import com.teamyg.parfait.domain.usecase.solo.GetSoloIntroPlayedDateUseCase
+import com.teamyg.parfait.domain.usecase.solo.MarkSoloIntroPlayedUseCase
 import com.teamyg.parfait.domain.usecase.solo.ResetSoloSpaceUseCase
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.SoloDialog
 import com.teamyg.parfait.feature.groups.canvas.impl.util.nextToppingPositionZ
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainUiState
@@ -70,6 +74,18 @@ sealed interface SoloCanvasIntent : UiIntent {
 
     /** 쓰기 권한이 거부돼 만들어 온 mp4 를 저장하지 않게 됐다 */
     data class DiscardRecordedVideo(val videoFilePath: String) : SoloCanvasIntent
+
+    /** 화면이 다시 보이기 시작했다(백그라운드 복귀 포함). 재생 중인 빈 캔버스 연출을 정리한다 */
+    data object AppStarted : SoloCanvasIntent
+
+    data object EmptyIntroAnimationFinished : SoloCanvasIntent
+
+    data object EmptyIntroTap : SoloCanvasIntent
+
+    /** 메뉴·뒤로가기·토핑 추가처럼 연출 바깥의 조작 */
+    data object EmptyIntroInteraction : SoloCanvasIntent
+
+    data object EmptyIntroDismissFinished : SoloCanvasIntent
 }
 
 sealed interface SoloCanvasEffect : UiSideEffect {
@@ -110,6 +126,8 @@ constructor(
     /** "내 공간". 문자열 리소스라 화면이 읽어 넘긴다 */
     @Assisted private val title: String,
     private val getSoloCanvasFlow: GetSoloCanvasFlowUseCase,
+    private val getSoloIntroPlayedDate: GetSoloIntroPlayedDateUseCase,
+    private val markSoloIntroPlayed: MarkSoloIntroPlayedUseCase,
     private val resetSoloSpace: ResetSoloSpaceUseCase,
     private val deleteSoloSpace: DeleteSoloSpaceUseCase,
     private val startToppingDraft: StartToppingDraftUseCase,
@@ -148,20 +166,66 @@ constructor(
     }
 
     private fun showCanvas(soloCanvas: SoloCanvasVO) {
-        updateCanvas {
-            copy(
-                todayCanvas = soloCanvas.toCanvasVO(today = today, title = title),
-                isInitialLoading = false,
-            )
+        val canvas = soloCanvas.toCanvasVO(today = state.value.canvas.today, title = title)
+        updateCanvas { copy(todayCanvas = canvas, isInitialLoading = false) }
+        syncEmptyIntro(canvas)
+    }
+
+    /**
+     * 빈 캔버스 안내 연출. 그룹 캔버스(`CanvasMainViewModel.syncEmptyIntro`)와 같은 규칙이다 — 날짜마다 첫
+     * 방출에서 한 번 정하고, 같은 날짜 안에서 캔버스가 중간에 비어도 뒤집지 않고, 시작하는 순간 기록한다.
+     * 기록만 계정과 무관한 혼자 공간 전용이다.
+     */
+    private fun syncEmptyIntro(canvas: CanvasVO) {
+        val isEmpty = canvas.toppings.isEmpty() && canvas.texts.isEmpty() && canvas.background == null
+
+        if (state.value.canvas.emptyIntroCanvasDate != canvas.date) {
+            updateCanvas {
+                copy(
+                    emptyIntroCanvasDate = canvas.date,
+                    emptyIntroPhase = if (isEmpty) CanvasEmptyIntroPhase.Idle else CanvasEmptyIntroPhase.Dismissed,
+                )
+            }
+            if (isEmpty) launch(key = EMPTY_INTRO_KEY) { startEmptyIntroIfUnplayed(canvas.date) }
+        } else if (isEmpty.not()) {
+            updateCanvas {
+                when (emptyIntroPhase) {
+                    CanvasEmptyIntroPhase.Entering, CanvasEmptyIntroPhase.Shown ->
+                        copy(emptyIntroPhase = CanvasEmptyIntroPhase.Dismissed)
+
+                    else -> this
+                }
+            }
         }
+    }
+
+    private suspend fun startEmptyIntroIfUnplayed(date: LocalDate) {
+        val alreadyPlayed = getSoloIntroPlayedDate() == date
+
+        // 기록을 읽는 사이 토핑이 올라왔거나 날짜·단계가 바뀌었으면 시작하지 않는다
+        val current = state.value.canvas
+        val isStillThisDecision = current.emptyIntroCanvasDate == date &&
+            current.emptyIntroPhase == CanvasEmptyIntroPhase.Idle
+        if (isStillThisDecision.not() || current.isEmptyPlaceholderVisible.not()) return
+
+        if (alreadyPlayed) {
+            updateCanvas { copy(emptyIntroPhase = CanvasEmptyIntroPhase.Dismissed) }
+        } else {
+            updateCanvas { copy(emptyIntroPhase = CanvasEmptyIntroPhase.Entering) }
+            markSoloIntroPlayed(date)
+        }
+    }
+
+    private fun updateEmptyIntroPhase(transform: (CanvasEmptyIntroPhase) -> CanvasEmptyIntroPhase) {
+        updateCanvas { copy(emptyIntroPhase = transform(emptyIntroPhase)) }
     }
 
     /** 날짜 경계를 넘기면 날짜 헤더만 바뀐다. 혼자 공간은 날마다 새 캔버스를 열지 않는다 */
     private fun observeDayBoundary() {
         launchWhileSubscribed(source = { observeParfaitDayBoundary() }) { today ->
-            updateCanvas {
-                if (today == this.today) return@updateCanvas this
+            if (today == state.value.canvas.today) return@launchWhileSubscribed
 
+            updateCanvas {
                 copy(
                     today = today,
                     selectedDate = today,
@@ -169,6 +233,9 @@ constructor(
                     todayCanvas = todayCanvas?.copy(date = today),
                 )
             }
+            // 날짜가 바뀌면 그 날짜의 연출 여부를 새로 정한다
+            val canvas = state.value.canvas.todayCanvas ?: return@launchWhileSubscribed
+            syncEmptyIntro(canvas)
         }
     }
 
@@ -202,6 +269,18 @@ constructor(
             is SoloCanvasIntent.SaveRecordedVideo -> handleSaveRecordedVideo(intent.videoFilePath)
 
             is SoloCanvasIntent.DiscardRecordedVideo -> launch { deleteRecordedVideo(intent.videoFilePath) }
+
+            SoloCanvasIntent.AppStarted -> updateEmptyIntroPhase(CanvasEmptyIntroPhase::onStop)
+
+            SoloCanvasIntent.EmptyIntroAnimationFinished ->
+                updateEmptyIntroPhase(CanvasEmptyIntroPhase::onAnimationFinished)
+
+            SoloCanvasIntent.EmptyIntroTap -> updateEmptyIntroPhase(CanvasEmptyIntroPhase::onTap)
+
+            SoloCanvasIntent.EmptyIntroInteraction -> updateEmptyIntroPhase(CanvasEmptyIntroPhase::onInteraction)
+
+            SoloCanvasIntent.EmptyIntroDismissFinished ->
+                updateEmptyIntroPhase(CanvasEmptyIntroPhase::onDismissFinished)
         }
     }
 
@@ -306,6 +385,8 @@ constructor(
 
     private companion object {
         const val SOLO_ACTION_KEY = "soloAction"
+
+        const val EMPTY_INTRO_KEY = "emptyIntro"
 
         const val START_TOPPING_FLOW_KEY = "startToppingFlow"
 
