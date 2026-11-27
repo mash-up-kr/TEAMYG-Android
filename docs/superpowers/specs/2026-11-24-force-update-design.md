@@ -79,7 +79,7 @@ tags: [spec, parfait, splash, force-update]
 |---|---|---|
 | `minimumVersion`을 언제 누가 올리는가 | 미정 | 아니오 — 값은 서버 DB에 있다 |
 
-추적: [open-questions.md](../../synthesis/open-questions.md) `OQ-P-464`.
+추적: [open-questions.md](../../synthesis/open-questions.md) `OQ-P-465`.
 
 ## 접근
 

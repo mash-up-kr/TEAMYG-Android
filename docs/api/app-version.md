@@ -68,4 +68,4 @@ tags: [api, parfait, server-contract, app-version]
 
 ## 미결
 
-- `minimum_version`을 언제 누가 올리는지, 실서버 `FORCE`·`OPTIONAL` 응답 실측(③) → [open-questions](../synthesis/open-questions.md) OQ-P-464
+- `minimum_version`을 언제 누가 올리는지, 실서버 `FORCE`·`OPTIONAL` 응답 실측(③) → [open-questions](../synthesis/open-questions.md) OQ-P-465

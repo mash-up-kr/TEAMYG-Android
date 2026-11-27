@@ -18,8 +18,8 @@
 - 상태: 스플래시가 부트스트랩·로띠와 함께 `GET api/v1/app-versions/check`([api/app-version.md](api/app-version.md))를 `APP_VERSION_NAME`으로 부르고, 로띠가 끝나면 판정에 따라 모달을 띄운다. `FORCE`는 `YGModalForceUpdate`로 진입을 막고 [종료]는 `finishAndRemoveTask`다. `OPTIONAL`은 `YGModalOptionalUpdate`이고 [나중에]·[업데이트] 모두 다음 화면으로 넘어간다. [업데이트]는 `storeLinkCandidates`가 만든 후보를 차례로 연다. 조회 실패·404·500·3초 초과·모르는 `updateType`은 전부 기존 진입으로 간다(fail-open).
 - ⚠️ 스토어 이동은 Play 전용이다. 인텐트가 `com.android.vending`(`PLAY_STORE_PACKAGE`, `model/StoreLinkCandidates.kt`)으로 고정돼 있어 삼성 기기에서도 원스토어·갤럭시 스토어 선택창이 뜨지 않는다. Play가 받지 못한 https 후보(Play 없는 기기의 Play 웹, 서버가 준 안내 페이지)만 패키지 없이 재시도해 브라우저로 간다. 버전 체크는 `@NoAuth`라 토큰을 싣지 않는다
 - 앵커: `CheckAppUpdateUseCase`, `AppVersionRepositoryImpl`, `AppVersionRemoteDataSourceImpl`, `AppVersionService`, `SplashViewModel`, `VERSION_CHECK_TIMEOUT`, `storeLinkCandidates`, `YGModalForceUpdate`, `YGModalOptionalUpdate`
-- ⚠️ 서버(`TEAMYG-SERVER` `feat/#225`)가 미머지·미배포라 실서버 응답을 받아 본 적이 없다. 배포 전에는 404로 통과하고, 배포 뒤에도 서버 DB에 ANDROID 행이 없으면 500(`APP_VERSION_NOT_FOUND`)이라 기능이 조용히 꺼진다 (OQ-P-464)
-- ⚠️ `versionNameSuffix`를 붙이면 서버가 400을 줘 판정이 영영 안 된다 (OQ-P-464)
+- ⚠️ 서버(`TEAMYG-SERVER` `feat/#225`)가 미머지·미배포라 실서버 응답을 받아 본 적이 없다. 배포 전에는 404로 통과하고, 배포 뒤에도 서버 DB에 ANDROID 행이 없으면 500(`APP_VERSION_NOT_FOUND`)이라 기능이 조용히 꺼진다 (OQ-P-465)
+- ⚠️ `versionNameSuffix`를 붙이면 서버가 400을 줘 판정이 영영 안 된다 (OQ-P-465)
 - 설계: [force-update-design](superpowers/specs/2026-11-24-force-update-design.md)
 
 ## 그룹 목록 (G-001)
@@ -228,7 +228,7 @@
 - OQ-P-301 — 카메라 권한 거부 화면의 수정 결과를 실기기에서 본 사람이 없다
 - OQ-P-400 — 세그멘테이션 1차 경로 회귀와 C-101-Loading 흐름(갤러리 content uri 재읽기, 팝업 중 결과 보류, 편집 완료 뒤 백스택)을 실기기로 본 적이 없다
 - OQ-P-260 — 화면 전환 애니메이션의 모양·시간·방향을 실기기로 본 적이 없다
-- OQ-P-464 — 강제 업데이트가 실서버 `FORCE` 응답으로 모달 노출·[업데이트] 스토어 이동·[종료]를 확인한 적이 없다(③)
+- OQ-P-465 — 강제 업데이트가 실서버 `FORCE` 응답으로 모달 노출·[업데이트] 스토어 이동·[종료]를 확인한 적이 없다(③)
 - OQ-P-146 — 로그인 실기기 검증 항목과 앱의 첫 실서버 호출 왕복이 한 번도 돌지 않았다
 - OQ-P-350 — 교체된 스플래시 로고 애니메이션을 본 사람이 없고 되돌아가도 잡을 수단이 없다
 - OQ-P-267 — 누끼 후보 필터 상수 둘이 실측 근거 없이 정해졌다
