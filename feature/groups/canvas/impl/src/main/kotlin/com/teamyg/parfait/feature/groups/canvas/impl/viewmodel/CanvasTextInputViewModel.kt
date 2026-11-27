@@ -28,6 +28,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
@@ -169,6 +170,7 @@ constructor(
     private val clearToppingDraft: ClearToppingDraftUseCase,
     private val placeTextTopping: PlaceTextToppingUseCase,
     private val refreshTodayParfaitDetail: RefreshTodayParfaitDetailUseCase,
+    private val recordReviewPromptUploadUseCase: RecordReviewPromptUploadUseCase,
     private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasTextInputUiState, CanvasTextInputIntent, CanvasTextInputEffect>(
     CanvasTextInputUiState(),
@@ -433,6 +435,8 @@ constructor(
                         viewModelLogger.e(throwable) { "오늘 캔버스를 다시 받지 못했다" }
                     }
                     clearToppingDraft()
+                    // NavigateBack 뒤로 미루지 않는다 — 되감기가 viewModelScope 를 취소하면 끊긴다
+                    recordReviewPromptUploadUseCase()
                     postSideEffect(CanvasTextInputEffect.NavigateBack)
                 }.onFailure { throwable ->
                     val error = throwable as? AppError ?: AppError.Unexpected(throwable)

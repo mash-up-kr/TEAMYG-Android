@@ -31,6 +31,7 @@ import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
 import io.mockk.Called
@@ -74,6 +75,7 @@ class CanvasBGEditViewModelTest {
     private val refreshTodayParfaitDetail: RefreshTodayParfaitDetailUseCase = mockk()
     private val uploadImage: UploadImageUseCase = mockk()
     private val changeCanvasBackground: ChangeCanvasBackgroundUseCase = mockk()
+    private val recordReviewPromptUploadUseCase: RecordReviewPromptUploadUseCase = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
@@ -110,6 +112,7 @@ class CanvasBGEditViewModelTest {
         refreshTodayParfaitDetailUseCase = refreshTodayParfaitDetail,
         uploadImageUseCase = uploadImage,
         changeCanvasBackgroundUseCase = changeCanvasBackground,
+        recordReviewPromptUploadUseCase = recordReviewPromptUploadUseCase,
     ).also { viewModel ->
         backgroundScope.launch { viewModel.state.collect { } }
         advanceUntilIdle()
@@ -243,6 +246,7 @@ class CanvasBGEditViewModelTest {
         coVerify(exactly = 1) {
             changeCanvasBackground(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), CanvasBackgroundEdit.Color("#FF6B00"))
         }
+        coVerify(exactly = 1) { recordReviewPromptUploadUseCase() }
     }
 
     @Test
@@ -314,6 +318,7 @@ class CanvasBGEditViewModelTest {
             assertEquals(CanvasBGEditEffect.ShowError(CanvasBGEditError.NETWORK), awaitItem())
         }
         verify { changeCanvasBackground wasNot Called }
+        coVerify(exactly = 0) { recordReviewPromptUploadUseCase() }
     }
 
     @Test
@@ -334,6 +339,7 @@ class CanvasBGEditViewModelTest {
             // Then 저장되지 않은 배경을 저장된 것처럼 넘기지 않는다
             assertEquals(CanvasBGEditEffect.ShowError(CanvasBGEditError.BACKGROUND_SAVE_UNKNOWN), awaitItem())
         }
+        coVerify(exactly = 0) { recordReviewPromptUploadUseCase() }
     }
 
     @Test

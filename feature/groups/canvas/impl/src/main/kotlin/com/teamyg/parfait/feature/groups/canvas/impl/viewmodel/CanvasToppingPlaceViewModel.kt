@@ -28,6 +28,7 @@ import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
+import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
@@ -195,6 +196,7 @@ class CanvasToppingPlaceViewModel
     private val addRecentImageUseCase: AddRecentImageUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
     private val requestTodayParfaitRefreshUseCase: RequestTodayParfaitRefreshUseCase,
+    private val recordReviewPromptUploadUseCase: RecordReviewPromptUploadUseCase,
     private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasToppingPlaceUiState, CanvasToppingPlaceIntent, CanvasToppingPlaceEffect>(
     initialState = CanvasToppingPlaceUiState(),
@@ -515,6 +517,10 @@ class CanvasToppingPlaceViewModel
                             ),
                         ),
                     )
+
+                    // PlaceSucceeded 보다 먼저 — 그 효과를 받은 라우트가 되감기며 viewModelScope 를
+                    // 취소하면 이 호출도 끊긴다
+                    recordReviewPromptUploadUseCase()
 
                     // 되감기를 먼저 알린다 — clearToppingDraft() 가 초안을 비우면 구독이 알맹이를 null 로
                     // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다

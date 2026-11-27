@@ -29,6 +29,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.ui.R as CoreUiR
+import com.teamyg.parfait.core.util.android.extension.requestInAppReview
 import com.teamyg.parfait.core.util.android.extension.shareText
 import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
 import com.teamyg.parfait.domain.model.id.ParfaitId
@@ -300,6 +301,8 @@ internal fun CanvasMainRoute(
                         viewModel.processIntent(CanvasMainIntent.ClickPastCanvasAlertDate(effect.date))
                     },
                 )
+
+                CanvasMainEffect.RequestInAppReview -> context.requestInAppReview()
             }
         }
     }
