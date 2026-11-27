@@ -1,10 +1,9 @@
 package com.teamyg.parfait.data.repository.topping
 
 import com.teamyg.parfait.data.source.topping.local.ToppingDraftLocalDataSource
-import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -22,20 +21,18 @@ class ToppingDraftRepositoryImpl @Inject constructor(
         .flowOn(Dispatchers.IO)
 
     override suspend fun start(
-        groupId: GroupId,
-        parfaitId: ParfaitId,
+        target: ToppingDraftTarget,
         nextPositionZ: Int,
     ) = toppingDraftLocalDataSource.save(
         ToppingDraft(
-            groupId = groupId,
-            parfaitId = parfaitId,
+            target = target,
             nextPositionZ = nextPositionZ,
         ),
     )
 
     override suspend fun clear() = toppingDraftLocalDataSource.clear()
 
-    // 정규화된 [draft] 가 아니라 원문을 읽는다 — 여기서 필요한 것은 캔버스 식별값뿐이고,
+    // 정규화된 [draft] 가 아니라 원문을 읽는다 — 여기서 필요한 것은 공간 대상뿐이고,
     // 정규화는 파일 존재 확인 IO 를 태운다
     override suspend fun record(
         subjectImagePath: String,

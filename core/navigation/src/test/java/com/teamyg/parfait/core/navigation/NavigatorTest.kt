@@ -12,6 +12,12 @@ private data object Detail : NavKey
 
 private data object Login : NavKey
 
+private interface Marker : NavKey
+
+private data object HomeA : Marker
+
+private data object HomeB : Marker
+
 class NavigatorTest {
     private fun navigator() = Navigator(initialNavigationKey = Home)
 
@@ -96,6 +102,53 @@ class NavigatorTest {
 
         // Then 백스택을 건드리지 않고 실패를 알린다 — 못 찾았는데 비우면
         // 사용자가 어디에도 없는 화면에 남는다
+        assertFalse(reached)
+        assertEquals(listOf(Home, Detail), navigator.backStack)
+    }
+
+    @Test
+    fun popUpTo_markerInterface_findsImplementingKey() {
+        // Given 표식 구현 키 위로 두 화면이 쌓인 백스택
+        val navigator = Navigator(initialNavigationKey = Home)
+        navigator.goTo(HomeA)
+        navigator.goTo(Detail)
+        navigator.goTo(Login)
+
+        // When 표식 인터페이스까지 걷어낸다
+        val reached = navigator.popUpTo<Marker>()
+
+        // Then 구현 키가 최상단이 되고 도달했다고 알린다
+        assertTrue(reached)
+        assertEquals(listOf(Home, HomeA), navigator.backStack)
+    }
+
+    @Test
+    fun popUpTo_markerInterface_picksTopmostOfMixedStack() {
+        // Given 표식 구현 키가 서로 다른 둘 섞여 쌓인 백스택
+        val navigator = Navigator(initialNavigationKey = Home)
+        navigator.goTo(HomeA)
+        navigator.goTo(Detail)
+        navigator.goTo(HomeB)
+        navigator.goTo(Login)
+
+        // When 표식 인터페이스까지 걷어낸다
+        val reached = navigator.popUpTo<Marker>()
+
+        // Then 가장 위의 구현 키까지만 걷어낸다
+        assertTrue(reached)
+        assertEquals(listOf(Home, HomeA, Detail, HomeB), navigator.backStack)
+    }
+
+    @Test
+    fun popUpTo_markerInterface_absent_changesNothing() {
+        // Given 표식 구현 키가 없는 백스택
+        val navigator = navigator()
+        navigator.goTo(Detail)
+
+        // When 표식 인터페이스까지 걷어내려 한다
+        val reached = navigator.popUpTo<Marker>()
+
+        // Then 백스택을 건드리지 않고 실패를 알린다
         assertFalse(reached)
         assertEquals(listOf(Home, Detail), navigator.backStack)
     }

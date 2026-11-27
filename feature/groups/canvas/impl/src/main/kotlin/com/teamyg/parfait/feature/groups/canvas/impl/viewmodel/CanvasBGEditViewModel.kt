@@ -26,8 +26,9 @@ import com.teamyg.parfait.domain.usecase.review.RecordReviewPromptUploadUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableText
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.util.seededFrom
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTexts
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableToppingsInDrawOrder
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -155,10 +156,8 @@ constructor(
                 parfaitId = canvas.parfaitId
             }
 
-            val incoming = canvas.toppings
-                .sortedBy { topping -> topping.transform.positionZ }
-                .map { topping -> topping.toEditableTopping() }
-            val incomingTexts = canvas.texts.map { text -> text.toEditableText() }
+            val incoming = canvas.toppings.toEditableToppingsInDrawOrder()
+            val incomingTexts = canvas.texts.toEditableTexts()
 
             updateState { withCanvas(canvas).copy(toppings = incoming, texts = incomingTexts) }
             hasSeededFromCanvas = true
@@ -175,14 +174,7 @@ constructor(
     private fun CanvasBGEditUiState.withCanvas(canvas: CanvasVO): CanvasBGEditUiState {
         if (hasSeededFromCanvas) return this
 
-        return copy(
-            selectedColor = (canvas.background as? CanvasBackground.Color)
-                ?.value
-                ?.toColorOrNull()
-                ?: selectedColor,
-            selectedImageUri = (canvas.background as? CanvasBackground.Image)?.url,
-            selectedImageSource = null,
-        )
+        return seededFrom(canvas.background)
     }
 
     override fun processIntent(intent: CanvasBGEditIntent) {

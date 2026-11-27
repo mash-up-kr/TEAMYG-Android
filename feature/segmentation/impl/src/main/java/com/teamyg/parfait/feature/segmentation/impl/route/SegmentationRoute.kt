@@ -16,7 +16,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasHomeNavKey
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.impl.R
@@ -60,7 +60,7 @@ internal fun SegmentationRoute(
                 is SegmentationEffect.ShowError -> toastPolicy.showError(errorMessage)
 
                 // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
-                is SegmentationEffect.QuitToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
+                is SegmentationEffect.QuitToCanvas -> navigator.popUpTo<CanvasHomeNavKey>()
 
                 // 이 화면을 걷어 편집에서 뒤로가기 해도 분석으로 돌아오지 않게 한다
                 is SegmentationEffect.GoToEditDetectionFailed -> navigator.goToAndPopCurrent(

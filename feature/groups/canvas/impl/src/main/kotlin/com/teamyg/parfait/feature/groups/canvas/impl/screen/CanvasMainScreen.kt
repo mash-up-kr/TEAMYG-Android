@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -73,7 +74,8 @@ private const val MAX_VISIBLE_MEMBER_CHIPS = 5
 internal fun CanvasMainScreen(
     canvasState: CanvasMainUiState,
     onClickBack: () -> Unit,
-    onClickDateSelect: () -> Unit,
+    /** null 이면 날짜를 고를 수 없다(혼자 공간) — 날짜 헤더가 캘린더 아이콘 없는 글자가 된다 */
+    onClickDateSelect: (() -> Unit)?,
     onClickMenu: () -> Unit,
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
@@ -102,6 +104,9 @@ internal fun CanvasMainScreen(
     onCanvasAreaSizeChange: (width: Dp, height: Dp) -> Unit = { _, _ -> },
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
     alertPolicy: YGAlertPolicy = rememberYGAlertPolicy(),
+    /** 빈 캔버스 안내 문구. `%1$s` 자리에 [emptyHighlightRes] 가 들어가고 연출은 그 글자를 강조한다 */
+    @StringRes emptyMessageRes: Int = R.string.canvas_main_empty_message,
+    @StringRes emptyHighlightRes: Int = R.string.canvas_main_empty_highlight,
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     val openMenu = {
@@ -109,7 +114,7 @@ internal fun CanvasMainScreen(
         isMenuExpanded = true
     }
 
-    val emptyHighlight = stringResource(R.string.canvas_main_empty_highlight)
+    val emptyHighlight = stringResource(emptyHighlightRes)
     val emptyIntroState = rememberCanvasEmptyIntroState(
         highlightCharCount = highlightCharCount(emptyHighlight),
         phase = canvasState.emptyIntroPhase,
@@ -243,7 +248,7 @@ internal fun CanvasMainScreen(
             },
             isEmpty = canvasState.isCanvasEmpty,
             emptyContent = {
-                val message = stringResource(R.string.canvas_main_empty_message, emptyHighlight)
+                val message = stringResource(emptyMessageRes, emptyHighlight)
                 if (canvasState.isEmptyIntroVisible) {
                     CanvasEmptyIntroLayer(state = emptyIntroState, message = message, highlight = emptyHighlight)
                 } else {
@@ -425,6 +430,48 @@ private fun PreviewCanvasMainScreen(
         onEmptyIntroInteraction = {},
         onEmptyIntroAnimationFinished = {},
         onEmptyIntroDismissFinished = {},
+        onLoadStateChange = {},
+        retryKey = 0,
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+/** 혼자 공간 — 멤버 칩이 없고 날짜는 글자로만 보인다 */
+@YGPreview
+@Composable
+private fun PreviewCanvasMainScreenSolo() = PreviewBox {
+    val today = LocalDate(2026, 5, 20)
+
+    CanvasMainScreen(
+        canvasState = CanvasMainUiState(
+            groupName = "내 공간",
+            today = today,
+            selectedDate = today,
+        ),
+        onClickBack = {},
+        onClickDateSelect = null,
+        onClickMenu = {},
+        onClickCamera = {},
+        onClickGallery = {},
+        onClickTextInput = {},
+        onClickEditCanvasBG = {},
+        onClickSaveAsImage = {},
+        onClickSaveAsVideo = {},
+        onClickGoToToday = {},
+        onDismissCalendar = {},
+        onSelectYear = {},
+        onSelectMonth = {},
+        onClickDate = {},
+        onClickTopping = {},
+        onClickText = {},
+        onClickSpotlightDim = {},
+        isEmptyIntroPaused = false,
+        onEmptyIntroTap = {},
+        onEmptyIntroInteraction = {},
+        onEmptyIntroAnimationFinished = {},
+        onEmptyIntroDismissFinished = {},
+        emptyMessageRes = R.string.solo_canvas_empty_message,
+        emptyHighlightRes = R.string.solo_canvas_empty_highlight,
         onLoadStateChange = {},
         retryKey = 0,
         modifier = Modifier.fillMaxSize(),

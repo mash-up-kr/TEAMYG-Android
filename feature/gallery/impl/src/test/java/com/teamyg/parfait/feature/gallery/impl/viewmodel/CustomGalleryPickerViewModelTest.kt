@@ -11,11 +11,17 @@ import com.teamyg.parfait.domain.usecase.image.GetRecentCacheImagesUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
+import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -24,6 +30,8 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import java.io.IOException
+
+private val GROUP_TARGET = ToppingDraftTarget.Group(GroupId(1L), ParfaitId(2L))
 
 class CustomGalleryPickerViewModelTest {
     @get:Rule
@@ -35,6 +43,12 @@ class CustomGalleryPickerViewModelTest {
         coEvery { this@mockk(any()) } returns true
     }
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
+
+    /** 알맹이를 맞춘 뒤의 초안. 배치 화면을 고르는 근거는 그 [ToppingDraft.target] 이다 */
+    private val draft = MutableStateFlow<ToppingDraft?>(ToppingDraft(target = GROUP_TARGET, nextPositionZ = 1))
+    private val getToppingDraftFlow: GetToppingDraftFlowUseCase = mockk {
+        every { this@mockk() } returns draft
+    }
 
     private val source = RecentImage(
         uri = "content://recent/a.jpg",
@@ -59,6 +73,7 @@ class CustomGalleryPickerViewModelTest {
             getRecentCacheImagesUseCase = getRecentCacheImages,
             loadGalleryImageGroupsUseCase = loadGroups,
             ensureDraftSubjectRecorded = ensureDraftSubjectRecorded,
+            getToppingDraftFlow = getToppingDraftFlow,
             analyticsLogger = analyticsLogger,
         )
     }
@@ -110,8 +125,23 @@ class CustomGalleryPickerViewModelTest {
             viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
 
             // Then 토핑 배치로 가고, 초안에 넘기는 것은 uri 가 아니라 절대경로다
-            assertEquals(CustomGalleryPickerEffect.NavigateToToppingPlace, awaitItem())
+            assertEquals(CustomGalleryPickerEffect.NavigateToToppingPlace(GROUP_TARGET), awaitItem())
             coVerify(exactly = 1) { ensureDraftSubjectRecorded(cutout.filePath) }
+        }
+    }
+
+    @Test
+    fun onClickCutoutImage_soloDraft_navigatesToSoloToppingPlace() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 혼자 공간에서 시작한 흐름이다
+        draft.value = ToppingDraft(target = ToppingDraftTarget.Solo, nextPositionZ = 1)
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
+
+            // Then 혼자 공간 배치로 간다
+            assertEquals(CustomGalleryPickerEffect.NavigateToToppingPlace(ToppingDraftTarget.Solo), awaitItem())
         }
     }
 
@@ -162,7 +192,7 @@ class CustomGalleryPickerViewModelTest {
             gate.complete(true)
 
             // Then 한 번만 맞추고 이펙트도 한 번이다
-            assertEquals(CustomGalleryPickerEffect.NavigateToToppingPlace, awaitItem())
+            assertEquals(CustomGalleryPickerEffect.NavigateToToppingPlace(GROUP_TARGET), awaitItem())
             coVerify(exactly = 1) { ensureDraftSubjectRecorded(cutout.filePath) }
             expectNoEvents()
         }

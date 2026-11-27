@@ -18,6 +18,11 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloBGEdit
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloCanvas
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloTextInput
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloToppingArrange
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeySoloToppingPlace
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupNickName
@@ -145,6 +150,21 @@ class NavKeyAnalyticsScreenTest {
                 ?.type
                 ?.screenId,
         )
+    }
+
+    @Test
+    fun toAnalyticsScreenOrNull_soloSpaceKeys_returnNull() {
+        // Given 혼자 공간 화면 다섯. 서버·애널리틱스에 닿지 않는 오프라인 기능이다
+        val soloKeys = listOf<NavKey>(
+            NavKeySoloCanvas,
+            NavKeySoloBGEdit,
+            NavKeySoloToppingPlace,
+            NavKeySoloTextInput,
+            NavKeySoloToppingArrange(1L, false),
+        )
+
+        // When, Then 화면 조회를 남기지 않는다
+        soloKeys.forEach { assertNull(it.toAnalyticsScreenOrNull(), "$it") }
     }
 
     @Test

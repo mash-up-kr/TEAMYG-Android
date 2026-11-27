@@ -43,10 +43,13 @@ import com.teamyg.parfait.domain.usecase.parfait.MarkPastCanvasAlertSeenUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.usecase.review.CheckReviewPromptTriggerUseCase
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.util.isEmptyForIntro
+import com.teamyg.parfait.feature.groups.canvas.impl.util.nextToppingPositionZ
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
@@ -455,7 +458,7 @@ constructor(
      * 재생 도중 나가도 같은 날 다시 재생하지 않는다.
      */
     private fun syncEmptyIntro(canvas: CanvasVO) {
-        val isEmpty = canvas.toppings.isEmpty() && canvas.texts.isEmpty() && canvas.background == null
+        val isEmpty = canvas.isEmptyForIntro()
 
         if (state.value.emptyIntroCanvasDate != canvas.date) {
             updateState {
@@ -464,7 +467,9 @@ constructor(
                     emptyIntroPhase = if (isEmpty) CanvasEmptyIntroPhase.Idle else CanvasEmptyIntroPhase.Dismissed,
                 )
             }
-            if (isEmpty) launch(key = EMPTY_INTRO_KEY) { startEmptyIntroIfUnplayed(canvas) }
+            // 키를 날짜별로 둔다 — 앞 날짜 판정이 기록을 읽는 사이 날짜가 바뀌어도 새 날짜 판정이 버려지지 않는다.
+            // 앞 날짜 작업은 startEmptyIntroIfUnplayed 의 날짜 가드에서 끝난다
+            if (isEmpty) launch(key = EMPTY_INTRO_KEY to canvas.date) { startEmptyIntroIfUnplayed(canvas) }
         } else if (isEmpty.not()) {
             updateState {
                 when (emptyIntroPhase) {
@@ -1137,8 +1142,7 @@ constructor(
             },
         ) {
             startToppingDraft(
-                groupId = groupId,
-                parfaitId = canvas.parfaitId,
+                target = ToppingDraftTarget.Group(groupId = groupId, parfaitId = canvas.parfaitId),
                 nextPositionZ = canvas.nextPositionZ(),
             )
             postSideEffect(effect)
@@ -1150,14 +1154,7 @@ constructor(
         is CanvasToppingKey.Text -> texts.any { it.parfaitTextId.value == key.id }
     }
 
-    /**
-     * 새 토핑은 언제나 맨 위다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 z 가 겹친다.
-     * 이미지와 텍스트가 한 z 축을 쓰므로 둘을 합쳐 센다.
-     */
-    private fun CanvasVO.nextPositionZ(): Int {
-        val maxZ = (toppings.map { it.transform.positionZ } + texts.map { it.transform.positionZ }).maxOrNull()
-        return (maxZ ?: 0) + 1
-    }
+    private fun CanvasVO.nextPositionZ(): Int = nextToppingPositionZ(toppings = toppings, texts = texts)
 
     /**
      * 오늘 캔버스를 아직 못 받았으면 열지 않는다 — 편집 화면은 대상 캔버스의 id 위에서만

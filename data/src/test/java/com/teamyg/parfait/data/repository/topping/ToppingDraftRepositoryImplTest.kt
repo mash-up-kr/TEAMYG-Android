@@ -4,6 +4,7 @@ import com.teamyg.parfait.data.source.topping.local.ToppingDraftLocalDataSource
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingDraftTarget
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -42,8 +43,7 @@ class ToppingDraftRepositoryImplTest {
         subjectImagePath: String?,
         cutoutImagePath: String?,
     ) = ToppingDraft(
-        groupId = GROUP_ID,
-        parfaitId = PARFAIT_ID,
+        target = TARGET,
         nextPositionZ = 4,
         subjectImagePath = subjectImagePath,
         cutoutImagePath = cutoutImagePath,
@@ -56,12 +56,12 @@ class ToppingDraftRepositoryImplTest {
         coEvery { toppingDraftLocalDataSource.save(capture(saved)) } returns Unit
 
         // When 캔버스 식별값으로 흐름을 연다
-        repository().start(groupId = GROUP_ID, parfaitId = PARFAIT_ID, nextPositionZ = 4)
+        repository().start(target = TARGET, nextPositionZ = 4)
 
         // Then 이미지와 테두리는 비어 있다 — 진입 시 덮어쓰는 이 규칙 하나가 지난 흐름의
         // 이미지가 따라붙는 것을 막는다
         assertEquals(
-            ToppingDraft(groupId = GROUP_ID, parfaitId = PARFAIT_ID, nextPositionZ = 4),
+            ToppingDraft(target = TARGET, nextPositionZ = 4),
             saved.captured,
         )
     }
@@ -138,8 +138,7 @@ class ToppingDraftRepositoryImplTest {
         assertTrue(recorded)
         assertEquals(
             ToppingDraft(
-                groupId = GROUP_ID,
-                parfaitId = PARFAIT_ID,
+                target = TARGET,
                 nextPositionZ = 4,
                 subjectImagePath = "/cache/segmentation/subject.png",
                 cutoutImagePath = "/cache/segmentation/cutout.png",
@@ -191,5 +190,6 @@ class ToppingDraftRepositoryImplTest {
     private companion object {
         val GROUP_ID = GroupId(1L)
         val PARFAIT_ID = ParfaitId(2L)
+        val TARGET = ToppingDraftTarget.Group(GROUP_ID, PARFAIT_ID)
     }
 }

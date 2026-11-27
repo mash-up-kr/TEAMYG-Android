@@ -49,7 +49,7 @@ import com.teamyg.parfait.feature.camera.impl.util.launchCapture
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasHomeNavKey
 import java.io.File
 
 @Composable
@@ -118,7 +118,7 @@ internal fun CustomCameraRoute(
                     }
                 }
 
-                is CustomCameraEffect.Cancel -> navigator.popUpTo<NavKeyCanvasMain>()
+                is CustomCameraEffect.Cancel -> navigator.popUpTo<CanvasHomeNavKey>()
 
                 is CustomCameraEffect.CaptureFailed -> {
                     toastPolicy.showError(captureFailedMessage)

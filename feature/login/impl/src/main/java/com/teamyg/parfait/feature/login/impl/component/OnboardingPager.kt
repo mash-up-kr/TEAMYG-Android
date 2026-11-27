@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +37,7 @@ import com.teamyg.parfait.feature.login.impl.model.OnboardingPagesPreviewParamet
 @Composable
 internal fun OnboardingPager(
     pages: List<OnboardingPage>,
+    onGlassesFiveTaps: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val pagerState = rememberPagerState(pageCount = { pages.size })
@@ -54,7 +56,12 @@ internal fun OnboardingPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth().weight(1f),
         ) { index ->
-            OnboardingPageContent(page = pages[index], modifier = Modifier.fillMaxSize())
+            OnboardingPageContent(
+                page = pages[index],
+                // 숨은 진입점은 첫 페이지(안경 이미지)에만 둔다
+                onGlassesFiveTaps = if (index == 0) onGlassesFiveTaps else null,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }
@@ -62,18 +69,29 @@ internal fun OnboardingPager(
 @Composable
 private fun OnboardingPageContent(
     page: OnboardingPage,
+    onGlassesFiveTaps: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Image(
-            painter = painterResource(page.painterResourceId),
-            contentDescription = null,
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            contentScale = ContentScale.Fit,
-        )
+        val painter = painterResource(page.painterResourceId)
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Image(
+                painter = painter,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+            )
+            if (onGlassesFiveTaps != null) {
+                GlassesTapArea(
+                    imageIntrinsicSize = painter.intrinsicSize,
+                    onFiveTaps = onGlassesFiveTaps,
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(30.dp)) // 30.dp가 gap 없음
 
         Text(
@@ -122,6 +140,7 @@ private fun PreviewOnboardingPager(
 ) = PreviewBox {
     OnboardingPager(
         pages = pages,
+        onGlassesFiveTaps = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

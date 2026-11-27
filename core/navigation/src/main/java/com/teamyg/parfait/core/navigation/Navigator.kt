@@ -47,7 +47,8 @@ class Navigator(initialNavigationKey: NavKey) {
     /**
      * [T] 타입 키가 백스택에 있으면 그 위에 쌓인 것을 모두 걷어낸다.
      *
-     * [goToSingleClearTop] 과 달리 **키 값이 아니라 타입**으로 찾는다. 목적지 키가 인자를 갖는
+     * [goToSingleClearTop] 과 달리 **키 값이 아니라 타입**으로 찾는다. [T] 는 구체 키 클래스뿐 아니라
+     * 표식 인터페이스여도 된다 — 그 인터페이스를 구현한 키 중 가장 위의 것에서 멈춘다. 목적지 키가 인자를 갖는
      * 경우(예: 그룹 id) 걷어내려는 쪽이 그 인자를 모를 수 있어서다 — 촬영·누끼 화면들은 어느
      * 그룹에서 시작했는지를 들고 다니지 않는다.
      *
@@ -58,7 +59,7 @@ class Navigator(initialNavigationKey: NavKey) {
 
     /** 타입을 값으로 받는 [popUpTo]. reified 판이 이쪽으로 넘긴다 */
     fun popUpTo(type: KClass<out NavKey>): Boolean {
-        val destinationIndex = backStack.indexOfLast { it::class == type }
+        val destinationIndex = backStack.indexOfLast { type.isInstance(it) }
 
         if (destinationIndex == -1) return false
         if (destinationIndex == backStack.lastIndex) return true

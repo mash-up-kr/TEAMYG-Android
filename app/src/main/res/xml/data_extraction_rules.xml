@@ -1,19 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
    See https://developer.android.com/about/versions/12/backup-restore#xml-changes
    for details.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- 혼자 공간 사진이 쌓이면 앱 클라우드 백업 한도(25MB)를 넘겨 백업 전체가 멈춘다.
+             기기 간 이전(device-transfer)에는 남긴다. 서버 종료 뒤 혼자 공간을 옮길 유일한 길이다 -->
+        <exclude domain="file" path="solo_space/" />
     </cloud-backup>
-    <!--
-    <device-transfer>
-        <include .../>
-        <exclude .../>
-    </device-transfer>
-    -->
 </data-extraction-rules>
